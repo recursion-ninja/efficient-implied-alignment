@@ -1,17 +1,3 @@
------------------------------------------------------------------------------
--- |
--- Module      :  File.Format.Fastc.Parser
--- Copyright   :  (c) 2015-2015 Ward Wheeler
--- License     :  BSD-style
---
--- Maintainer  :  wheeler@amnh.org
--- Stability   :  provisional
--- Portability :  portable
---
--- Utility functions used for parsing both FASTA & FASTC file formats.
---
------------------------------------------------------------------------------
-
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
 module File.Format.Fastc.Parser 
@@ -30,7 +16,7 @@ import           Data.Char                 (isSpace)
 import           Data.List.NonEmpty        (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Vector        as V
-import           File.Format.Fasta.Internal
+import           File.Format.Fastc.Internal
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom

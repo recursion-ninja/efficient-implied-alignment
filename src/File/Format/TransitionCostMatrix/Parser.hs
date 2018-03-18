@@ -1,30 +1,16 @@
------------------------------------------------------------------------------
--- |
--- Module      :  File.Format.TransitionCostMatrix.Parser
--- Copyright   :  (c) 2015-2015 Ward Wheeler
--- License     :  BSD-style
---
--- Maintainer  :  wheeler@amnh.org
--- Stability   :  provisional
--- Portability :  portable
---
--- Functions for for parsing TCM files into an alphabet and square matrix.
---
------------------------------------------------------------------------------
-
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
 module File.Format.TransitionCostMatrix.Parser where
 
 
-import           Data.Char                   (isSpace)
-import           Data.Foldable               (toList)
-import           Data.List.NonEmpty          (NonEmpty)
-import qualified Data.List.NonEmpty    as NE (fromList)
-import           Data.List.Utility           (duplicates, mostCommon)
-import           Data.Matrix.NotStupid       (Matrix, ncols, nrows)
-import qualified Data.Matrix.NotStupid as M  (fromList)
-import           Data.Maybe                  (catMaybes, fromJust)
+import           Data.Char                     (isSpace)
+import           Data.Foldable                 (toList)
+import           Data.List.NonEmpty            (NonEmpty)
+import qualified Data.List.NonEmpty      as NE (fromList)
+import           Data.List.Utility             (duplicates, mostCommon)
+import           Data.Matrix.ZeroIndexed       (Matrix, ncols, nrows)
+import qualified Data.Matrix.ZeroIndexed as M  (fromList)
+import           Data.Maybe                    (catMaybes, fromJust)
 import           Data.Semigroup
 import           Text.Megaparsec
 import           Text.Megaparsec.Char

@@ -1,17 +1,3 @@
------------------------------------------------------------------------------
--- |
--- Module      :  File.Format.Newick.Internal
--- Copyright   :  (c) 2015-2015 Ward Wheeler
--- License     :  BSD-style
---
--- Maintainer  :  wheeler@amnh.org
--- Stability   :  provisional
--- Portability :  portable
---
--- Utility functions and types for parsing Newick tree files into a topological tree structure.
---
------------------------------------------------------------------------------
-
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module File.Format.Newick.Internal

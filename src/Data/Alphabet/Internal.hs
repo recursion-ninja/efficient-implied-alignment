@@ -1,19 +1,3 @@
------------------------------------------------------------------------------
--- |
--- Module      :  Data.Alphabet.Internal
--- Copyright   :  (c) 2015-2015 Ward Wheeler
--- License     :  BSD-style
---
--- Maintainer  :  wheeler@amnh.org
--- Stability   :  provisional
--- Portability :  portable
---
--- We must ensure that missing and gap are appropriately
--- code as "-" & "?", respectively, before this module is used, i.e., as output
--- from either parsers or in unification step.
---
------------------------------------------------------------------------------
-
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies #-}
 
@@ -46,8 +30,6 @@ import qualified Data.Vector.NonEmpty  as NEV
 import           GHC.Generics                 (Generic)
 import           Prelude               hiding (lookup, unzip, zip)
 import           Test.QuickCheck
-import           Test.QuickCheck.Arbitrary.Instances ()
-import           Text.XML
 
 
 -- |
@@ -332,13 +314,6 @@ instance Show a => Show (Alphabet a) where
         , intercalate ", " $ show <$> toList x
         , "}"
         ]
-
-
--- | (✔)
-instance (Show a) => ToXML (Alphabet a) where
-
-    toXML alphabet = xmlElement "Alphabet" [] [ Left ("Symbols", show alphabet)]
-
 
 
 {-
