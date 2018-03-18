@@ -4,6 +4,7 @@ module Main where
 import Data.Char
 import Data.Semigroup ((<>))
 import Options.Applicative
+import Text.PrettyPrint.ANSI.Leijen (string)
 
 
 data UserInput =
@@ -32,6 +33,10 @@ parseUserInput = customExecParser preferences $ info userInput description
 
     argSpec c s h = strOption $ mconcat [short c, long s, help h, metavar (toUpper <$> s <> "FILE")]
 
-    description = mempty <> fullDesc <> header "Tree-based multiple string alignment program"
+    description = mconcat
+        [ fullDesc
+        , headerDoc (Just (string "\n  Tree-based multiple string alignment program"))
+        , footerDoc (Just mempty)
+        ]
 
     preferences = prefs $ mconcat [showHelpOnError, showHelpOnEmpty]
