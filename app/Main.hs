@@ -35,8 +35,8 @@ parseUserInput = customExecParser preferences $ info userInput description
 
     description = mconcat
         [ fullDesc
-        , headerDoc (Just (string "\n  Tree-based multiple string alignment program"))
-        , footerDoc (Just mempty)
+        , headerDoc . Just $ string "\n  Tree-based multiple string alignment program"
+        , footerDoc $ Just mempty
         ]
 
     preferences = prefs $ mconcat [showHelpOnError, showHelpOnEmpty]
