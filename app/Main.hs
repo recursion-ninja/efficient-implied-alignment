@@ -21,7 +21,7 @@ main :: IO ()
 main = parseUserInput >>= print
 
 
-parseUserInput = customExecParser preferences $ info userInput description
+parseUserInput = customExecParser preferences $ info (helper <*> userInput) description
   where
     userInput =
         UserInput
