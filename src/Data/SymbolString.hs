@@ -29,6 +29,9 @@ import Data.Semigroup
 import Data.Semigroup.Foldable
 
 
+type SymbolString = NonEmpty (SymbolContext String)
+
+
 data  SymbolContext a
     = Align  Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Delete Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
@@ -36,22 +39,10 @@ data  SymbolContext a
     deriving (Eq, Ord)
 
 
+-- |
+-- A non-empty set of characters.
 newtype SymbolAmbiguityGroup a = SAG (Set a)
     deriving (Eq, Ord, Pointed, Semigroup)
-
-
-newtype SymbolString a = SS (NonEmpty a)
-    deriving (Eq, Foldable, FoldableWithKey, FoldableWithKey1, Ord, Semigroup)
-
-
-type instance Key SymbolString = Int
-
-
-instance Foldable1 SymbolString where
-
-    foldMap1 f (SS x) = foldMap1 f x
-  
-    toNonEmpty (SS x) = x
 
 
 symbolAlignmentCost :: SymbolContext a -> Word
