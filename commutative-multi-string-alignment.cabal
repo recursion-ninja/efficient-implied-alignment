@@ -43,6 +43,7 @@ library
     , megaparsec         >=6.3
     , mono-traversable   >=1.0
     , mtl
+    , pointed
     , QuickCheck
     , scientific
     , semigroupoids
@@ -57,6 +58,7 @@ library
   exposed-modules:
       Data.Alphabet
       Data.Alphabet.IUPAC
+      Data.SymbolString
       File.Format.Fastc
       File.Format.Newick
       File.Format.TransitionCostMatrix
