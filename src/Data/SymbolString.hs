@@ -21,10 +21,11 @@ module Data.SymbolString
   ) where
 
 
+import Data.Foldable
 import Data.Key
-import Data.List.NonEmpty
+import Data.List.NonEmpty (NonEmpty(..), intersperse)
 import Data.Pointed
-import Data.Set
+import Data.Set           (Set)
 import Data.Semigroup
 import Data.Semigroup.Foldable
 
@@ -42,7 +43,22 @@ data  SymbolContext a
 -- |
 -- A non-empty set of characters.
 newtype SymbolAmbiguityGroup a = SAG (Set a)
-    deriving (Eq, Ord, Pointed, Semigroup)
+    deriving (Eq, Foldable, Ord, Pointed, Semigroup)
+
+
+instance Foldable1 SymbolAmbiguityGroup where
+
+    foldMap1 f = foldMap1 f . toNonEmpty
+
+    toNonEmpty (SAG x) =
+        case toList x of
+          x:xs -> x:|xs
+          _    -> error "The impossible happened when calling toNonEmpty on a SymbolAmbiguityGroup"
+
+
+instance Show a => Show (SymbolAmbiguityGroup a) where
+
+    show = (\x -> "{"<>x<>"}") . sconcat . intersperse ", " . fmap show . toNonEmpty
 
 
 symbolAlignmentCost :: SymbolContext a -> Word
