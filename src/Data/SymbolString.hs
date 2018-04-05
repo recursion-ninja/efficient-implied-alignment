@@ -10,7 +10,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveFoldable, GeneralizedNewtypeDeriving, TypeFamilies #-}
+{-# LANGUAGE DeriveFoldable, DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 
 module Data.SymbolString
   ( SymbolAmbiguityGroup()
@@ -21,6 +21,7 @@ module Data.SymbolString
   ) where
 
 
+import Control.DeepSeq
 import Data.Foldable
 import Data.Key
 import Data.List.NonEmpty (NonEmpty(..), intersperse)
@@ -28,6 +29,7 @@ import Data.Pointed
 import Data.Set           (Set)
 import Data.Semigroup
 import Data.Semigroup.Foldable
+import GHC.Generics
 
 
 type SymbolString = NonEmpty (SymbolContext String)
@@ -37,13 +39,13 @@ data  SymbolContext a
     = Align  Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Delete Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Insert Word (SymbolAmbiguityGroup a)                          (SymbolAmbiguityGroup a)
-    deriving (Eq, Ord)
+    deriving (Eq, Generic, Ord)
 
 
 -- |
 -- A non-empty set of characters.
 newtype SymbolAmbiguityGroup a = SAG (Set a)
-    deriving (Eq, Foldable, Ord, Pointed, Semigroup)
+    deriving (Eq, Foldable, Generic, Ord, Pointed, Semigroup)
 
 
 instance Foldable1 SymbolAmbiguityGroup where
@@ -54,6 +56,12 @@ instance Foldable1 SymbolAmbiguityGroup where
         case toList x of
           x:xs -> x:|xs
           _    -> error "The impossible happened when calling toNonEmpty on a SymbolAmbiguityGroup"
+
+
+instance NFData a => NFData (SymbolContext a)
+
+
+instance NFData a => NFData (SymbolAmbiguityGroup a)
 
 
 instance Show a => Show (SymbolAmbiguityGroup a) where

@@ -58,6 +58,7 @@ library
   exposed-modules:
       Data.Alphabet
       Data.Alphabet.IUPAC
+      Data.Decoration
       Data.SymbolString
       File.Format.Fastc
       File.Format.Newick
@@ -65,6 +66,9 @@ library
 
   other-modules:
       Data.Alphabet.Internal
+      Data.Decoration.Class
+      Data.Decoration.Internal
+      Data.Decoration.Leaf
       Data.List.Utility
       Data.Matrix.ZeroIndexed
       Data.Vector.NonEmpty
