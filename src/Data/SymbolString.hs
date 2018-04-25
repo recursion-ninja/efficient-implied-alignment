@@ -16,23 +16,27 @@ module Data.SymbolString
   ( SymbolAmbiguityGroup()
   , SymbolContext(..)
   , SymbolString()
+  , (/\)
+  , gap
+  , reverseContext
   , symbolAlignmentCost
   , symbolAlignmentMedian
   ) where
 
+import           Control.DeepSeq
+import           Data.Foldable
+import           Data.Key
+import           Data.List.NonEmpty (NonEmpty(..), intersperse)
+import           Data.Pointed
+import           Data.Set           (Set)
+import qualified Data.Set      as S
+import           Data.Semigroup
+import           Data.Semigroup.Foldable
+import           Data.Vector.NonEmpty
+import           GHC.Generics
 
-import Control.DeepSeq
-import Data.Foldable
-import Data.Key
-import Data.List.NonEmpty (NonEmpty(..), intersperse)
-import Data.Pointed
-import Data.Set           (Set)
-import Data.Semigroup
-import Data.Semigroup.Foldable
-import GHC.Generics
 
-
-type SymbolString = NonEmpty (SymbolContext String)
+type SymbolString = Vector (SymbolContext String)
 
 
 data  SymbolContext a
@@ -79,3 +83,29 @@ symbolAlignmentMedian :: SymbolContext a -> SymbolAmbiguityGroup a
 symbolAlignmentMedian (Align  _ x _ _) = x
 symbolAlignmentMedian (Delete _ x _  ) = x
 symbolAlignmentMedian (Insert _ x _  ) = x
+
+
+gap :: SymbolAmbiguityGroup String
+gap = SAG $ S.singleton "-"
+
+
+reverseContext :: SymbolContext a -> SymbolContext a
+reverseContext (Align  cost med lhs rhs) = (Align  cost med rhs lhs) 
+reverseContext (Delete cost med lhs    ) = (Insert cost med     lhs) 
+reverseContext (Insert cost med     rhs) = (Insert cost med rhs    ) 
+
+
+-- |
+-- Attempt to take the intersection two 'SymbolAmbiguityGroup's. Returns a
+-- @Nothing@ value is the 'SymbolAmbiguityGroup's are disjoint or the @Just@ the
+-- intersection.
+(/\)
+  :: Ord a
+  => SymbolAmbiguityGroup a
+  -> SymbolAmbiguityGroup a
+  -> Maybe (SymbolAmbiguityGroup a)
+(/\) (SAG lhs) (SAG rhs)
+  | null intersect = Nothing
+  | otherwise      = Just $ SAG intersect
+  where
+    intersect = S.intersection lhs rhs
