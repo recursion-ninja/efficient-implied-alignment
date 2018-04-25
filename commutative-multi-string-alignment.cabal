@@ -1,22 +1,32 @@
-name:           commutative-multi-string-alignment
-version:        0.1.0.0
-description:    Proof of concept of efficient multiple string alignment
+cabal-version:  >= 1.10
 category:       Algorithms
-homepage:       https://github.com/githubuser/commutative-multi-string-alignment#readme
-bug-reports:    https://github.com/githubuser/commutative-multi-string-alignment/issues
+build-type:     Simple
+
+name:           commutative-multi-string-alignment
+version:        0.1.0
+
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
 copyright:      2018 Alex Washburn
 license:        BSD3
 license-file:   LICENSE
-build-type:     Simple
-cabal-version:  >= 1.10
 
+synopsis:       Proof of concept of efficient multiple string alignment
 
+description:    Using a commutative, binary string alignment operator and a
+                binary tree with strings on the leaf nodes, we can efficiently
+                derive the a multiple string alignment of the implied by the
+                binary tree. Requires a pot-order then preorder traversal.
+                Post-order traversal should be worst case /O(n*k^2)/, average
+                case /O(n*k*log(k))/ and the pre-order traversal should be
+                /O(n*k)/.
+
+homepage:       https://github.com/githubuser/commutative-multi-string-alignment#readme
+bug-reports:    https://github.com/githubuser/commutative-multi-string-alignment/issues
+                
 extra-source-files:
     ChangeLog.md
     README.md
-
 
 source-repository head
   type: git
