@@ -143,12 +143,12 @@ directOptimization
      , MatrixConstraint m
      , Ord s
      )
-  => f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> OverlapFunction (SymbolAmbiguityGroup s)
+  => OverlapFunction (SymbolAmbiguityGroup s)
   -> MatrixFunction m f s
+  -> f (SymbolContext s)
+  -> f (SymbolContext s)
   -> (Word, NonEmpty (SymbolContext s))
-directOptimization lhs rhs overlapFunction matrixFunction = (alignmentCost, alignmentContext)
+directOptimization overlapFunction matrixFunction lhs rhs = (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
@@ -200,33 +200,34 @@ needlemanWunschDefinition
      , Key m ~ (Int, Int)
      , Ord s
      )
-  => SymbolAmbiguityGroup s
+  => s
   -> OverlapFunction (SymbolAmbiguityGroup s)
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> m (Cost, Direction, SymbolAmbiguityGroup s)
   -> (Int, Int)
   -> (Cost, Direction, SymbolAmbiguityGroup s)
-needlemanWunschDefinition gap overlapFunction topChar leftChar memo p@(row, col)
-  | p == (0,0) = (      0, DiagArrow,      gap)
+needlemanWunschDefinition gapSymbol overlapFunction topChar leftChar memo p@(row, col)
+  | p == (0,0) = (      0, DiagArrow, gapGroup)
   | otherwise  = (minCost,    minDir, minState)
   where
     -- | Lookup with a default value of infinite cost.
     {-# INLINE (!?) #-}
-    (!?) m k = fromMaybe (infinity, DiagArrow, gap) $ k `lookup` m
+    (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    topElement                    = maybe gap symbolAlignmentMedian $ (col - 1) `lookup` topChar
-    leftElement                   = maybe gap symbolAlignmentMedian $ (row - 1) `lookup` leftChar
+    gapGroup                      = point gapSymbol
+    topElement                    = maybe gapGroup symbolAlignmentMedian $ (col - 1) `lookup` topChar
+    leftElement                   = maybe gapGroup symbolAlignmentMedian $ (row - 1) `lookup` leftChar
     (leftwardValue, _, _)         = memo !? (row    , col - 1)
     (diagonalValue, _, _)         = memo !? (row - 1, col - 1)
     (  upwardValue, _, _)         = memo !? (row - 1, col    )
-    (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement  gap
-    ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement  leftElement
-    ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gap         leftElement
+    (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
+    ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
+    ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gapGroup   leftElement
     rightCost                     = rightOverlapCost + leftwardValue
     diagCost                      =  diagOverlapCost + diagonalValue
     downCost                      =  downOverlapCost +   upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gap
+    (minCost, minState, minDir)   = getMinimalCostDirection gapSymbol
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
@@ -456,14 +457,14 @@ getMinimalCostDirection
   :: ( Ord a
      , Ord c
      )
-  => SymbolAmbiguityGroup a
+  => a
   -> (c, SymbolAmbiguityGroup a)
   -> (c, SymbolAmbiguityGroup a)
   -> (c, SymbolAmbiguityGroup a)
   -> (c, SymbolAmbiguityGroup a, Direction)
 getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar) =
     minimumBy (comparing (\(c,_,d) -> (c,d)))
-      [ (diagCost ,  diagChar       , DiagArrow)
-      , (rightCost, rightChar <> gap, LeftArrow)
-      , (downCost ,  downChar <> gap, UpArrow  )
+      [ (diagCost ,  diagChar             , DiagArrow)
+      , (rightCost, rightChar <> point gap, LeftArrow)
+      , (downCost ,  downChar <> point gap, UpArrow  )
       ]

@@ -70,6 +70,7 @@ library
   exposed-modules:
 --      Alignment
       Alignment.Pairwise.Internal
+      Alignment.Pairwise.NeedlemanWunsch
       Data.Alphabet
       Data.Alphabet.IUPAC
       Data.Decoration
@@ -81,7 +82,6 @@ library
   other-modules:
 --      Alignment.Internal
 --      Alignment.Pairwise
---      Alignment.Pairwise.NeedlemanWunsch
 --      Alignment.Pairwise.Ukkonen
 --      Alignment.Pairwise.Ukkonen.Internal
 --      Alignment.Pairwise.Ukkonen.Ribbon
