@@ -30,6 +30,7 @@ import Data.Matrix.ZeroIndexed (matrix)
 import Data.MonoTraversable
 import Data.Pointed
 import Data.SymbolString
+import Data.TCM
 import Data.Vector.NonEmpty
 
 

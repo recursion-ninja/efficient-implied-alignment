@@ -30,10 +30,10 @@ module Alignment.Pairwise.Internal
 -- , renderCostMatrix
  , traceback
  -- * Probably removable
- , overlap
+-- , overlap
  , overlapConst
- , getOverlap
- , minimalChoice
+-- , getOverlap
+-- , minimalChoice
  ) where
 
 
@@ -353,85 +353,6 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, unfoldr go l
 {--
  - Internal computations
  -}
-
-
--- |
--- Memoized wrapper of the overlap function
-getOverlap
-  :: ( Foldable1 f
-     , Ord a
-     )
-  => f a
-  -> SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> (a -> a -> Word)
-  -> (SymbolAmbiguityGroup a, Word)
-getOverlap allSymbols lhs rhs costStruct = overlap allSymbols costStruct lhs rhs
-
-
--- |
--- Takes two 'EncodableStreamElement' and a symbol change cost function and
--- returns a tuple of a new character, along with the cost of obtaining that
--- character. The return character may be (or is even likely to be) ambiguous.
--- Will attempt to intersect the two characters, but will union them if that is
--- not possible, based on the symbol change cost function.
---
--- To clarify, the return character is an intersection of all possible least-cost
--- combinations, so for instance, if @ char1 == A,T @ and @ char2 == G,C @, and
--- the two (non-overlapping) least cost pairs are A,C and T,G, then the return
--- value is A,C,G,T.
-overlap
-  :: ( Foldable1 f
-     , Ord a
-     )
-  => f a
-  -> (a -> a -> Word)
-  -> SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> (SymbolAmbiguityGroup a, Word)
-overlap allSymbols costStruct lhs rhs = 
-    case lhs /\ rhs of
-      Nothing -> minimalChoice $ symbolDistances allSymbols costStruct lhs rhs
-      Just xs -> (xs, 0)
-
-
--- |
--- Given a structure of unambiguous character elements and costs, calculates the
--- least costly intersection of unambiguous character elements and the cost of
--- that intersection.
-minimalChoice :: (Semigroup a, Foldable1 t, Ord a, Ord c) => t (a, c) -> (a, c)
-minimalChoice = foldl1 f
-  where
-    f (!symbol1, !cost1) (!symbol2, !cost2) =
-        case cost1 `compare` cost2 of
-          EQ -> (symbol1 <> symbol2, cost1)
-          LT -> (symbol1           , cost1)
-          GT -> (symbol2           , cost2)
-
-
--- |
--- Finds the cost between all single, unambiguous symbols and two dynamic
--- character elements (ambiguity groups of symbols).
---
--- Takes in a symbol change cost function and two ambiguous elements of a dynamic
--- character and returns a list of tuples of all possible unambiguous pairings,
--- along with the cost of each pairing. The resulting elements each have exactly
--- two bits set.
-symbolDistances
-  :: Foldable1 f
-  => f a
-  -> (a -> a -> Word)
-  -> SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> NonEmpty (SymbolAmbiguityGroup a, Word)
-symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol allSymbols
-  where
-    costAndSymbol i = pure (point i, cost1 + cost2)
-      where
-        cost1 = getDistance i group1
-        cost2 = getDistance i group2
-
-    getDistance i e = minimum $ costStruct i <$> toNonEmpty e
 
 
 -- |

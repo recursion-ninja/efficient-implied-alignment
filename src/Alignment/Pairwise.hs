@@ -14,8 +14,8 @@
 
 module Alignment.Pairwise
   ( OverlapFunction
-  , getOverlap
-  , minimalChoice
+--  , getOverlap
+--  , minimalChoice
   , naiveDO
   , naiveDOMemo
   , ukkonenDO

@@ -74,6 +74,7 @@ library
       Data.Alphabet.IUPAC
       Data.Decoration
       Data.SymbolString
+      Data.TCM
       File.Format.Fastc
       File.Format.Newick
       File.Format.TransitionCostMatrix
