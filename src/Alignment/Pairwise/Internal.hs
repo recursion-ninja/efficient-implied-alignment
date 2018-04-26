@@ -10,7 +10,7 @@
 --
 -- Defines the primative operations for standard Needleman-Wunsch and Ukkonen
 -- algorithms for performing a direct optimization heuristic alignmnet between
--- two dynamic characters.
+-- two alignment context strings.
 --
 -----------------------------------------------------------------------------
 
@@ -145,24 +145,22 @@ directOptimization overlapFunction matrixFunction lhs rhs = (alignmentCost, alig
 
 
 -- |
--- Strips the gap elements from the supplied character.
---
--- If the character contains /only/ gaps, a missing character is returned.
+-- Strips the gap symbols from the supplied string.
 --filterGaps :: NonEmpty (SymbolContext s) -> NonEmpty (SymbolContext s)
 --filterGaps = NE.fromList . NE.filter (/= gap)
 
 
 -- |
--- /O(1)/ for input characters of differing lengths
+-- /O(1)/ for input strings of differing lengths
 --
--- /O(k)/ for input characters of equal length, where /k/ is the shared prefix of
+-- /O(k)/ for input strings of equal length, where /k/ is the shared prefix of
 -- both characters.
 --
--- Returns the dynamic character that is longer first, shorter second, and notes
--- whether or not the inputs were swapped to place the characters in this ordering.
+-- Returns the string that is longer first, shorter second, and notes whether or
+-- not the inputs were swapped to place the strings in this ordering.
 --
 -- Handles equal length characters by considering the lexicographically larger
--- character as longer.
+-- string as longer.
 --
 -- Handles equality of inputs by /not/ swapping.
 measureCharacters :: (Foldable f, Ord s) => f s -> f s -> (Bool, f s, f s)
@@ -303,13 +301,11 @@ renderCostMatrix lhs rhs mtx = unlines
 -- |
 -- Performs the traceback of an 'NeedlemanWunchMatrix'.
 --
--- Takes in an 'NeedlemanWunchMatrix', two 'EncodableDynamicCharacter's and returns an
--- aligned 'EncodableDynamicCharacter', as well as the aligned versions of the
--- two inputs. Essentially does the second step of Needleman-Wunsch, following
--- the arrows from the bottom right corner, accumulating the sequences as it goes,
--- but returns three alignments: the left character, the right character, and the
--- parent. The child alignments *should* be biased toward the shorter of the two
--- dynamic characters.
+-- Takes in an 'NeedlemanWunchMatrix', two strings and returns an aligned string,
+-- Essentially does the second step of Needleman-Wunsch, following the arrows
+-- from the bottom right corner, accumulating the alignment context string as it
+-- goes. The alignment *should* be biased toward insertions into the shorter of
+-- the two strings.
 traceback
   :: ( Foldable f
      , Indexable f
@@ -348,7 +344,8 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, unfoldr go l
 
 
 -- |
--- An overlap function that applies the discrete metric to aligning two elements.
+-- An overlap function that applies the discrete metric to aligning two
+-- 'SymbolAmbiguityGroup'.
 overlapConst
   :: Ord a
   => SymbolAmbiguityGroup a

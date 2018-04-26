@@ -124,4 +124,3 @@ symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol all
         cost2 = getDistance i group2
 
     getDistance i e = minimum $ costStruct i <$> toNonEmpty e
-
