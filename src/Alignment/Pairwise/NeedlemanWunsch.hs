@@ -18,7 +18,7 @@
 module Alignment.Pairwise.NeedlemanWunsch
   ( naiveDO
 --  , naiveDOConst
---  , naiveDOMemo
+  , naiveDOMemo
   ) where
 
 import Alignment.Pairwise.Internal
@@ -77,6 +77,7 @@ naiveDOConst
   -> f (SymbolContext s)
   -> (Word, NonEmpty (SymbolContext s))
 naiveDOConst _ = directOptimization overlapConst createNeedlemanWunchMatrix
+-}
 
 
 -- |
@@ -88,12 +89,12 @@ naiveDOMemo
      , Key f ~ Int
      , Ord s
      )
-  => (SymbolAmbiguityGroup s -> SymbolAmbiguityGroup s -> Word)
+  => Alphabet s
+  -> OverlapFunction (SymbolAmbiguityGroup s)
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, NonEmpty (SymbolContext s))
-naiveDOMemo tcm = directOptimization tcm createNeedlemanWunchMatrix
--}
+naiveDOMemo alphabet tcm = directOptimization tcm $ createNeedlemanWunchMatrix (gapSymbol alphabet)
 
 
 -- |

@@ -44,7 +44,7 @@ library
     , bv-little
     , case-insensitive
     -- >=0.5.8 Required for Data.Map.restrictKeys
-    , containers         >=0.5.8
+    , containers       >=0.5.8
     , deepseq
     , dlist
     , hashable
@@ -52,8 +52,8 @@ library
     , keys
     , lens
     , matrix
-    , megaparsec         >=6.3
-    , mono-traversable   >=1.0
+    , megaparsec       >=6.3
+    , mono-traversable >=1.0
     , mtl
     , pointed
     , QuickCheck
@@ -69,8 +69,7 @@ library
 
   exposed-modules:
 --      Alignment
-      Alignment.Pairwise.Internal
-      Alignment.Pairwise.NeedlemanWunsch
+      Alignment.Pairwise
       Data.Alphabet
       Data.Alphabet.IUPAC
       Data.Decoration
@@ -81,10 +80,11 @@ library
 
   other-modules:
 --      Alignment.Internal
---      Alignment.Pairwise
---      Alignment.Pairwise.Ukkonen
---      Alignment.Pairwise.Ukkonen.Internal
---      Alignment.Pairwise.Ukkonen.Ribbon
+      Alignment.Pairwise.Internal
+      Alignment.Pairwise.NeedlemanWunsch
+      Alignment.Pairwise.Ukkonen
+      Alignment.Pairwise.Ukkonen.Internal
+      Alignment.Pairwise.Ukkonen.Ribbon
       Data.Alphabet.Internal
       Data.Decoration.Class
       Data.Decoration.Internal

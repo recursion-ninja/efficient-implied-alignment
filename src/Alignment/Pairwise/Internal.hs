@@ -207,7 +207,7 @@ needlemanWunschDefinition
   -> m (Cost, Direction, SymbolAmbiguityGroup s)
   -> (Int, Int)
   -> (Cost, Direction, SymbolAmbiguityGroup s)
-needlemanWunschDefinition gapSymbol overlapFunction topChar leftChar memo p@(row, col)
+needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row, col)
   | p == (0,0) = (      0, DiagArrow, gapGroup)
   | otherwise  = (minCost,    minDir, minState)
   where
@@ -215,7 +215,7 @@ needlemanWunschDefinition gapSymbol overlapFunction topChar leftChar memo p@(row
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    gapGroup                      = point gapSymbol
+    gapGroup                      = point gapValue
     topElement                    = maybe gapGroup symbolAlignmentMedian $ (col - 1) `lookup` topChar
     leftElement                   = maybe gapGroup symbolAlignmentMedian $ (row - 1) `lookup` leftChar
     (leftwardValue, _, _)         = memo !? (row    , col - 1)
@@ -227,7 +227,7 @@ needlemanWunschDefinition gapSymbol overlapFunction topChar leftChar memo p@(row
     rightCost                     = rightOverlapCost + leftwardValue
     diagCost                      =  diagOverlapCost + diagonalValue
     downCost                      =  downOverlapCost +   upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gapSymbol
+    (minCost, minState, minDir)   = getMinimalCostDirection gapValue
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
