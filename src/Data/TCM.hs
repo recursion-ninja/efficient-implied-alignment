@@ -25,11 +25,15 @@ import Data.SymbolString
 
 
 -- |
+-- /O(1)/ for practical purposes, technically \( \mathcal{O} \left( \log_16 \left( a \right) \right) \)
+--
 -- A generalized function representationing cost to change between two symbols.
 type SymbolChangeMatrix k = k -> k -> Word
 
 
 -- |
+-- /O(a^2)/
+--
 -- A generalized function representationing transition between two
 -- 'SymbolAmbiguityGroup's, returning the corresponding median
 -- 'SymbolAmbiguityGroup' and transition cost.
@@ -39,6 +43,13 @@ type TransitionCostMatrix k
      -> (SymbolAmbiguityGroup k, Word)
 
 
+-- |
+-- /O(a^2)/
+--
+-- Build a 'SymbolChangeMatrix' from an 'Alphabet' and a square 'Matrix'. It is
+-- assumed that @rows matrix == length alphabet@ and
+-- @cols matrix == length alphabet@ and that the index of each row & column
+-- corresponds to that index of the alphabet.
 buildSymbolChangeMatrix
   :: (Eq k, Hashable k, NFData k)
   => Alphabet k
@@ -53,6 +64,10 @@ buildSymbolChangeMatrix alphabet matrix x y = (completeStructure ! x) ! y
             buildCell j colSymbol = [(colSymbol, matrix ! (i, j))]
                   
 
+-- |
+-- /O(1)/
+--
+-- Build a 'TransitionCostMatrix' from an 'Alphabet' and a 'SymbolChangeMatrix'.
 buildTransitionCostMatrix
   :: (Ord k, Hashable k)
   => Alphabet k
