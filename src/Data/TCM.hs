@@ -10,13 +10,14 @@ module Data.TCM
   , overlap
   ) where
 
+import Control.DeepSeq
 import Data.Alphabet
 import Data.Foldable
 import Data.Hashable
-import Data.HashMap.Lazy hiding ((!))
+import Data.HashMap.Strict hiding ((!))
 import Data.Key
-import Data.List.NonEmpty       (NonEmpty)
-import Data.Matrix.ZeroIndexed  (Matrix)
+import Data.List.NonEmpty         (NonEmpty)
+import Data.Matrix.ZeroIndexed    (Matrix)
 import Data.Pointed
 import Data.Semigroup
 import Data.Semigroup.Foldable
@@ -39,13 +40,13 @@ type TransitionCostMatrix k
 
 
 buildSymbolChangeMatrix
-  :: (Eq k, Hashable k)
+  :: (Eq k, Hashable k, NFData k)
   => Alphabet k
   -> Matrix Word
   -> SymbolChangeMatrix k
-buildSymbolChangeMatrix alphabet matrix x y = (memoizedStructure ! x) ! y
+buildSymbolChangeMatrix alphabet matrix x y = (completeStructure ! x) ! y
   where
-    memoizedStructure = fromList $ foldMapWithKey buildRow alphabet
+    completeStructure = force . fromList $ foldMapWithKey buildRow alphabet
       where
         buildRow i rowSymbol = [(rowSymbol, fromList $ foldMapWithKey buildCell alphabet)]
           where
