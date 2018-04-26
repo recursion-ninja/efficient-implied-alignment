@@ -24,12 +24,13 @@ module Alignment.Pairwise.NeedlemanWunsch
 import Alignment.Pairwise.Internal
 import Data.Alphabet
 import Data.Foldable
-import Data.List.NonEmpty      (NonEmpty(..))
+--import Data.List.NonEmpty      (NonEmpty(..))
 import Data.Key
 import Data.Matrix.ZeroIndexed (matrix)
 import Data.MonoTraversable
 import Data.Pointed
 import Data.SymbolString
+import Data.Vector.NonEmpty
 
 
 -- |
@@ -45,20 +46,11 @@ naiveDO
      , Key f ~ Int
      , Ord s
      )
-  => Alphabet s                         -- ^ Alphabet of symbols
-  -> (s -> s -> Word)                   -- ^ Structure defining the transition costs between character states
-  -> f (SymbolContext s)                -- ^ First  dynamic character
-  -> f (SymbolContext s)                -- ^ Second dynamic character
-  -> (Word, NonEmpty (SymbolContext s)) -- ^ The cost of the alignment
-                                        --
-                                        --   The /ungapped/ character derived from the the input characters' N-W-esque matrix traceback
-                                        --
-                                        --   The /gapped/ character derived from the the input characters' N-W-esque matrix traceback
-                                        --
-                                        --   The gapped alignment of the /first/ input character when aligned with the second character
-                                        --
-                                        --   The gapped alignment of the /second/ input character when aligned with the first character
-
+  => Alphabet s                       -- ^ Alphabet of symbols
+  -> (s -> s -> Word)                 -- ^ Structure defining the transition costs between character states
+  -> f (SymbolContext s)              -- ^ First  dynamic character
+  -> f (SymbolContext s)              -- ^ Second dynamic character
+  -> (Word, Vector (SymbolContext s)) -- ^ The cost of the alignment and the alignment context
 naiveDO alphabet costStruct = directOptimization (overlap alphabet costStruct) $ createNeedlemanWunchMatrix (gapSymbol alphabet)
 
 
@@ -93,7 +85,7 @@ naiveDOMemo
   -> OverlapFunction (SymbolAmbiguityGroup s)
   -> f (SymbolContext s)
   -> f (SymbolContext s)
-  -> (Word, NonEmpty (SymbolContext s))
+  -> (Word, Vector (SymbolContext s))
 naiveDOMemo alphabet tcm = directOptimization tcm $ createNeedlemanWunchMatrix (gapSymbol alphabet)
 
 

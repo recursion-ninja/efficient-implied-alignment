@@ -19,7 +19,6 @@
 module Alignment.Pairwise.Internal
  ( Cost
  , Direction(..)
- , DOCharConstraint
  , MatrixConstraint
  , MatrixFunction
  , NeedlemanWunchMatrix
@@ -53,6 +52,7 @@ import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
+import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude            hiding (lookup, zipWith)
 
@@ -104,12 +104,6 @@ type NeedlemanWunchMatrix e = Matrix (Cost, Direction, e)
 
 
 -- |
--- Constraints on the input dynamic characters that direct optimization requires
--- to operate.
-type DOCharConstraint s = NonEmpty (SymbolContext s)
-
-
--- |
 -- Constraints on the type of structure a "matrix" exposes to be used in rendering
 -- and traceback functions.
 type MatrixConstraint m = (Indexable m, Key m ~ (Int, Int))
@@ -147,7 +141,7 @@ directOptimization
   -> MatrixFunction m f s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
-  -> (Word, NonEmpty (SymbolContext s))
+  -> (Word, Vector (SymbolContext s))
 directOptimization overlapFunction matrixFunction lhs rhs = (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
@@ -334,8 +328,8 @@ traceback
   => m (Cost, Direction, SymbolAmbiguityGroup s)
   -> f (SymbolContext s)
   -> f (SymbolContext s)
-  -> (Word, NonEmpty (SymbolContext s))
-traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, NE.unfoldr go lastCell)
+  -> (Word, Vector (SymbolContext s))
+traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, unfoldr go lastCell)
   where
       lastCell     = (row, col)
       (cost, _, _) = alignMatrix ! lastCell

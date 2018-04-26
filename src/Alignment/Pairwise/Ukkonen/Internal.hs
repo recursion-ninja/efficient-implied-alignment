@@ -31,12 +31,12 @@ import qualified Alignment.Pairwise.Ukkonen.Ribbon as Ribbon
 import           Data.Alphabet
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty       (NonEmpty)
 import           Data.Maybe               (isJust)
 import           Data.MonoTraversable
 import           Data.Pointed
 import           Data.SymbolString
 import           Data.Vector.Instances    ()
+import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude           hiding (lookup)
 
@@ -84,7 +84,7 @@ ukkonenDO
   -> (SymbolAmbiguityGroup s -> SymbolAmbiguityGroup s -> (SymbolAmbiguityGroup s, Word))
   -> f (SymbolContext s)
   -> f (SymbolContext s)
-  -> (Word, NonEmpty (SymbolContext s))
+  -> (Word, Vector (SymbolContext s))
 ukkonenDO alphabet overlapFunction lhs rhs
   | noGainFromUkkonenMethod = naiveDOMemo alphabet overlapFunction lhs rhs
   | otherwise               = directOptimization overlapFunction (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
