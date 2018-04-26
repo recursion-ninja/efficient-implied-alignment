@@ -35,6 +35,7 @@ import           Data.Maybe               (isJust)
 import           Data.MonoTraversable
 import           Data.Pointed
 import           Data.SymbolString
+import           Data.TCM
 import           Data.Vector.Instances    ()
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
@@ -155,7 +156,7 @@ createUkkonenMethodMatrix
      )
   => Word -- ^ Coefficient value, representing the /minimum/ transition cost from a state to gap
   -> Alphabet s
-  -> OverlapFunction (SymbolAmbiguityGroup s)
+  -> TransitionCostMatrix s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup s)

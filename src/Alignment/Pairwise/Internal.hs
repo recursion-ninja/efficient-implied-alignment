@@ -22,7 +22,6 @@ module Alignment.Pairwise.Internal
  , MatrixConstraint
  , MatrixFunction
  , NeedlemanWunchMatrix
- , OverlapFunction
  -- * Direct Optimization primative construction functions
  , directOptimization
  , measureCharacters
@@ -52,6 +51,7 @@ import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
+import           Data.TCM
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude            hiding (lookup, zipWith)
@@ -112,22 +112,14 @@ type MatrixConstraint m = (Indexable m, Key m ~ (Int, Int))
 -- |
 -- A parameterized function to generate an alignment matrix.
 type MatrixFunction m f s
-    =  OverlapFunction (SymbolAmbiguityGroup s)
+    =  TransitionCostMatrix s
     -> f (SymbolContext s)
     -> f (SymbolContext s)
     -> m (Cost, Direction, SymbolAmbiguityGroup s)
 
-
--- |
--- A generalized function representation: the "overlap" between dynamic character
--- elements, supplying the corresponding median and cost to align the two
--- characters.
-type OverlapFunction e = e -> e -> (e, Word)
-
-
 -- |
 -- Wraps the primative operations in this module to a cohesive operation that is
--- parameterized by an 'OverlapFunction'.
+-- parameterized by an 'TransitionCostMatrix'.
 --
 -- Reused internally by different implementations.
 directOptimization
@@ -137,7 +129,7 @@ directOptimization
      , MatrixConstraint m
      , Ord s
      )
-  => OverlapFunction (SymbolAmbiguityGroup s)
+  => TransitionCostMatrix s
   -> MatrixFunction m f s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
@@ -195,7 +187,7 @@ needlemanWunschDefinition
      , Ord s
      )
   => s
-  -> OverlapFunction (SymbolAmbiguityGroup s)
+  -> TransitionCostMatrix s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> m (Cost, Direction, SymbolAmbiguityGroup s)

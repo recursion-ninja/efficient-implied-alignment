@@ -23,9 +23,15 @@ import Data.Semigroup.Foldable
 import Data.SymbolString
 
 
+-- |
+-- A generalized function representationing cost to change between two symbols.
 type SymbolChangeMatrix k = k -> k -> Word
 
 
+-- |
+-- A generalized function representationing transition between two
+-- 'SymbolAmbiguityGroup's, returning the corresponding median
+-- 'SymbolAmbiguityGroup' and transition cost.
 type TransitionCostMatrix k
      =  SymbolAmbiguityGroup k
      -> SymbolAmbiguityGroup k
@@ -71,7 +77,7 @@ overlap
      , Ord a
      )
   => f a
-  -> (a -> a -> Word)
+  -> SymbolChangeMatrix a
   -> SymbolAmbiguityGroup a
   -> SymbolAmbiguityGroup a
   -> (SymbolAmbiguityGroup a, Word)
@@ -105,7 +111,7 @@ minimalChoice = foldl1 f
 symbolDistances
   :: Foldable1 f
   => f a
-  -> (a -> a -> Word)
+  -> SymbolChangeMatrix a
   -> SymbolAmbiguityGroup a
   -> SymbolAmbiguityGroup a
   -> NonEmpty (SymbolAmbiguityGroup a, Word)

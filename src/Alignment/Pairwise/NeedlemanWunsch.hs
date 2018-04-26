@@ -83,7 +83,7 @@ naiveDOMemo
      , Ord s
      )
   => Alphabet s
-  -> OverlapFunction (SymbolAmbiguityGroup s)
+  -> TransitionCostMatrix s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, Vector (SymbolContext s))

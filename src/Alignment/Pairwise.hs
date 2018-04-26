@@ -13,12 +13,11 @@
 -----------------------------------------------------------------------------
 
 module Alignment.Pairwise
-  ( OverlapFunction
---  , getOverlap
---  , minimalChoice
-  , naiveDO
+  ( naiveDO
   , naiveDOMemo
   , ukkonenDO
+--  , getOverlap
+--  , minimalChoice
   ) where
 
 
