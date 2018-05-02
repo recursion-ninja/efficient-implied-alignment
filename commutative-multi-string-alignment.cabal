@@ -72,6 +72,7 @@ library
       Alignment.Pairwise
       Data.Alphabet
       Data.Alphabet.IUPAC
+      Data.BTree            
       Data.Decoration
       Data.SymbolString
       Data.TCM
