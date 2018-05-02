@@ -68,7 +68,7 @@ library
     , vector-instances >=3.4
 
   exposed-modules:
---      Alignment
+      Alignment
       Alignment.Pairwise
       Data.Alphabet
       Data.Alphabet.IUPAC
@@ -80,7 +80,7 @@ library
       File.Format.TransitionCostMatrix
 
   other-modules:
---      Alignment.Internal
+      Alignment.Internal
       Alignment.Pairwise.Internal
       Alignment.Pairwise.NeedlemanWunsch
       Alignment.Pairwise.Ukkonen
