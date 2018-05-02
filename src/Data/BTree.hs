@@ -48,4 +48,20 @@ postorder f node =
 
 
 preorder :: (b -> c) -> (c -> b -> c) -> (c -> a -> d) -> BTree b a -> BTree c d
-preorder = undefined
+preorder rootTransformation internalTransformation leafTransformation rootNode =
+    case rootNode of
+      Leaf x -> undefined -- Single node trees are beyond the scope of this example.
+      Internal (NodeDatum i x) lhs rhs ->
+        let transformedRoot = rootTransformation x
+            lhs' = go transformedRoot lhs
+            rhs' = go transformedRoot rhs
+        in  Internal (NodeDatum i transformedRoot) lhs' rhs'
+  where
+    go parentNode currentNode =
+        case currentNode of
+          Leaf x -> Leaf $ leafTransformation parentNode <$> x
+          Internal (NodeDatum i x) lhs rhs ->
+            let transformedDatum = internalTransformation parentNode x
+                lhs' = go transformedDatum lhs
+                rhs' = go transformedDatum rhs
+            in  Internal (NodeDatum i transformedDatum) lhs' rhs'
