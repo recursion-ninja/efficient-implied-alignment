@@ -22,7 +22,7 @@ import GHC.Generics
 
 
 data InitialInternalNode
-   = InitialLeaf
+   = InitialInternalNode
    { _IIN_SubtreeCost       :: Word
    , _IIN_LocalCost         :: Word
    , _IIN_PreliminaryString :: SymbolString
