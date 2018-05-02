@@ -11,10 +11,10 @@
 -----------------------------------------------------------------------------
 
 module Data.Decoration
-  ( InitialInternalNode()
-  , InitialLeaf()
-  , FinalizedInternalNode()
-  , FinalizedLeaf()
+  ( InitialInternalNode(InitialInternalNode)
+  , InitialLeaf(InitialLeaf)
+  , FinalizedInternalNode(FinalizedInternalNode)
+  , FinalizedLeaf(FinalizedLeaf)
   , alignedString
   , inputString
   , localCost
