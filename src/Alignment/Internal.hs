@@ -58,6 +58,23 @@ postOrderLogic pairwiseAlignment lhs rhs =
                                           (rhs ^. preliminaryString)
 
 
+-- |
+-- The post-order scoring logic for dynamic characters.
+--
+-- Parameterized over a 'PairwiseAlignment' function to allow for different
+-- atomic alignments depending on the character's metadata.
+preOrderRootLogic
+  :: InitialInternalNode
+  -> FinalizedInternalNode
+preOrderRootLogic =
+    FinalizedInternalNode
+      <$> (^. subtreeCost)
+      <*> (^. localCost)
+      <*> (^. preliminaryString)
+      <*> (^. preliminaryString)
+      <*> (^. preliminaryString)
+
+
 {-
 -- |
 -- The pre-order scoring logic for dynamic characters.
