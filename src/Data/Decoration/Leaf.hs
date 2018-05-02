@@ -17,8 +17,8 @@ module Data.Decoration.Leaf where
 import Control.DeepSeq
 import Control.Lens
 import Data.Decoration.Class
-import Data.List.NonEmpty
 import Data.SymbolString
+import Data.Vector.NonEmpty
 import GHC.Generics
 
 
@@ -27,7 +27,7 @@ data InitialLeaf
    { _IL_SubtreeCost       :: Word
    , _IL_LocalCost         :: Word
    , _IL_PreliminaryString :: SymbolString
-   , _IL_InputString       :: NonEmpty String
+   , _IL_InputString       :: SymbolString
    } deriving (Eq, Generic)
 
 
@@ -37,8 +37,8 @@ data FinalizedLeaf
    , _FL_LocalCost            :: Word
    , _FL_PreliminaryString    :: SymbolString
    , _FL_AlignedString        :: SymbolString
-   , _FL_InputString          :: NonEmpty String
-   , _FL_OutputString         :: NonEmpty String
+   , _FL_InputString          :: SymbolString
+   , _FL_OutputString         :: SymbolString
    } deriving (Eq, Generic)
 
 
@@ -78,12 +78,12 @@ instance HasPreliminaryString FinalizedLeaf SymbolString where
     preliminaryString = lens _FL_PreliminaryString (\e x -> e { _FL_PreliminaryString = x })
 
 
-instance HasInputString InitialLeaf (NonEmpty String) where
+instance HasInputString InitialLeaf SymbolString where
 
     inputString = lens _IL_InputString (\e x -> e { _IL_InputString = x })
 
 
-instance HasInputString FinalizedLeaf (NonEmpty String) where
+instance HasInputString FinalizedLeaf SymbolString where
 
     inputString = lens _FL_InputString (\e x -> e { _FL_InputString = x })
 
@@ -93,6 +93,6 @@ instance HasAlignedString FinalizedLeaf SymbolString where
     alignedString = lens _FL_AlignedString (\e x -> e { _FL_AlignedString = x })
 
 
-instance HasOutputString FinalizedLeaf (NonEmpty String) where
+instance HasOutputString FinalizedLeaf SymbolString where
 
     outputString = lens _FL_OutputString (\e x -> e { _FL_OutputString = x })
