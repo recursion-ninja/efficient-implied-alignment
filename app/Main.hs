@@ -1,22 +1,25 @@
-{-# LANGUAGE BangPatterns,  TypeFamilies #-}
+{-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
 
 module Main where
 
+import           Alignment
+import           Control.Lens
 import           Data.Alphabet
 import           Data.BTree
 import           Data.Char
 import           Data.Decoration
+import           Data.Foldable
 import           Data.Functor                 (($>))
 import           Data.Key
 import           Data.List.NonEmpty           (NonEmpty(..))
 import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed
+import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Map                     (Map)
 import qualified Data.Map              as M
 import           Data.Pointed
 import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
-import           Data.Set
+import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
@@ -25,27 +28,39 @@ import           Prelude               hiding (lookup)
 import           Text.PrettyPrint.ANSI.Leijen (string)
 
 
-data UserInput =
-     UserInput
-     { dataFile    :: String
-     , treeFile    :: String
-     , tcmFile     :: String
-     , outputFile  :: String
-     , verbose     :: Bool
-     , commandHelp :: ExampleFileRequest
-     } deriving (Show)
+data  UserInput
+    = UserInput
+    { dataFile    :: String
+    , treeFile    :: String
+    , tcmFile     :: String
+    , outputFile  :: String
+    , verbose     :: Bool
+    , commandHelp :: ExampleFileRequest
+    } deriving (Show)
 
 
-data ExampleFileRequest
-   = DataFileRequest
-   | TreeFileRequest
-   | TcmFileRequest
-   | NoFileRequest
-   deriving (Eq, Show)
+data  ExampleFileRequest
+    = DataFileRequest
+    | TreeFileRequest
+    | TcmFileRequest
+    | NoFileRequest
+    deriving (Eq, Show)
 
 
 main :: IO ()
-main = parseUserInput >>= print
+main = do
+--    parseUserInput >>= print
+    case toEither $ unifyInput defaultDataSet defaultTopology of
+      Left  errors -> mapM_ print $ toList errors
+      Right tree   -> putStrLn . renderPhylogeny renderLabel
+                    $ postorder stringAligner tree
+  where
+    stringAligner = postOrderLogic (ukkonenDO defaultAlphabet defaultTCM)
+    renderLabel x i = mconcat
+        [ i
+        , ": "
+        , show $ x ^. preliminaryString
+        ]
 
 
 parseUserInput = customExecParser preferences $ info (helper <*> userInput) description
@@ -99,12 +114,13 @@ defaultAlphabet :: Alphabet String
 defaultAlphabet = fromSymbols $ pure <$> "ACGT-"
 
 
-defaultSCM :: TransitionCostMatrix String
-defaultSCM = tcm
+defaultTCM :: TransitionCostMatrix String
+defaultTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
     scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
+
 
 defaultDataSet :: Map String (NonEmpty (NonEmpty String))
 defaultDataSet = M.fromList
@@ -142,10 +158,9 @@ unifyInput
      , Traversable c
      )
   => c (f (t String))
-  -> Alphabet String
   -> BTree b a
-  -> Validation (NonEmpty UnificationError) (BTree b InitialLeaf)
-unifyInput dataCollection alphabet genericTree = validatedDataSet *> initializedTree
+  -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
+unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
   where
     dataSetKeys   = mapWithKey const dataCollection
     leafTaggedTree = setLeafLabels genericTree
@@ -161,12 +176,12 @@ unifyInput dataCollection alphabet genericTree = validatedDataSet *> initialized
 
     initializedTree = traverse f leafTaggedTree
       where
-        f :: String -> Validation (NonEmpty UnificationError) InitialLeaf
+        f :: String -> Validation (NonEmpty UnificationError) InitialInternalNode
         f k = validationNel $
             case k `lookup` dataCollection of
               Nothing -> Left $ LeafLabelMissingInDataSet k
               Just xs -> let !ss = buildSymbolString xs
-                         in  Right $ InitialLeaf 0 0 ss ss
+                         in  Right $ InitialInternalNode 0 0 ss
           where
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =

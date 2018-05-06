@@ -43,7 +43,7 @@ data  SymbolContext a
     = Align  Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Delete Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Insert Word (SymbolAmbiguityGroup a)                          (SymbolAmbiguityGroup a)
-    deriving (Eq, Generic, Ord)
+    deriving (Eq, Generic, Ord, Show)
 
 
 -- |

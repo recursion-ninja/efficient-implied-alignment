@@ -123,6 +123,7 @@ executable tree-align
     , commutative-multi-string-alignment
     , containers >=0.5.8
     , keys
+    , lens
     , optparse-applicative
     , pointed
     , semigroupoids
