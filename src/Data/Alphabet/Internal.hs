@@ -66,9 +66,9 @@ newtype NamedSymbol   a = Named (a,a) deriving (Generic)
 
 class InternalClass a where
 
-  gapSymbol'        :: a
-  isGapSymboled     :: a -> Bool
-  isMissingSymboled :: a -> Bool
+    gapSymbol'        :: a
+    isGapSymboled     :: a -> Bool
+    isMissingSymboled :: a -> Bool
 
 
 -- |
