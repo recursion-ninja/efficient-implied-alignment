@@ -1,8 +1,15 @@
 module Main where
 
 
+import Data.Alphabet
+import Data.BTree
 import Data.Char
+import Data.Decoration
+import Data.Key
+import Data.Matrix.ZeroIndexed
 import Data.Semigroup ((<>))
+import Data.Semigroup.Foldable
+import Data.TCM
 import Options.Applicative
 import Text.PrettyPrint.ANSI.Leijen (string)
 
@@ -75,3 +82,38 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
 
     fileFormatHelp :: ExampleFileRequest -> [String] -> ParserInfo ExampleFileRequest
     fileFormatHelp val = info (pure val) . progDesc . unlines
+
+
+defaultAlphabet :: Alphabet String
+defaultAlphabet = fromSymbols $ pure <$> "ACGT-"
+
+
+defaultSCM :: TransitionCostMatrix String
+defaultSCM = tcm
+  where
+    tcm = buildTransitionCostMatrix defaultAlphabet scm
+    scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
+    fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
+
+
+unifyInput
+  :: ( Lookup c
+     , Foldable1 f
+     , Foldable1 t
+     )
+  => c (String, f (t s))
+  -> Alphabet s
+  -> BTree b a
+  -> Either UnificationError (BTree b InitialLeaf)
+unifyInput dataCollection alphabet genericTree = traverse f symbolTree
+  where
+    symbolTree = setLeafLabels genericTree 
+    f :: String -> Either UnificationError InitialLeaf
+    f = undefined
+
+
+data  UnificationError
+    = TreeLableMissingInLeaf String
+    | LeafLableMissingInTree String
+    deriving (Eq, Show)
+    

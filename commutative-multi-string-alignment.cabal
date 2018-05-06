@@ -74,6 +74,7 @@ library
       Data.Alphabet.IUPAC
       Data.BTree            
       Data.Decoration
+      Data.Matrix.ZeroIndexed
       Data.SymbolString
       Data.TCM
       File.Format.Fastc
@@ -92,7 +93,6 @@ library
       Data.Decoration.Internal
       Data.Decoration.Leaf
       Data.List.Utility
-      Data.Matrix.ZeroIndexed
       Data.Vector.NonEmpty
       File.Format.Fastc.Internal
       File.Format.Fastc.Parser
@@ -121,7 +121,9 @@ executable tree-align
       ansi-wl-pprint
     , base >=4.7 && <5
     , commutative-multi-string-alignment
+    , keys
     , optparse-applicative
+    , semigroupoids
 
   other-modules:
       Paths_commutative_multi_string_alignment
