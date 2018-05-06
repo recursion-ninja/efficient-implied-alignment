@@ -2,24 +2,27 @@
 
 module Main where
 
-import Data.Alphabet
-import Data.BTree
-import Data.Char
-import Data.Decoration
-import Data.Functor (($>))
-import Data.Key
-import Data.List.NonEmpty
-import Data.Matrix.ZeroIndexed
-import Data.Pointed
-import Data.Semigroup ((<>))
-import Data.Semigroup.Foldable
-import Data.Set
-import Data.SymbolString
-import Data.TCM
-import Data.Validation
-import Options.Applicative
-import Prelude hiding (lookup)
-import Text.PrettyPrint.ANSI.Leijen (string)
+import           Data.Alphabet
+import           Data.BTree
+import           Data.Char
+import           Data.Decoration
+import           Data.Functor                 (($>))
+import           Data.Key
+import           Data.List.NonEmpty           (NonEmpty(..))
+import qualified Data.List.NonEmpty    as NE
+import           Data.Matrix.ZeroIndexed
+import           Data.Map                     (Map)
+import qualified Data.Map              as M
+import           Data.Pointed
+import           Data.Semigroup               ((<>))
+import           Data.Semigroup.Foldable
+import           Data.Set
+import           Data.SymbolString
+import           Data.TCM
+import           Data.Validation
+import           Options.Applicative
+import           Prelude               hiding (lookup)
+import           Text.PrettyPrint.ANSI.Leijen (string)
 
 
 data UserInput =
@@ -104,19 +107,26 @@ defaultSCM = tcm
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
 
 defaultDataSet :: Map String (NonEmpty (NonEmpty String))
-defaultDataSet = undefined
+defaultDataSet = M.fromList
+    [ ("A", toNonEmpties $ 'A':|"AATTGGG")
+    , ("B", toNonEmpties $ 'A':|"AATT")
+    , ("C", toNonEmpties $ 'T':|"TCCC")
+    , ("D", toNonEmpties $ 'T':|"TCCCGGG")
+    ]
+  where
+    toNonEmpties = foldMap1 (pure . pure . pure) 
 
 
 defaultTopology :: BTree () ()
 defaultTopology =
     Internal blank
     ( Internal blank
-      ( Leaf "A" () )
-      ( Leaf "B" () )
+      ( Leaf (NodeDatum "A" ()) )
+      ( Leaf (NodeDatum "B" ()) )
     )
     ( Internal blank
-      ( Leaf "C" () )
-      ( Leaf "D" () )
+      ( Leaf (NodeDatum "C" ()) )
+      ( Leaf (NodeDatum "D" ()) )
     )
   where
     blank = NodeDatum "" ()
