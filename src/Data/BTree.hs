@@ -3,6 +3,8 @@
 module Data.BTree where
 
 import Data.Bifunctor
+import Data.Bifoldable
+import Data.Bitraversable
 
 
 data BTree b a
@@ -18,7 +20,6 @@ data NodeDatum a
    } deriving (Eq, Functor)
 
 
-
 instance Bifunctor BTree where
 
     bimap f g (Internal x lhs rhs) = Internal (f <$> x) (bimap f g lhs) (bimap f g rhs)
@@ -30,9 +31,43 @@ instance Bifunctor BTree where
     second = fmap 
 
 
+instance Bifoldable BTree where
+
+    bifoldr f g a (Leaf (NodeDatum _ x)) = g x a
+    bifoldr f g a (Internal (NodeDatum _ x) lhs rhs) =
+        f x $ bifoldr f g (bifoldr f g a lhs) rhs
+
+
+instance Bitraversable BTree where
+
+    bitraverse f g (Leaf (NodeDatum i x)) = Leaf . NodeDatum i <$> g x
+    bitraverse f g (Internal (NodeDatum i x) lhs rhs) =
+        Internal
+          <$> (NodeDatum i <$> f x)
+          <*> bitraverse f g lhs
+          <*> bitraverse f g rhs
+
+
+instance Foldable (BTree b) where
+
+    foldr f a (Leaf (NodeDatum _ x)) = f x a
+    foldr f a (Internal _ lhs rhs)   = foldr f (foldr f a lhs) rhs
+
+
+instance Traversable (BTree b) where
+
+    traverse f (Leaf (NodeDatum i x)) = Leaf . NodeDatum i <$> f x
+    traverse f (Internal n lhs rhs)   = Internal n <$> traverse f lhs <*> traverse f rhs
+
+
 getNodeDatum :: BTree a a -> a
 getNodeDatum (Leaf     (NodeDatum _ x)) = x
 getNodeDatum (Internal (NodeDatum _ x) _ _) = x
+
+
+setLeafLabels :: BTree b a -> BTree b String
+setLeafLabels (Leaf     (NodeDatum i _)) = Leaf $ NodeDatum i i
+setLeafLabels (Internal n lhs rhs) = Internal n (setLeafLabels lhs) $ setLeafLabels rhs
 
 
 postorder :: (a -> a -> a) -> BTree b a -> BTree a a
