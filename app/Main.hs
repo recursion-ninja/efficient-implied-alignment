@@ -103,6 +103,24 @@ defaultSCM = tcm
     scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
 
+defaultDataSet :: Map String (NonEmpty (NonEmpty String))
+defaultDataSet = undefined
+
+
+defaultTopology :: BTree () ()
+defaultTopology =
+    Internal blank
+    ( Internal blank
+      ( Leaf "A" () )
+      ( Leaf "B" () )
+    )
+    ( Internal blank
+      ( Leaf "C" () )
+      ( Leaf "D" () )
+    )
+  where
+    blank = NodeDatum "" ()
+
 
 unifyInput
   :: ( Foldable  c
