@@ -21,13 +21,17 @@ module Data.SymbolString
   , reverseContext
   , symbolAlignmentCost
   , symbolAlignmentMedian
+  , renderSymbolString
   ) where
 
 import           Control.DeepSeq
+import           Data.Alphabet
 import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty (NonEmpty(..), intersperse)
 import           Data.Pointed
+import           Data.Map           (Map)
+import qualified Data.Map      as M
 import           Data.Set           (Set)
 import qualified Data.Set      as S
 import           Data.Semigroup
@@ -43,7 +47,7 @@ data  SymbolContext a
     = Align  Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Delete Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
     | Insert Word (SymbolAmbiguityGroup a)                          (SymbolAmbiguityGroup a)
-    deriving (Eq, Generic, Ord, Show)
+    deriving (Eq, Generic, Ord)
 
 
 -- |
@@ -71,6 +75,32 @@ instance NFData a => NFData (SymbolAmbiguityGroup a)
 instance Show a => Show (SymbolAmbiguityGroup a) where
 
     show = (\x -> "{"<>x<>"}") . sconcat . intersperse ", " . fmap show . toNonEmpty
+
+
+instance Show a => Show (SymbolContext a) where
+
+    show (Align  _ x _ _) = "A" <> show x
+    show (Delete _ x _  ) = "D" <> show x
+    show (Insert _ x   _) = "I" <> show x
+
+
+renderSymbolString :: Alphabet String -> SymbolString -> String
+renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
+  where
+    renderContext (Align  _ x y z) = mconcat ["α:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", renderAmbiguityGroup z]
+    renderContext (Delete _ x y  ) = mconcat ["δ:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", blankSpace            ]
+    renderContext (Insert _ x   z) = mconcat ["ι:", renderAmbiguityGroup x, "|", blankSpace            , "|", renderAmbiguityGroup z]
+
+    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
+    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+      where
+        f k v
+          | k `elem` xs = k
+          | otherwise   = v
+
+    blankSpace   = foldMap id alphabetTags
+
+    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
 
 
 symbolAlignmentCost :: SymbolContext a -> Word

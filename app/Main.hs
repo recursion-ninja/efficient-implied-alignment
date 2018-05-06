@@ -52,14 +52,15 @@ main = do
 --    parseUserInput >>= print
     case toEither $ unifyInput defaultDataSet defaultTopology of
       Left  errors -> mapM_ print $ toList errors
-      Right tree   -> putStrLn . renderPhylogeny renderLabel
-                    $ postorder stringAligner tree
+      Right tree   -> do
+          print defaultAlphabet
+          putStrLn . renderPhylogeny renderLabel $ postorder stringAligner tree
   where
     stringAligner = postOrderLogic (ukkonenDO defaultAlphabet defaultTCM)
     renderLabel x i = mconcat
         [ i
         , ": "
-        , show $ x ^. preliminaryString
+        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
         ]
 
 
