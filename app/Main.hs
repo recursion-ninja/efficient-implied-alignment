@@ -54,12 +54,16 @@ main = do
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           print defaultAlphabet
-          putStrLn . renderPhylogeny renderLabel $ postorder stringAligner tree
+          putStrLn . renderAlignment nodeRenderer leafRenderer $ postorder stringAligner tree
   where
     stringAligner = postOrderLogic (ukkonenDO defaultAlphabet defaultTCM)
-    renderLabel x i = mconcat
+    leafRenderer x i = mconcat
         [ i
         , ": "
+        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+        ]
+    nodeRenderer x _ = mconcat
+        [ "?: "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
         ]
 

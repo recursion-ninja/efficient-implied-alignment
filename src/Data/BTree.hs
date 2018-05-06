@@ -108,33 +108,47 @@ preorder rootTransformation internalTransformation leafTransformation rootNode =
             in  Internal (NodeDatum i transformedDatum) lhs' rhs'
 
 
-renderPhylogeny :: (a -> String -> String) -> BTree b a -> String
-renderPhylogeny f = horizontalRendering . toBinaryRenderingTree f
+renderPhylogeny
+  :: (a -> String -> String)
+  -> BTree b a
+  -> String
+renderPhylogeny f = horizontalRendering . toBinaryRenderingTree (const (const "")) f
 
 
-toBinaryRenderingTree :: (a -> String -> String) -> BTree b a -> BinaryRenderingTree
-toBinaryRenderingTree f tree = 
+renderAlignment
+  :: (b -> String ->String)
+  -> (a -> String -> String)
+  -> BTree b a -> String
+renderAlignment f g = horizontalRendering . toBinaryRenderingTree f g
+
+
+toBinaryRenderingTree
+  :: (b -> String -> String)
+  -> (a -> String -> String)
+  -> BTree b a
+  -> BinaryRenderingTree
+toBinaryRenderingTree f g tree = 
     case tree of
-      Leaf (NodeDatum i a) -> Terminal $ f a i
-      Internal _ lhs rhs   -> 
-          let lhs'    = toBinaryRenderingTree f lhs
-              rhs'    = toBinaryRenderingTree f rhs
+      Leaf     (NodeDatum i a)         -> Terminal $ g a i
+      Internal (NodeDatum i b) lhs rhs -> 
+          let lhs'    = toBinaryRenderingTree f g lhs
+              rhs'    = toBinaryRenderingTree f g rhs
               subSize = subtreeSize lhs' + subtreeSize rhs'
-          in  Branch subSize Nothing $ lhs' :| [rhs']
+          in  Branch (f b i) subSize Nothing $ lhs' :| [rhs']
 
 -- |
 -- An intermediate structure for rendering directed, acyclic graphs.
 data  BinaryRenderingTree
     = Terminal String
-    | Branch   Word (Maybe String) (NonEmpty BinaryRenderingTree)
+    | Branch   String Word (Maybe String) (NonEmpty BinaryRenderingTree)
     deriving (Eq, Show)
 
 
 -- |
 -- Get the number of leaves present in a subtree.
 subtreeSize :: BinaryRenderingTree -> Word
-subtreeSize (Terminal _)   = 1
-subtreeSize (Branch x _ _) = x
+subtreeSize (Terminal _)       = 1
+subtreeSize (Branch   _ x _ _) = x
 
 
 -- |
@@ -146,12 +160,12 @@ horizontalRendering = fold . intersperse "\n" . go
   where
     go :: BinaryRenderingTree -> NonEmpty String
     go (Terminal label) = pure $ "─ " <> label
-    go (Branch _ labelMay kids) = sconcat paddedSubtrees
+    go (Branch   label _ labelMay kids) = sconcat paddedSubtrees
       where
         paddedSubtrees   = maybe prefixedSubtrees (`applyPadding` prefixedSubtrees) labelMay
         
         prefixedSubtrees :: NonEmpty (NonEmpty String)
-        prefixedSubtrees = applyPrefixes alignedSubtrees
+        prefixedSubtrees = applyPrefixes medianLabel alignedSubtrees
 
         alignedSubtrees  :: NonEmpty (NonEmpty String)
         alignedSubtrees  = applySubtreeAlignment maxSubtreeDepth <$> renderedSubtrees
@@ -163,6 +177,10 @@ horizontalRendering = fold . intersperse "\n" . go
 
         prefixLength     = length . takeWhile (`elem` "└┌│├┤─ ") . head
 
+        medianLabel
+          | null label = ""
+          | otherwise  = replicate maxSubtreeDepth '╌' <> label
+
     applyPadding :: String -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
     applyPadding e input =
         case input of
@@ -171,18 +189,21 @@ horizontalRendering = fold . intersperse "\n" . go
       where
         pad   = replicate (length e) ' '
 
-    applyPrefixes :: NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
-    applyPrefixes = run True
+    applyPrefixes :: String -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
+    applyPrefixes medianLabel = run True
       where
         run :: Bool -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String) 
         run True  (v:|[])     = pure $ applyAtCenter "─" " " " " v
         run False (v:|[])     = pure $ applyAtCenter "└" "│" " " v
-        run True  (v:|(x:xs)) = applyPrefixAndGlue  v "┤" "┌" " " "│" (x:|xs)
-        run False (v:|(x:xs)) = applyPrefixAndGlue  v "│" "├" "│" " " (x:|xs)
+        run True  (v:|(x:xs)) = applyPrefixAndGlue v "┤" "┌" " " "│" (x:|xs)
+        run False (v:|(x:xs)) = applyPrefixAndGlue v "│" "├" "│" " " (x:|xs)
 
-        applyPrefixAndGlue v glue center upper lower xs = pure (applyAtCenter center upper lower v)
-                                          <> pure (pure glue)
-                                          <> run False xs
+        applyPrefixAndGlue v glue center upper lower xs =
+            pure (applyAtCenter center upper lower v) <> pure (pure glue') <> run False xs
+          where
+            glue'
+              | glue == "┤" = glue <> medianLabel
+              | otherwise   = glue
 
     applySubtreeAlignment :: Int -> (Int, NonEmpty String) -> NonEmpty String
     applySubtreeAlignment maxLength (currLength, xs) = applyAtCenter branch pad pad xs
