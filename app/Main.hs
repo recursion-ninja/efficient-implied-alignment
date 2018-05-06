@@ -1,16 +1,24 @@
-module Main where
+{-# LANGUAGE BangPatterns,  TypeFamilies #-}
 
+module Main where
 
 import Data.Alphabet
 import Data.BTree
 import Data.Char
 import Data.Decoration
+import Data.Functor (($>))
 import Data.Key
+import Data.List.NonEmpty
 import Data.Matrix.ZeroIndexed
+import Data.Pointed
 import Data.Semigroup ((<>))
 import Data.Semigroup.Foldable
+import Data.Set
+import Data.SymbolString
 import Data.TCM
+import Data.Validation
 import Options.Applicative
+import Prelude hiding (lookup)
 import Text.PrettyPrint.ANSI.Leijen (string)
 
 
@@ -97,23 +105,49 @@ defaultSCM = tcm
 
 
 unifyInput
-  :: ( Lookup c
+  :: ( Foldable  c
      , Foldable1 f
      , Foldable1 t
+     , Key c ~ String
+     , Keyed c
+     , Lookup c
+     , Traversable c
      )
-  => c (String, f (t s))
-  -> Alphabet s
+  => c (f (t String))
+  -> Alphabet String
   -> BTree b a
-  -> Either UnificationError (BTree b InitialLeaf)
-unifyInput dataCollection alphabet genericTree = traverse f symbolTree
+  -> Validation (NonEmpty UnificationError) (BTree b InitialLeaf)
+unifyInput dataCollection alphabet genericTree = validatedDataSet *> initializedTree
   where
-    symbolTree = setLeafLabels genericTree 
-    f :: String -> Either UnificationError InitialLeaf
-    f = undefined
+    dataSetKeys   = mapWithKey const dataCollection
+    leafTaggedTree = setLeafLabels genericTree
+    leafTagSet :: Set String
+    leafTagSet    = foldMap point leafTaggedTree
+    
+    validatedDataSet = traverse f dataSetKeys
+      where
+        f :: String -> Validation (NonEmpty UnificationError) ()
+        f k = validate err (`elem` leafTagSet) k $> ()
+          where
+            err = pure $ DataLabelMissingInLeafSet k
+
+    initializedTree = traverse f leafTaggedTree
+      where
+        f :: String -> Validation (NonEmpty UnificationError) InitialLeaf
+        f k = validationNel $
+            case k `lookup` dataCollection of
+              Nothing -> Left $ LeafLabelMissingInDataSet k
+              Just xs -> let !ss = buildSymbolString xs
+                         in  Right $ InitialLeaf 0 0 ss ss
+          where
+            buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
+            buildAmbiguityGroup x =
+                let !y = foldMap1 point x
+                in  Align 0 y y y
 
 
 data  UnificationError
-    = TreeLableMissingInLeaf String
-    | LeafLableMissingInTree String
+    = LeafLabelMissingInDataSet String
+    | DataLabelMissingInLeafSet String
     deriving (Eq, Show)
     

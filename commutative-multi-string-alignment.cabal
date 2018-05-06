@@ -119,11 +119,14 @@ executable tree-align
 
   build-depends:
       ansi-wl-pprint
-    , base >=4.7 && <5
+    , base       >=4.7 && <5
     , commutative-multi-string-alignment
+    , containers >=0.5.8
     , keys
     , optparse-applicative
+    , pointed
     , semigroupoids
+    , validation
 
   other-modules:
       Paths_commutative_multi_string_alignment
