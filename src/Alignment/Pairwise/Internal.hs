@@ -284,7 +284,7 @@ renderCostMatrix gapValue lhs rhs mtx = unlines
 
     headerRow = mconcat
         [ " "
-        , pad maxPrefixWidth "⭙"
+        , pad maxPrefixWidth "⊗"
         , "┃ "
         , pad maxColumnWidth "⁎"
         , concatMap (pad maxColumnWidth) longerTokens
