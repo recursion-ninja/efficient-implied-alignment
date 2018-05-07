@@ -50,7 +50,7 @@ data  ExampleFileRequest
 main :: IO ()
 main = do
 --    parseUserInput >>= print
-    case toEither $ unifyInput dataSetD topologyD of
+    case toEither $ unifyInput dataSetE topologyE of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           print defaultAlphabet
@@ -245,6 +245,48 @@ topologyD =
                     ( Leaf (NodeDatum "J" ()) )
                   )
                 )
+              )
+            )
+          )
+        )
+      )
+    )
+  where
+    blank = NodeDatum "" ()
+
+
+dataSetE :: Map String (NonEmpty (NonEmpty String))
+dataSetE = M.fromList
+    [ ("A", toNonEmpties $ 'A':|"ATT")
+    , ("B", toNonEmpties $ 'A':|"ATT")
+    , ("C", toNonEmpties $ 'A':|"ATT")
+    , ("D", toNonEmpties $ 'A':|"ACTT")
+    , ("E", toNonEmpties $ 'A':|"ACTT")
+    , ("F", toNonEmpties $ 'A':|"ACTT")
+    , ("G", toNonEmpties $ 'A':|"ATT")
+    , ("H", toNonEmpties $ 'A':|"ATT")
+    ]
+  where
+    toNonEmpties = foldMap1 (pure . pure . pure) 
+
+
+topologyE :: BTree () ()
+topologyE =
+    Internal blank
+    ( Leaf (NodeDatum "A" ()) )
+    ( Internal blank
+      ( Leaf (NodeDatum "B" ()) )
+      ( Internal blank
+        ( Leaf (NodeDatum "C" ()) )
+        ( Internal blank
+          ( Leaf (NodeDatum "D" ()) )
+          ( Internal blank
+            ( Leaf (NodeDatum "E" ()) )
+            ( Internal blank
+              ( Leaf (NodeDatum "F" ()) )
+              ( Internal blank
+                ( Leaf (NodeDatum "G" ()) )
+                ( Leaf (NodeDatum "H" ()) )
               )
             )
           )
