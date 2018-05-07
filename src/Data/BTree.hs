@@ -179,7 +179,7 @@ horizontalRendering = fold . intersperse "\n" . go
 
         medianLabel
           | null label = ""
-          | otherwise  = replicate (maxSubtreeDepth - 1) '╌' <> " " <> label
+          | otherwise  = replicate (maxSubtreeDepth - 1) '-' <> " " <> label
 
     applyPadding :: String -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
     applyPadding e input =
