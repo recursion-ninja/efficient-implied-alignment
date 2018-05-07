@@ -13,7 +13,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Alignment
-  ( postOrderLogic
+  ( postorderLogic
   , naiveDO
   , naiveDOMemo
   , ukkonenDO

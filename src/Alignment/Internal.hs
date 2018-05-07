@@ -44,12 +44,12 @@ type PairwiseAlignment s =  Vector (SymbolContext s)
 --
 -- Parameterized over a 'PairwiseAlignment' function to allow for different
 -- atomic alignments depending on the character's metadata.
-postOrderLogic
+postorderLogic
   :: PairwiseAlignment String
   -> InitialInternalNode
   -> InitialInternalNode
   -> InitialInternalNode
-postOrderLogic pairwiseAlignment lhs rhs =
+postorderLogic pairwiseAlignment lhs rhs =
     InitialInternalNode totalSubtreeCost alignmentCost alignmentContext
   where
     totalSubtreeCost = alignmentCost + lhs ^. subtreeCost + rhs ^. subtreeCost
@@ -59,20 +59,31 @@ postOrderLogic pairwiseAlignment lhs rhs =
 
 
 -- |
--- The post-order scoring logic for dynamic characters.
---
--- Parameterized over a 'PairwiseAlignment' function to allow for different
--- atomic alignments depending on the character's metadata.
-preOrderRootLogic
+-- The pre-order scoring logic for root node.
+preorderRootLogic
   :: InitialInternalNode
   -> FinalizedInternalNode
-preOrderRootLogic =
+preorderRootLogic =
     FinalizedInternalNode
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
       <*> (^. preliminaryString)
       <*> (^. preliminaryString)
+
+
+-- |
+-- The pre-order scoring logic for intenral nodes.
+preorderInternalLogic
+  :: FinalizedInternalNode                          -- ^ Parent decoration
+  -> Either InitialInternalNode InitialInternalNode -- ^ Current decoration, whether it is Left or Right child of parent.
+  -> FinalizedInternalNode                          -- ^ Updated decoration
+preorderInternalLogic parent current = undefined
+   where
+--     c = $ current ^. preliminaryString
+     p = parent  ^.   finalizedString
+
+     aligner = undefined
 
 
 {-

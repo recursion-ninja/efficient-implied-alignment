@@ -56,7 +56,7 @@ main = do
           print defaultAlphabet
           putStrLn . renderAlignment nodeRenderer leafRenderer $ postorder stringAligner tree
   where
-    stringAligner = postOrderLogic (ukkonenDO defaultAlphabet defaultTCM)
+    stringAligner = postorderLogic (ukkonenDO defaultAlphabet defaultTCM)
     leafRenderer x i = mconcat
         [ i
         , ": "

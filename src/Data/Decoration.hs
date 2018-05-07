@@ -16,6 +16,7 @@ module Data.Decoration
   , FinalizedInternalNode(FinalizedInternalNode)
   , FinalizedLeaf(FinalizedLeaf)
   , alignedString
+  , finalizedString
   , inputString
   , localCost
   , outputString

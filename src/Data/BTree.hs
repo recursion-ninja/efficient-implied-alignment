@@ -88,7 +88,12 @@ postorder f node =
          in   Internal (NodeDatum i (f x y)) lhs' rhs'
 
 
-preorder :: (b -> c) -> (c -> b -> c) -> (c -> a -> d) -> BTree b a -> BTree c d
+preorder
+  :: (b -> c)      -- ^ Root node case
+  -> (c -> b -> c) -- ^ Internal node case
+  -> (c -> a -> d) -- ^ Leaf node case
+  -> BTree b a
+  -> BTree c d
 preorder rootTransformation internalTransformation leafTransformation rootNode =
     case rootNode of
       Leaf x -> undefined -- Single node trees are beyond the scope of this example.
