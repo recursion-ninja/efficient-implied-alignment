@@ -54,7 +54,7 @@ import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
-import           Prelude            hiding (lookup, zipWith)
+import           Prelude            hiding (lookup, reverse, zipWith)
 
 
 -- |
@@ -317,7 +317,7 @@ traceback
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, Vector (SymbolContext s))
-traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, unfoldr go lastCell)
+traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ unfoldr go lastCell)
   where
       lastCell     = (row, col)
       (cost, _, _) = alignMatrix ! lastCell
@@ -326,8 +326,8 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, unfoldr go l
       row = length lesserChar
 
       go currentCell@(!i, !j)
-        | nextCell == (0,0) = (contextElement, Nothing)
-        | otherwise         = (contextElement, Just nextCell)
+        | nextCell < (0,0) = (contextElement, Nothing)
+        | otherwise        = (contextElement, Just nextCell)
         where
           (cost, directionArrow, medianElement) = alignMatrix ! currentCell
 

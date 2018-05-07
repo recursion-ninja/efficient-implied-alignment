@@ -6,6 +6,7 @@ module Data.Vector.NonEmpty
   , fromNonEmpty
   , singleton
   -- * Useful stuff
+  , reverse
   , uncons
   , unfoldr
   ) where
@@ -27,7 +28,7 @@ import           Data.Semigroup.Traversable
 import qualified Data.Vector                as V
 import           Data.Vector.Instances             ()
 import           Test.QuickCheck
-
+import           Prelude                    hiding (reverse)
 
 -- |
 -- A sequence of values that are repeated multiple times in contiguous blocks.
@@ -128,6 +129,15 @@ singleton = NEV . V.singleton
 {-# INLINE fromNonEmpty #-}
 fromNonEmpty :: Foldable1 f => f a -> Vector a
 fromNonEmpty = NEV . V.fromList . toList . toNonEmpty
+
+
+-- |
+-- /O(n)/
+--
+-- Reverse a vector
+{-# INLINE reverse #-}
+reverse :: Vector a -> Vector a
+reverse = NEV . V.reverse . unwrap
 
 
 -- | /O(n)/
