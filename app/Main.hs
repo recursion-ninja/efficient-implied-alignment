@@ -50,7 +50,7 @@ data  ExampleFileRequest
 main :: IO ()
 main = do
 --    parseUserInput >>= print
-    case toEither $ unifyInput defaultDataSet defaultTopology of
+    case toEither $ unifyInput dataSetD topologyD of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           print defaultAlphabet
@@ -127,27 +127,129 @@ defaultTCM = tcm
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
 
 
-defaultDataSet :: Map String (NonEmpty (NonEmpty String))
-defaultDataSet = M.fromList
-    [ ("A", toNonEmpties $ 'A':|"AATTGGG")
-    , ("B", toNonEmpties $ 'A':|"AATT")
-    , ("C", toNonEmpties $ 'T':|"TCCC")
-    , ("D", toNonEmpties $ 'T':|"TCCCGGG")
+dataSetA :: Map String (NonEmpty (NonEmpty String))
+dataSetA = M.fromList
+    [ ("A", toNonEmpties $ 'A':|"CGT")
+    , ("B", toNonEmpties $ 'A':|"CG")
+    , ("C", toNonEmpties $ 'A':|"C")
+    , ("D", toNonEmpties $ 'A':|"")
     ]
   where
     toNonEmpties = foldMap1 (pure . pure . pure) 
 
 
-defaultTopology :: BTree () ()
-defaultTopology =
+topologyA :: BTree () ()
+topologyA =
     Internal blank
+    ( Leaf (NodeDatum "A" ()) )
     ( Internal blank
-      ( Leaf (NodeDatum "A" ()) )
       ( Leaf (NodeDatum "B" ()) )
+      ( Internal blank
+        ( Leaf (NodeDatum "C" ()) )
+        ( Leaf (NodeDatum "D" ()) )
+      )
     )
+  where
+    blank = NodeDatum "" ()
+
+
+dataSetB :: Map String (NonEmpty (NonEmpty String))
+dataSetB = M.fromList
+    [ ("A", toNonEmpties $ 'A':|"")
+    , ("B", toNonEmpties $ 'A':|"C")
+    , ("C", toNonEmpties $ 'A':|"CG")
+    , ("D", toNonEmpties $ 'A':|"CGT")
+    ]
+  where
+    toNonEmpties = foldMap1 (pure . pure . pure) 
+
+
+topologyB :: BTree () ()
+topologyB =
+    Internal blank
+    ( Leaf (NodeDatum "A" ()) )
     ( Internal blank
-      ( Leaf (NodeDatum "C" ()) )
-      ( Leaf (NodeDatum "D" ()) )
+      ( Leaf (NodeDatum "B" ()) )
+      ( Internal blank
+        ( Leaf (NodeDatum "C" ()) )
+        ( Leaf (NodeDatum "D" ()) )
+      )
+    )
+  where
+    blank = NodeDatum "" ()
+
+
+dataSetC :: Map String (NonEmpty (NonEmpty String))
+dataSetC = M.fromList
+    [ ("A", toNonEmpties $ 'T':|"GCA")
+    , ("B", toNonEmpties $ 'G':|"CA")
+    , ("C", toNonEmpties $ 'C':|"A")
+    , ("D", toNonEmpties $ 'A':|"")
+    ]
+  where
+    toNonEmpties = foldMap1 (pure . pure . pure) 
+
+
+topologyC :: BTree () ()
+topologyC =
+    Internal blank
+    ( Leaf (NodeDatum "A" ()) )
+    ( Internal blank
+      ( Leaf (NodeDatum "B" ()) )
+      ( Internal blank
+        ( Leaf (NodeDatum "C" ()) )
+        ( Leaf (NodeDatum "D" ()) )
+      )
+    )
+  where
+    blank = NodeDatum "" ()
+
+
+dataSetD :: Map String (NonEmpty (NonEmpty String))
+dataSetD = M.fromList
+    [ ("A", toNonEmpties $ 'A':|"A")
+    , ("B", toNonEmpties $ 'A':|"A")
+    , ("C", toNonEmpties $ 'A':|"TA")
+    , ("D", toNonEmpties $ 'A':|"TA")
+    , ("E", toNonEmpties $ 'A':|"TA")
+    , ("F", toNonEmpties $ 'A':|"A")
+    , ("G", toNonEmpties $ 'A':|"A")
+    , ("H", toNonEmpties $ 'A':|"A")
+    , ("I", toNonEmpties $ 'A':|"TA")
+    , ("J", toNonEmpties $ 'A':|"TA")
+    ]
+  where
+    toNonEmpties = foldMap1 (pure . pure . pure) 
+
+
+topologyD :: BTree () ()
+topologyD =
+    Internal blank
+    ( Leaf (NodeDatum "A" ()) )
+    ( Internal blank
+      ( Leaf (NodeDatum "B" ()) )
+      ( Internal blank
+        ( Leaf (NodeDatum "C" ()) )
+        ( Internal blank
+          ( Leaf (NodeDatum "D" ()) )
+          ( Internal blank
+            ( Leaf (NodeDatum "E" ()) )
+            ( Internal blank
+              ( Leaf (NodeDatum "F" ()) )
+              ( Internal blank
+                ( Leaf (NodeDatum "G" ()) )
+                ( Internal blank
+                  ( Leaf (NodeDatum "H" ()) )
+                  ( Internal blank
+                    ( Leaf (NodeDatum "I" ()) )
+                    ( Leaf (NodeDatum "J" ()) )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
     )
   where
     blank = NodeDatum "" ()
