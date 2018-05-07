@@ -278,15 +278,15 @@ renderCostMatrix gapValue lhs rhs mtx = unlines
     dimensionPrefix  = " " <> unwords
         [ "Dimensions:"
         , show rowCount
-        , "×"
+        , "⨉" --"×"
         , show colCount
         ]
 
     headerRow = mconcat
         [ " "
-        , pad maxPrefixWidth "╳"
+        , pad maxPrefixWidth "⭙"
         , "┃ "
-        , pad maxColumnWidth "*"
+        , pad maxColumnWidth "⁎"
         , concatMap (pad maxColumnWidth) longerTokens
         ]
 
@@ -299,7 +299,7 @@ renderCostMatrix gapValue lhs rhs mtx = unlines
       where
         bar n = replicate (n+1) '━'
 
-    renderedRows = unlines . zipWith renderRow ("*":lesserTokens) $ getRows matrixTokens
+    renderedRows = unlines . zipWith renderRow ("⁎":lesserTokens) $ getRows matrixTokens
       where
         renderRow e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
 
