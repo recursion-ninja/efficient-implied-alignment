@@ -26,7 +26,7 @@ module Alignment.Pairwise.Internal
  , directOptimization
  , measureCharacters
  , needlemanWunschDefinition
--- , renderCostMatrix
+ , renderCostMatrix
  , traceback
  -- * Probably removable
 -- , overlap
@@ -55,6 +55,8 @@ import           Data.TCM
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude            hiding (lookup, reverse, zipWith)
+
+import Debug.Trace
 
 
 -- |
@@ -124,17 +126,22 @@ type MatrixFunction m f s
 -- Reused internally by different implementations.
 directOptimization
   :: ( Foldable f
+     , Foldable m
+     , Functor m
      , Indexable f
+     , Indexable m
      , Key f ~ Int
+     , Key m ~ (Int, Int)
      , MatrixConstraint m
      , Ord s
      )
   => TransitionCostMatrix s
+  -> (f (SymbolContext s) -> f (SymbolContext s) -> m (Cost, Direction, SymbolAmbiguityGroup s) -> String)
   -> MatrixFunction m f s
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, Vector (SymbolContext s))
-directOptimization overlapFunction matrixFunction lhs rhs = (alignmentCost, alignmentContext)
+directOptimization overlapFunction renderingFunction matrixFunction lhs rhs = trace (renderingFunction lhs rhs traversalMatrix) (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
@@ -192,8 +199,16 @@ needlemanWunschDefinition
   -> (Int, Int)
   -> (Cost, Direction, SymbolAmbiguityGroup s)
 needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row, col)
-  | p == (0,0) = (      0, DiagArrow, gapGroup)
-  | otherwise  = (minCost,    minDir, minState)
+  |  p == (0,0)              = (            0,  DiagArrow, gapGroup)
+  |   topElement == gapGroup
+  && leftElement == gapGroup
+  && row /= 0
+  && col /= 0                = (diagonalValue,  DiagArrow, gapGroup)
+  |   topElement == gapGroup
+  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
+  |  leftElement == gapGroup
+  && row /= 0                = (  upwardValue,    UpArrow, gapGroup)
+  |  otherwise               = (      minCost,     minDir, minState)
   where
     -- | Lookup with a default value of infinite cost.
     {-# INLINE (!?) #-}
@@ -222,52 +237,55 @@ needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row,
 -- and column labelings.
 --
 -- Useful for debugging purposes.
-{-
+{--}
 renderCostMatrix
-  :: ( Enum (Element s)
-     , Foldable f
-     , Functor f
-     , Indexable f
-     , Key f ~ (Int, Int)
+  :: ( Foldable  f
+     , Foldable m
+     , Functor m
+     , Indexable m
+     , Key m ~ (Int, Int)
      , Ord s
-     , Show a
-     , Show b
+--     , Show a
+--     , Show b
      )
-  => NonEmpty (SymbolContext s)
-  -> NonEmpty (SymbolContext s)
-  -> f (a, b, c) -- ^ The Needleman-Wunsch alignment matrix
+  => s
+  -> f (SymbolContext s)
+  -> f (SymbolContext s)
+  -> m (Cost, Direction, SymbolAmbiguityGroup s)
+--  -> m (a, b, c) -- ^ The Needleman-Wunsch alignment matrix
   -> String
-renderCostMatrix lhs rhs mtx = unlines
+renderCostMatrix gapValue lhs rhs mtx = unlines
     [ dimensionPrefix
     , headerRow
     , barRow
     , renderedRows
     ]
   where
+    gapGroup          = point gapValue
     (_,longer,lesser) = measureCharacters lhs rhs
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
-    toShownIntegers   = fmap (show . fromEnum) . otoList
+    toShownIntegers   = fmap renderContext . toList
     matrixTokens      = showCell <$> mtx
     showCell (c,d,_)  = show c <> show d
     maxPrefixWidth    = maxLengthOf lesserTokens
     maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ toList matrixTokens
     maxLengthOf       = maximum . fmap length
 
-    colCount = olength longer + 1
-    rowCount = olength lesser + 1
+    colCount = length longer + 1
+    rowCount = length lesser + 1
 
     dimensionPrefix  = " " <> unwords
         [ "Dimensions:"
         , show rowCount
-        , "X"
+        , "×"
         , show colCount
         ]
 
     headerRow = mconcat
         [ " "
-        , pad maxPrefixWidth "\\"
-        , "| "
+        , pad maxPrefixWidth "╳"
+        , "┃ "
         , pad maxColumnWidth "*"
         , concatMap (pad maxColumnWidth) longerTokens
         ]
@@ -275,27 +293,30 @@ renderCostMatrix lhs rhs mtx = unlines
     barRow    = mconcat
         [ " "
         , bar maxPrefixWidth
-        , "+"
+        , "╋"
         , concatMap (const (bar maxColumnWidth)) $ undefined : longerTokens
         ]
       where
-        bar n = replicate (n+1) '-'
+        bar n = replicate (n+1) '━'
 
     renderedRows = unlines . zipWith renderRow ("*":lesserTokens) $ getRows matrixTokens
       where
-        renderRow e vs = " " <> pad maxPrefixWidth e <> "| " <> concatMap (pad maxColumnWidth) vs
+        renderRow e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
 
         getRows m = (`getRow'` m) <$> [0 .. rowCount - 1]
         getRow' i m = g <$> [0 .. colCount - 1]
           where
             g j = fromMaybe "" $ (i,j) `lookup` m
 
+    renderContext (Align  _ x _ _) = if x == gapGroup then "—" else "α"
+    renderContext (Delete _ x _  ) = if x == gapGroup then "—" else "δ"
+    renderContext (Insert _ x   _) = if x == gapGroup then "—" else "ι"
 
     pad :: Int -> String -> String
     pad n e = replicate (n - len) ' ' <> e <> " "
       where
         len = length e
--}
+{--}
 
 
 -- |

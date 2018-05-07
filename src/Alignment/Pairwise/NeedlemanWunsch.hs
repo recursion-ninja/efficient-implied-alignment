@@ -52,7 +52,9 @@ naiveDO
   -> f (SymbolContext s)              -- ^ First  dynamic character
   -> f (SymbolContext s)              -- ^ Second dynamic character
   -> (Word, Vector (SymbolContext s)) -- ^ The cost of the alignment and the alignment context
-naiveDO alphabet costStruct = directOptimization (overlap alphabet costStruct) $ createNeedlemanWunchMatrix (gapSymbol alphabet)
+naiveDO alphabet costStruct = directOptimization (overlap alphabet costStruct) (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
+  where
+    gap = gapSymbol alphabet
 
 
 {-
@@ -87,7 +89,9 @@ naiveDOMemo
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, Vector (SymbolContext s))
-naiveDOMemo alphabet tcm = directOptimization tcm $ createNeedlemanWunchMatrix (gapSymbol alphabet)
+naiveDOMemo alphabet tcm = directOptimization tcm (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
+  where
+    gap = gapSymbol alphabet
 
 
 -- |

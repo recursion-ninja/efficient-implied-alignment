@@ -88,7 +88,7 @@ ukkonenDO
   -> (Word, Vector (SymbolContext s))
 ukkonenDO alphabet overlapFunction lhs rhs
   | noGainFromUkkonenMethod = naiveDOMemo alphabet overlapFunction lhs rhs
-  | otherwise               = directOptimization overlapFunction (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
+  | otherwise               = directOptimization overlapFunction (renderCostMatrix (gapSymbol alphabet)) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
   where
     (_, longer, lesser) = measureCharacters lhs rhs
 
