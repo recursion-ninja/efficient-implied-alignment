@@ -50,21 +50,28 @@ data  ExampleFileRequest
 main :: IO ()
 main = do
 --    parseUserInput >>= print
-    case toEither $ unifyInput dataSetE topologyE of
+    case toEither $ unifyInput dataSetD topologyD of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           print defaultAlphabet
-          putStrLn . renderAlignment nodeRenderer leafRenderer $ postorder stringAligner tree
-  where
+          putStrLn . renderAlignment nodeRenderer leafRenderer . preorder' $ postorder' tree
+  where 
+    postorder' = postorder stringAligner
+    preorder'  = preorder preorderRootLogic (preorderInternalLogic defaultTripleCompare) preorderLeafLogic
+    
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet defaultTCM)
     leafRenderer x i = mconcat
         [ i
         , ": "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+--        , renderSymbolString defaultAlphabet $ x ^. alignedString
         ]
     nodeRenderer x _ = mconcat
         [ "?: "
-        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+        , renderSymbolString defaultAlphabet $ x ^. alignedString
         ]
 
 
@@ -75,7 +82,7 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
           <$> argSpec 'd' "data"   "FASTC data file"
           <*> argSpec 't' "tree"   "Newick tree file"
           <*> argSpec 'm' "tcm"    "Transition Cost Matrix file with symbol alphabet"
-          <*> argSpec 'o' "output"  "Output file for alignments"
+          <*> argSpec 'o' "output" "Output file for alignments"
           <*> switch  (mconcat [short 'v', long "verbose", help "Display debugging informaion"])
           <*> commandHelperDescriptions
 
@@ -117,6 +124,10 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
 
 defaultAlphabet :: Alphabet String
 defaultAlphabet = fromSymbols $ pure <$> "ACGT-"
+
+
+defaultTripleCompare :: ThreewayCompare String
+defaultTripleCompare = buildThreeWayCompare defaultAlphabet defaultTCM
 
 
 defaultTCM :: TransitionCostMatrix String

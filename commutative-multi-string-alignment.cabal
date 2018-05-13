@@ -57,6 +57,7 @@ library
     , mtl
     , pointed
     , QuickCheck
+    , safe
     , scientific
     , semigroupoids
     , semigroups

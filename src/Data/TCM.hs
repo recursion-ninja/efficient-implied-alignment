@@ -3,8 +3,10 @@
 module Data.TCM
   ( SymbolChangeMatrix
   , TransitionCostMatrix
+  , ThreewayCompare
   -- * Construction
   , buildSymbolChangeMatrix
+  , buildThreeWayCompare
   , buildTransitionCostMatrix
   -- * Querries
   , overlap
@@ -14,7 +16,7 @@ import Control.DeepSeq
 import Data.Alphabet
 import Data.Foldable
 import Data.Hashable
-import Data.HashMap.Strict hiding ((!))
+import Data.HashMap.Strict hiding ((!), foldl')
 import Data.Key
 import Data.List.NonEmpty         (NonEmpty)
 import Data.Matrix.ZeroIndexed    (Matrix)
@@ -41,6 +43,39 @@ type TransitionCostMatrix k
      =  SymbolAmbiguityGroup k
      -> SymbolAmbiguityGroup k
      -> (SymbolAmbiguityGroup k, Word)
+
+
+-- |
+-- /O(a^3)/
+--
+-- A generalized function representationing transition between two
+-- 'SymbolAmbiguityGroup's, returning the corresponding median
+-- 'SymbolAmbiguityGroup' and transition cost.
+type ThreewayCompare k
+     =  SymbolAmbiguityGroup k
+     -> SymbolAmbiguityGroup k
+     -> SymbolAmbiguityGroup k
+     -> (SymbolAmbiguityGroup k, Word)
+
+
+buildThreeWayCompare
+  :: (Ord k, Hashable k)
+  => Alphabet k
+  -> TransitionCostMatrix k
+  -> ThreewayCompare k
+buildThreeWayCompare alphabet tcm = f
+  where
+   singletonStates = point <$> toNonEmpty alphabet
+   
+   f a b c = foldl' g (undefined, maxBound :: Word) singletonStates
+     where
+       g acc@(combinedState, curentMinCost) singleState =
+           case combinedCost `compare` curentMinCost of
+             EQ -> (combinedState <> singleState, curentMinCost)
+             LT -> (                 singleState,  combinedCost)
+             GT -> acc
+         where
+           combinedCost = sum $ (snd . tcm singleState) <$> [a, b, c]
 
 
 -- |

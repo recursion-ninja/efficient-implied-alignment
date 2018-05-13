@@ -21,6 +21,7 @@ module Data.SymbolString
   , reverseContext
   , symbolAlignmentCost
   , symbolAlignmentMedian
+  , renderString
   , renderSymbolString
   ) where
 
@@ -84,6 +85,21 @@ instance Show a => Show (SymbolContext a) where
     show (Insert _ x   _) = "I" <> show x
 
 
+renderString :: Foldable1 f => Alphabet String -> f (SymbolAmbiguityGroup String) -> String
+renderString alphabet = (\s -> "["<>s<>"]") . intercalate1 "," . fmap renderAmbiguityGroup . toNonEmpty
+  where
+    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
+    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+      where
+        f k v
+          | k `elem` xs = k
+          | otherwise   = v
+
+    blankSpace   = foldMap id alphabetTags
+
+    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+
+
 renderSymbolString :: Alphabet String -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
@@ -122,7 +138,7 @@ gap = SAG $ S.singleton "-"
 reverseContext :: SymbolContext a -> SymbolContext a
 reverseContext (Align  cost med lhs rhs) = (Align  cost med rhs lhs) 
 reverseContext (Delete cost med lhs    ) = (Insert cost med     lhs) 
-reverseContext (Insert cost med     rhs) = (Insert cost med rhs    ) 
+reverseContext (Insert cost med     rhs) = (Delete cost med rhs    ) 
 
 
 -- |

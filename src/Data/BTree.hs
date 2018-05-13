@@ -89,28 +89,32 @@ postorder f node =
 
 
 preorder
-  :: (b -> c)      -- ^ Root node case
-  -> (c -> b -> c) -- ^ Internal node case
-  -> (c -> a -> d) -- ^ Leaf node case
-  -> BTree b a
-  -> BTree c d
+  :: (a -> b)               -- ^ Root node case
+  -> (b -> Either a a -> b) -- ^ Internal node case
+  -> (b -> Either a a -> c) -- ^ Leaf node case
+  -> BTree a a
+  -> BTree b c
 preorder rootTransformation internalTransformation leafTransformation rootNode =
     case rootNode of
       Leaf x -> undefined -- Single node trees are beyond the scope of this example.
       Internal (NodeDatum i x) lhs rhs ->
         let transformedRoot = rootTransformation x
-            lhs' = go transformedRoot lhs
-            rhs' = go transformedRoot rhs
+            lhs' = go transformedRoot True  lhs
+            rhs' = go transformedRoot False rhs
         in  Internal (NodeDatum i transformedRoot) lhs' rhs'
   where
-    go parentNode currentNode =
+    go parentNode isLeft currentNode =
         case currentNode of
-          Leaf x -> Leaf $ leafTransformation parentNode <$> x
+          Leaf x -> Leaf $ leafTransformation parentNode . wrap <$> x
           Internal (NodeDatum i x) lhs rhs ->
-            let transformedDatum = internalTransformation parentNode x
-                lhs' = go transformedDatum lhs
-                rhs' = go transformedDatum rhs
+            let transformedDatum = internalTransformation parentNode (wrap x)
+                lhs' = go transformedDatum True  lhs
+                rhs' = go transformedDatum False rhs
             in  Internal (NodeDatum i transformedDatum) lhs' rhs'
+      where
+        wrap x
+          | isLeft    = Left  x
+          | otherwise = Right x
 
 
 renderPhylogeny

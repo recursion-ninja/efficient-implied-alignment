@@ -14,6 +14,9 @@
 
 module Alignment
   ( postorderLogic
+  , preorderInternalLogic
+  , preorderLeafLogic
+  , preorderRootLogic
   , naiveDO
   , naiveDOMemo
   , ukkonenDO

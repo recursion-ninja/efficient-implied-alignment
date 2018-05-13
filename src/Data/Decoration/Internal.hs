@@ -18,6 +18,7 @@ import Control.DeepSeq
 import Control.Lens
 import Data.Decoration.Class
 import Data.SymbolString
+import Data.Vector.NonEmpty
 import GHC.Generics
 
 
@@ -34,7 +35,7 @@ data FinalizedInternalNode
    { _FIN_SubtreeCost       :: Word
    , _FIN_LocalCost         :: Word
    , _FIN_PreliminaryString :: SymbolString
-   , _FIN_FinalizedString   :: SymbolString
+   , _FIN_FinalizedString   :: Vector (SymbolAmbiguityGroup String)
    , _FIN_AlignedString     :: SymbolString
    } deriving (Eq, Generic)
 
@@ -75,7 +76,7 @@ instance HasPreliminaryString FinalizedInternalNode SymbolString where
     preliminaryString = lens _FIN_PreliminaryString (\e x -> e { _FIN_PreliminaryString = x })
 
 
-instance HasFinalizedString FinalizedInternalNode SymbolString where
+instance HasFinalizedString FinalizedInternalNode (Vector (SymbolAmbiguityGroup String)) where
 
     finalizedString = lens _FIN_FinalizedString (\e x -> e { _FIN_FinalizedString = x })
 
