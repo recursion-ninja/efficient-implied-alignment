@@ -21,6 +21,7 @@ module Data.SymbolString
   , reverseContext
   , symbolAlignmentCost
   , symbolAlignmentMedian
+  , renderAligns
   , renderString
   , renderSymbolString
   ) where
@@ -106,6 +107,25 @@ renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap r
     renderContext (Align  _ x y z) = mconcat ["α:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", renderAmbiguityGroup z]
     renderContext (Delete _ x y  ) = mconcat ["δ:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", blankSpace            ]
     renderContext (Insert _ x   z) = mconcat ["ι:", renderAmbiguityGroup x, "|", blankSpace            , "|", renderAmbiguityGroup z]
+
+    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
+    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+      where
+        f k v
+          | k `elem` xs = k
+          | otherwise   = v
+
+    blankSpace   = foldMap id alphabetTags
+
+    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+
+
+renderAligns :: Alphabet String -> SymbolString -> String
+renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
+  where
+    renderContext (Align  _ x _ _) = renderAmbiguityGroup x
+    renderContext (Delete _ x _  ) = renderAmbiguityGroup (point "-")
+    renderContext (Insert _ x   _) = renderAmbiguityGroup (point "-")
 
     renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
     renderAmbiguityGroup xs = foldMapWithKey f alphabetTags

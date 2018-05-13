@@ -141,7 +141,7 @@ directOptimization
   -> f (SymbolContext s)
   -> f (SymbolContext s)
   -> (Word, Vector (SymbolContext s))
-directOptimization overlapFunction renderingFunction matrixFunction lhs rhs = trace (renderingFunction lhs rhs traversalMatrix) (alignmentCost, alignmentContext)
+directOptimization overlapFunction renderingFunction matrixFunction lhs rhs = {- trace (renderingFunction lhs rhs traversalMatrix) -} (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput

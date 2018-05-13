@@ -25,6 +25,7 @@ import           Data.TCM
 import           Data.Validation
 import           Options.Applicative
 import           Prelude               hiding (lookup)
+import           System.IO
 import           Text.PrettyPrint.ANSI.Leijen (string)
 
 
@@ -49,6 +50,7 @@ data  ExampleFileRequest
 
 main :: IO ()
 main = do
+    hSetBuffering stdout NoBuffering
 --    parseUserInput >>= print
     case toEither $ unifyInput dataSetD topologyD of
       Left  errors -> mapM_ print $ toList errors
@@ -63,15 +65,17 @@ main = do
     leafRenderer x i = mconcat
         [ i
         , ": "
-        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
 --        , renderSymbolString defaultAlphabet $ x ^. alignedString
+        , renderAligns defaultAlphabet $ x ^. alignedString
         ]
     nodeRenderer x _ = mconcat
         [ "?: "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
-        , renderSymbolString defaultAlphabet $ x ^. alignedString
+--        , renderSymbolString defaultAlphabet $ x ^. alignedString
+        , renderAligns defaultAlphabet $ x ^. alignedString
         ]
 
 
