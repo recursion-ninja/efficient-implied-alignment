@@ -330,7 +330,7 @@ deriveLeafAlignment
   -> SymbolString -- ^ Child Alignment
 deriveLeafAlignment pAlignment pContext cContext = alignment
   where
-    alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
+    alignment = extractVector {--} . traceResult {--} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
 
