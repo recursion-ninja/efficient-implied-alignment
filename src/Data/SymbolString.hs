@@ -22,6 +22,7 @@ module Data.SymbolString
   , symbolAlignmentCost
   , symbolAlignmentMedian
   , renderAligns
+  , renderSingleton
   , renderString
   , renderSymbolString
   ) where
@@ -30,12 +31,13 @@ import           Control.DeepSeq
 import           Data.Alphabet
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty (NonEmpty(..), intersperse)
+import           Data.List.NonEmpty       (NonEmpty(..), intersperse)
+import qualified Data.List.NonEmpty as NE
 import           Data.Pointed
-import           Data.Map           (Map)
-import qualified Data.Map      as M
-import           Data.Set           (Set)
-import qualified Data.Set      as S
+import           Data.Map                  (Map)
+import qualified Data.Map           as M
+import           Data.Set                  (Set)
+import qualified Data.Set           as S
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
@@ -137,6 +139,14 @@ renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderC
     blankSpace   = foldMap id alphabetTags
 
     alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+
+
+renderSingleton :: Alphabet String -> SymbolString -> String
+renderSingleton alphabet = foldMap renderContext . toNonEmpty
+  where
+    gap = gapSymbol alphabet
+    renderContext (Align  _ x _ _) = NE.head $ toNonEmpty x
+    renderContext _  = gap
 
 
 symbolAlignmentCost :: SymbolContext a -> Word

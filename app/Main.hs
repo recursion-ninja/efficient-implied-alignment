@@ -52,30 +52,48 @@ main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
 --    parseUserInput >>= print
-    case toEither $ unifyInput dataSetE topologyE of
+    case toEither $ unifyInput dataSetA topologyA of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
+          putStrLn ""
           print defaultAlphabet
+          putStrLn ""
+          putStrLn "Input Strings:"
+          putStrLn ""
+          putStrLn $ renderPhylogeny inputRenderer tree
+          putStrLn ""
+          putStrLn "Output Alignment:"
+          putStrLn ""
           putStrLn . renderAlignment nodeRenderer leafRenderer . preorder' $ postorder' tree
+          putStrLn ""
   where 
     postorder' = postorder stringAligner
     preorder'  = preorder preorderRootLogic (preorderInternalLogic defaultTripleCompare) preorderLeafLogic
     
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet defaultTCM)
+
+    inputRenderer x i = mconcat
+        [ i
+        , ": "
+        , renderSingleton defaultAlphabet $ x ^. preliminaryString
+        ]
+    
     leafRenderer x i = mconcat
         [ i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
 --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
     nodeRenderer x _ = mconcat
         [ "?: "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
 --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
 
