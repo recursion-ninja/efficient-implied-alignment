@@ -37,6 +37,7 @@ data FinalizedInternalNode
    , _FIN_PreliminaryString :: SymbolString
    , _FIN_FinalizedString   :: Vector (SymbolAmbiguityGroup String)
    , _FIN_AlignedString     :: SymbolString
+   , _FIN_IsRoot            :: Bool
    } deriving (Eq, Generic)
 
 
@@ -84,3 +85,8 @@ instance HasFinalizedString FinalizedInternalNode (Vector (SymbolAmbiguityGroup 
 instance HasAlignedString FinalizedInternalNode SymbolString where
 
     alignedString = lens _FIN_AlignedString (\e x -> e { _FIN_AlignedString = x })
+
+
+instance HasIsRoot FinalizedInternalNode Bool where
+
+    isRoot = lens _FIN_IsRoot (\e x -> e { _FIN_IsRoot = x })

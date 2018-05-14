@@ -78,6 +78,7 @@ preorderRootLogic =
       <*> (^. preliminaryString)
       <*> deriveFinalizedString . (^. preliminaryString)
       <*> (^. preliminaryString)
+      <*> const True
   where
     deriveFinalizedString = toVector . foldMap f
 
@@ -109,15 +110,22 @@ preorderLeafLogic parent current =
       <*> (^. preliminaryString)
       <*> fmap symbolAlignmentMedian . (^. preliminaryString)
       <*> const derivedStringAlignment
+      <*> const False
     ) $ either id id current
   where
     gap    = point "-"
      
-    (c, p) = case current of
-               Left  x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
-               Right x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
+    (c, p, a) =
+        case current of
+          Left  x -> (x ^. preliminaryString, f <$> parent ^. preliminaryString, f <$> parent ^. alignedString)
+          Right x -> (x ^. preliminaryString, r <$> parent ^. preliminaryString, f <$> parent ^. alignedString)
 
-    derivedStringAlignment = deriveLeafAlignment (parent ^. alignedString) p c
+    r = reverseContext
+
+    f | parent ^. isRoot = reverseContext
+      | otherwise        = id
+
+    derivedStringAlignment = deriveLeafAlignment a p c
 
     localAlignedStrings :: Vector (SymbolAmbiguityGroup String)
     localAlignedStrings = fromNonEmpty . NE.fromList . snd $ foldl' f (toList c, []) p
@@ -145,6 +153,7 @@ preorderInternalLogic sigma parent current =
       <*> (^. preliminaryString)
       <*> const finalSymbols
       <*> const derivedStringAlignment
+      <*> const False
     ) $ either id id current
   where
     finalSymbols :: Vector (SymbolAmbiguityGroup String)
@@ -325,11 +334,11 @@ deriveLeafAlignment
   -> SymbolString -- ^ Child Alignment
 deriveLeafAlignment pAlignment pContext cContext = alignment
   where
-    alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
+    alignment = extractVector {--} . traceResult {--} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
 
-{-
+{---}
     traceResult e = trace (renderResult e) e
 
     renderResult (x,y,z) = ("\n"<>) $ unlines
@@ -348,7 +357,45 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
         , "Result Alignment: " 
         , show $ reverse x
         ]
+{--}
+
+    f (acc, [], []) k e =
+        case e of
+          Delete _ m _ -> (e : acc, [], [])
+          _            -> error $ unlines
+                              [ "Cannot Align or Insert when there is no child symbol:"
+                              , "at index " <> show k <> ": " <> show e
+                              , "Parent Alignment: " <> show pAlignment
+                              , "Parent Context:   " <> show pContext
+                              , "Child  Context:   " <> show cContext
+                              ]
+
+    f z@(acc, [], y:ys) k e =
+        case e of
+          Delete _ _ _   -> (e : acc, [], [])
+          Insert _ _   v -> (e : acc, [], ys)
+--            if v == gap
+--            then (Delete 0 gap gap : acc, [], y:ys)
+--            else case y of
+--                   Delete {} -> (Delete 0 gap gap : acc,  [], ys)
+--                   _         -> error "SAD!"
+          Align  _ _ _ v ->
+              case y of
+                Insert {} -> (y : acc, [], ys)
+                _         -> error $ "SAD!\n" <> renderResult z
+{-
+              Delete {}  -> (Delete 0 gap gap : acc, [], ys)
+              _          -> error $ unlines
+                                [ "BAD!"
+                                , "at index " <> show k <> ": " <> show e
+                                , "Parent Alignment: " <> show pAlignment
+                                , "Parent Context:   " <> show pContext
+                                , "Child  Context:   " <> show cContext
+                                , renderResult z
+                                ]
 -}
+
+    f (acc, x:xs, []) k e = error "MAD!"
 
     f (acc, x:xs, y:ys) k e =
         case e of

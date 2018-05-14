@@ -18,6 +18,7 @@ module Data.Decoration
   , alignedString
   , finalizedString
   , inputString
+  , isRoot
   , localCost
   , outputString
   , preliminaryString

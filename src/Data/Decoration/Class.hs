@@ -57,3 +57,9 @@ class HasSubtreeCost s a | s -> a where
 
     subtreeCost :: Lens' s a
     {-# MINIMAL subtreeCost #-}
+
+
+class HasIsRoot s a | s -> a where
+
+    isRoot :: Lens' s a
+    {-# MINIMAL isRoot #-}
