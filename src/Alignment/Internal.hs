@@ -81,8 +81,6 @@ preorderRootLogic =
       <*> const True
   where
     deriveFinalizedString = toVector . foldMap f
-
---    deriveStringAlignment = foldMap1 g
     
     gapGroup = point "-"
 
@@ -91,8 +89,6 @@ preorderRootLogic =
       | otherwise     = [v]
       where
         v = symbolAlignmentMedian x
-
---    g = pure . symbolAlignmentMedian
 
     toVector = fromNonEmpty . NE.fromList
 
@@ -118,7 +114,7 @@ preorderLeafLogic parent current =
     (c, p, a) =
         case current of
           Left  x -> (x ^. preliminaryString, f <$> parent ^. preliminaryString, f <$> parent ^. alignedString)
-          Right x -> (x ^. preliminaryString, r <$> parent ^. preliminaryString, f <$> parent ^. alignedString)
+          Right x -> (x ^. preliminaryString,  parent ^. preliminaryString,  parent ^. alignedString)
 
     r = reverseContext
 
@@ -334,7 +330,7 @@ deriveLeafAlignment
   -> SymbolString -- ^ Child Alignment
 deriveLeafAlignment pAlignment pContext cContext = alignment
   where
-    alignment = extractVector {--} . traceResult {--} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
+    alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
 
@@ -382,9 +378,9 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
           Align  _ _ _ v ->
               case y of
                 Insert {} -> (y : acc, [], ys)
+                Delete {} -> (y : acc, [], ys)
                 _         -> error $ "SAD!\n" <> renderResult z
 {-
-              Delete {}  -> (Delete 0 gap gap : acc, [], ys)
               _          -> error $ unlines
                                 [ "BAD!"
                                 , "at index " <> show k <> ": " <> show e
