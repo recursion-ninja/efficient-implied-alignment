@@ -77,7 +77,7 @@ preorderRootLogic =
       <*> (^. localCost)
       <*> (^. preliminaryString)
       <*> deriveFinalizedString . (^. preliminaryString)
-      <*> (^. preliminaryString)
+      <*> setInitialAlignment   . (^. preliminaryString)
       <*> const True
   where
     deriveFinalizedString = toVector . foldMap f
@@ -113,7 +113,7 @@ preorderLeafLogic parent current =
      
     (c, p, a) =
         case current of
-          Left  x -> (x ^. preliminaryString, f <$> parent ^. preliminaryString, f <$> parent ^. alignedString)
+          Left  x -> (x ^. preliminaryString, r <$> parent ^. preliminaryString, parent ^. alignedString)
           Right x -> (x ^. preliminaryString,  parent ^. preliminaryString,  parent ^. alignedString)
 
     r = reverseContext
@@ -323,6 +323,13 @@ countAlignInsert = sum . fmap g
     g _           = 1
 
 
+setInitialAlignment :: Functor f => f (SymbolContext s) -> f (SymbolContext s)
+setInitialAlignment = fmap g
+  where
+    g e@(Delete {}) = reverseContext e
+    g e             = e
+
+
 deriveLeafAlignment
   :: SymbolString -- ^ Parent Alignment
   -> SymbolString -- ^ Parent Context
@@ -330,7 +337,7 @@ deriveLeafAlignment
   -> SymbolString -- ^ Child Alignment
 deriveLeafAlignment pAlignment pContext cContext = alignment
   where
-    alignment = extractVector {--} . traceResult {--} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
+    alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
 
@@ -411,12 +418,7 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 --                   _         -> (               x : acc,    xs, ys)
           Align  _ v _ _     -> -- (               x : acc,    xs, ys)
               case y of
-                Delete _ _ v   -> (x : acc,  xs, ys)
-
---                  if v == symbolAlignmentMedian x
---                  then (x : acc,    xs, ys)
---                  else (e : acc,  x:xs, ys)
-
+                v@Delete {} -> (v : acc, x:xs, ys)
                 Insert {} -> (x : acc,    xs, ys)
                 Align  {} -> (x : acc,    xs, ys)
 --            if v == gap

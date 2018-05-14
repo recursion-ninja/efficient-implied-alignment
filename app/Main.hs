@@ -52,7 +52,7 @@ main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
 --    parseUserInput >>= print
-    case toEither $ unifyInput dataSetC topologyC of
+    case toEither $ unifyInput dataSetE topologyE of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           print defaultAlphabet
