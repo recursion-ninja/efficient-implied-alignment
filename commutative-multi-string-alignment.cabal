@@ -132,6 +132,7 @@ executable tree-align
 
   other-modules:
       Paths_commutative_multi_string_alignment
+      SampleData
 
   default-language: Haskell2010
 

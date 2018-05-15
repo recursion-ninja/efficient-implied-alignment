@@ -28,6 +28,8 @@ import           Prelude               hiding (lookup)
 import           System.IO
 import           Text.PrettyPrint.ANSI.Leijen (string)
 
+import SampleData
+
 
 data  UserInput
     = UserInput
@@ -51,8 +53,19 @@ data  ExampleFileRequest
 main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
+    let maxWidth = maximum $ (\(x,_,_) -> length x) <$> sampleDataSets
+    mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
+
+
+runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput) -> IO ()
+runAndReportDataSet width num (dataSetLabel, leafData, treeData) = do
 --    parseUserInput >>= print
-    case toEither $ unifyInput dataSetA topologyA of
+    let dataSetNumber = "Data Set Number: " <> show num
+    let width'        = max width $ length dataSetNumber
+    putStrLn $ mconcat [ " -=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=- " ]    
+    putStrLn $ mconcat [ " -=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=- " ]
+    putStrLn ""
+    case toEither $ unifyInput leafData treeData of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           putStrLn ""
@@ -66,7 +79,16 @@ main = do
           putStrLn ""
           putStrLn . renderAlignment nodeRenderer leafRenderer . preorder' $ postorder' tree
           putStrLn ""
-  where 
+  where
+    centerWithin width x = mconcat
+        [ replicate pad ' '
+        , x
+        , replicate pad ' '
+        , if extra == 1 then " " else ""
+        ]
+      where
+        (pad, extra) = (width - length x) `quotRem` 2
+    
     postorder' = postorder stringAligner
     preorder'  = preorder preorderRootLogic (preorderInternalLogic defaultTripleCompare) preorderLeafLogic
     
@@ -142,192 +164,6 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
 
     fileFormatHelp :: ExampleFileRequest -> [String] -> ParserInfo ExampleFileRequest
     fileFormatHelp val = info (pure val) . progDesc . unlines
-
-
-defaultAlphabet :: Alphabet String
-defaultAlphabet = fromSymbols $ pure <$> "ACGT-"
-
-
-defaultTripleCompare :: ThreewayCompare String
-defaultTripleCompare = buildThreeWayCompare defaultAlphabet defaultTCM
-
-
-defaultTCM :: TransitionCostMatrix String
-defaultTCM = tcm
-  where
-    tcm = buildTransitionCostMatrix defaultAlphabet scm
-    scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
-    fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
-
-
-dataSetA :: Map String (NonEmpty (NonEmpty String))
-dataSetA = M.fromList
-    [ ("A", toNonEmpties $ 'A':|"CGT")
-    , ("B", toNonEmpties $ 'A':|"CG")
-    , ("C", toNonEmpties $ 'A':|"C")
-    , ("D", toNonEmpties $ 'A':|"")
-    ]
-  where
-    toNonEmpties = foldMap1 (pure . pure . pure) 
-
-
-topologyA :: BTree () ()
-topologyA =
-    Internal blank
-    ( Leaf (NodeDatum "A" ()) )
-    ( Internal blank
-      ( Leaf (NodeDatum "B" ()) )
-      ( Internal blank
-        ( Leaf (NodeDatum "C" ()) )
-        ( Leaf (NodeDatum "D" ()) )
-      )
-    )
-  where
-    blank = NodeDatum "" ()
-
-
-dataSetB :: Map String (NonEmpty (NonEmpty String))
-dataSetB = M.fromList
-    [ ("A", toNonEmpties $ 'A':|"")
-    , ("B", toNonEmpties $ 'A':|"C")
-    , ("C", toNonEmpties $ 'A':|"CG")
-    , ("D", toNonEmpties $ 'A':|"CGT")
-    ]
-  where
-    toNonEmpties = foldMap1 (pure . pure . pure) 
-
-
-topologyB :: BTree () ()
-topologyB =
-    Internal blank
-    ( Leaf (NodeDatum "A" ()) )
-    ( Internal blank
-      ( Leaf (NodeDatum "B" ()) )
-      ( Internal blank
-        ( Leaf (NodeDatum "C" ()) )
-        ( Leaf (NodeDatum "D" ()) )
-      )
-    )
-  where
-    blank = NodeDatum "" ()
-
-
-dataSetC :: Map String (NonEmpty (NonEmpty String))
-dataSetC = M.fromList
-    [ ("A", toNonEmpties $ 'T':|"GCA")
-    , ("B", toNonEmpties $ 'G':|"CA")
-    , ("C", toNonEmpties $ 'C':|"A")
-    , ("D", toNonEmpties $ 'A':|"")
-    ]
-  where
-    toNonEmpties = foldMap1 (pure . pure . pure) 
-
-
-topologyC :: BTree () ()
-topologyC =
-    Internal blank
-    ( Leaf (NodeDatum "A" ()) )
-    ( Internal blank
-      ( Leaf (NodeDatum "B" ()) )
-      ( Internal blank
-        ( Leaf (NodeDatum "C" ()) )
-        ( Leaf (NodeDatum "D" ()) )
-      )
-    )
-  where
-    blank = NodeDatum "" ()
-
-
-dataSetD :: Map String (NonEmpty (NonEmpty String))
-dataSetD = M.fromList
-    [ ("A", toNonEmpties $ 'A':|"A")
-    , ("B", toNonEmpties $ 'A':|"A")
-    , ("C", toNonEmpties $ 'A':|"TA")
-    , ("D", toNonEmpties $ 'A':|"TA")
-    , ("E", toNonEmpties $ 'A':|"TA")
-    , ("F", toNonEmpties $ 'A':|"A")
-    , ("G", toNonEmpties $ 'A':|"A")
-    , ("H", toNonEmpties $ 'A':|"A")
-    , ("I", toNonEmpties $ 'A':|"TA")
-    , ("J", toNonEmpties $ 'A':|"TA")
-    ]
-  where
-    toNonEmpties = foldMap1 (pure . pure . pure) 
-
-
-topologyD :: BTree () ()
-topologyD =
-    Internal blank
-    ( Leaf (NodeDatum "A" ()) )
-    ( Internal blank
-      ( Leaf (NodeDatum "B" ()) )
-      ( Internal blank
-        ( Leaf (NodeDatum "C" ()) )
-        ( Internal blank
-          ( Leaf (NodeDatum "D" ()) )
-          ( Internal blank
-            ( Leaf (NodeDatum "E" ()) )
-            ( Internal blank
-              ( Leaf (NodeDatum "F" ()) )
-              ( Internal blank
-                ( Leaf (NodeDatum "G" ()) )
-                ( Internal blank
-                  ( Leaf (NodeDatum "H" ()) )
-                  ( Internal blank
-                    ( Leaf (NodeDatum "I" ()) )
-                    ( Leaf (NodeDatum "J" ()) )
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  where
-    blank = NodeDatum "" ()
-
-
-dataSetE :: Map String (NonEmpty (NonEmpty String))
-dataSetE = M.fromList
-    [ ("A", toNonEmpties $ 'A':|"ATT")
-    , ("B", toNonEmpties $ 'A':|"ATT")
-    , ("C", toNonEmpties $ 'A':|"ATT")
-    , ("D", toNonEmpties $ 'A':|"ACTT")
-    , ("E", toNonEmpties $ 'A':|"ACTT")
-    , ("F", toNonEmpties $ 'A':|"ACTT")
-    , ("G", toNonEmpties $ 'A':|"ATT")
-    , ("H", toNonEmpties $ 'A':|"ATT")
-    ]
-  where
-    toNonEmpties = foldMap1 (pure . pure . pure) 
-
-
-topologyE :: BTree () ()
-topologyE =
-    Internal blank
-    ( Leaf (NodeDatum "A" ()) )
-    ( Internal blank
-      ( Leaf (NodeDatum "B" ()) )
-      ( Internal blank
-        ( Leaf (NodeDatum "C" ()) )
-        ( Internal blank
-          ( Leaf (NodeDatum "D" ()) )
-          ( Internal blank
-            ( Leaf (NodeDatum "E" ()) )
-            ( Internal blank
-              ( Leaf (NodeDatum "F" ()) )
-              ( Internal blank
-                ( Leaf (NodeDatum "G" ()) )
-                ( Leaf (NodeDatum "H" ()) )
-              )
-            )
-          )
-        )
-      )
-    )
-  where
-    blank = NodeDatum "" ()
 
 
 unifyInput
