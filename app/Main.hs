@@ -53,17 +53,18 @@ data  ExampleFileRequest
 main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
-    let maxWidth = maximum $ (\(x,_,_) -> length x) <$> sampleDataSets
+    let maxWidth = maximum $ (\(x,_,_,_) -> length x) <$> sampleDataSets
     mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
+--    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 6
 
 
-runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput) -> IO ()
-runAndReportDataSet width num (dataSetLabel, leafData, treeData) = do
+runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix String) -> IO ()
+runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --    parseUserInput >>= print
     let dataSetNumber = "Data Set Number: " <> show num
     let width'        = max width $ length dataSetNumber
-    putStrLn $ mconcat [ " -=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=- " ]    
-    putStrLn $ mconcat [ " -=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=- " ]
+    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-" ]    
+    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=-" ]
     putStrLn ""
     case toEither $ unifyInput leafData treeData of
       Left  errors -> mapM_ print $ toList errors
@@ -90,9 +91,11 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData) = do
         (pad, extra) = (width - length x) `quotRem` 2
     
     postorder' = postorder stringAligner
-    preorder'  = preorder preorderRootLogic (preorderInternalLogic defaultTripleCompare) preorderLeafLogic
+    preorder'  = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+
+    medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet op)
     
-    stringAligner = postorderLogic (ukkonenDO defaultAlphabet defaultTCM)
+    stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
 
     inputRenderer x i = mconcat
         [ i
