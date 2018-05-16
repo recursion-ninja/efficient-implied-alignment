@@ -203,7 +203,8 @@ needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row,
   |   topElement == gapGroup
   && leftElement == gapGroup
   && row /= 0
-  && col /= 0                = (diagonalValue,  DiagArrow, gapGroup)
+  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
+--  && col /= 0                = (diagonalValue,  DiagArrow, gapGroup)
   |   topElement == gapGroup
   && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
   |  leftElement == gapGroup
