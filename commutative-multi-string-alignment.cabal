@@ -123,6 +123,7 @@ executable tree-align
     , base       >=4.7 && <5
     , commutative-multi-string-alignment
     , containers >=0.5.8
+    , deepseq
     , keys
     , lens
     , optparse-applicative

@@ -3,6 +3,7 @@
 module Main where
 
 import           Alignment
+import           Control.DeepSeq
 import           Control.Lens
 import           Data.Alphabet
 import           Data.BTree
@@ -55,7 +56,7 @@ main = do
     hSetBuffering stdout NoBuffering
     let maxWidth = maximum $ (\(x,_,_,_) -> length x) <$> sampleDataSets
     mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
---    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 6
+--    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 7
 
 
 runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix String) -> IO ()
@@ -78,8 +79,15 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
           putStrLn ""
           putStrLn "Output Alignment:"
           putStrLn ""
-          putStrLn . renderAlignment nodeRenderer leafRenderer . preorder' $ postorder' tree
+          let result = force . preorder' $ postorder' tree
+          putStrLn $ renderAlignment nodeRendererA leafRendererA result          
           putStrLn ""
+{--          
+          putStrLn $ renderAlignment nodeRendererB leafRendererB result
+          putStrLn ""
+          putStrLn $ renderAlignment nodeRendererC leafRendererC result
+          putStrLn ""
+--}
   where
     centerWithin width x = mconcat
         [ replicate pad ' '
@@ -103,7 +111,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         , renderSingleton defaultAlphabet $ x ^. preliminaryString
         ]
     
-    leafRenderer x i = mconcat
+    leafRendererA x i = mconcat
         [ i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
@@ -112,13 +120,52 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --        , renderAligns defaultAlphabet $ x ^. alignedString
         , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
-    nodeRenderer x _ = mconcat
+
+    nodeRendererA x _ = mconcat
         [ "?: "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
 --        , renderSymbolString defaultAlphabet $ x ^. alignedString
 --        , renderAligns defaultAlphabet $ x ^. alignedString
         , renderSingleton defaultAlphabet $ x ^. alignedString
+        ]
+
+    leafRendererB x i = mconcat
+        [ i
+        , ": "
+--        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+        , renderSymbolString defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderSingleton defaultAlphabet $ x ^. alignedString
+        ]
+
+    nodeRendererB x _ = mconcat
+        [ "?: "
+--        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+        , renderSymbolString defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderSingleton defaultAlphabet $ x ^. alignedString
+        ]
+
+    leafRendererC x i = mconcat
+        [ i
+        , ": "
+        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+--        , renderSymbolString defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderSingleton defaultAlphabet $ x ^. alignedString
+        ]
+
+    nodeRendererC x _ = mconcat
+        [ "?: "
+        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
+--        , renderString       defaultAlphabet $ x ^.   finalizedString
+--        , renderSymbolString defaultAlphabet $ x ^. alignedString
+--        , renderAligns defaultAlphabet $ x ^. alignedString
+--        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
 
