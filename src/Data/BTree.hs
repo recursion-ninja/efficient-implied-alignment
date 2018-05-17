@@ -3,6 +3,7 @@
 module Data.BTree where
 
 import Control.Arrow             ((&&&))
+import Control.DeepSeq
 import Data.Bifunctor
 import Data.Bifoldable
 import Data.Bitraversable
@@ -52,6 +53,17 @@ instance Bitraversable BTree where
           <$> (NodeDatum i <$> f x)
           <*> bitraverse f g lhs
           <*> bitraverse f g rhs
+
+
+instance (NFData a, NFData b) => NFData (BTree b a) where
+
+    rnf (Leaf     x        ) = rnf x
+    rnf (Internal x lhs rhs) = rnf lhs `seq` rnf rhs `seq` rnf x
+
+
+instance NFData a => NFData (NodeDatum a) where
+
+    rnf (NodeDatum i x) = rnf i `seq` rnf x
 
 
 instance Foldable (BTree b) where

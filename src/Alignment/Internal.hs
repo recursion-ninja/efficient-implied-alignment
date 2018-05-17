@@ -292,12 +292,15 @@ deriveAlignment pAlignment pContext cContext = alignment
 
     f (acc, x:xs, y:ys) k e =
         case e of
-          Delete _ _ _   -> (Delete 0 gap gap : acc, x:xs, y:ys)
+          Delete _ _ w  ->
+            case y of
+              Delete {} -> (Delete 0 gap gap : acc, x:xs,  y:ys)
+              _         -> (Delete 0 gap gap : acc, x:xs,  y:ys)
           Insert _ v   _ -> -- (               x : acc,    xs, ys)
               case y of
-                Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
-                Insert {} -> (               x : acc,    xs, ys)
-                Align  {} -> (               x : acc,    xs, ys)
+                Delete {} -> (     Delete 0 gap gap : acc, x:xs, ys)
+                Insert {} -> (deleteionToInserion x : acc,   xs, ys)
+                Align  {} -> (                    x : acc,   xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
 --            else case y of
@@ -305,9 +308,9 @@ deriveAlignment pAlignment pContext cContext = alignment
 --                   _         -> (               x : acc,    xs, ys)
           Align  _ v _ _     -> -- (               x : acc,    xs, ys)
               case y of
-                Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
-                Insert {} -> (               x : acc,    xs, ys)
-                Align  {} -> (               y : acc,    xs, ys)
+                Delete {} -> (Delete 0 gap gap : acc, x:xs, ys)
+                Insert {} -> (               x : acc,   xs, ys)
+                Align  {} -> (               y : acc,   xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
 --            else case y of
@@ -324,10 +327,11 @@ countAlignInsert = sum . fmap g
 
 
 setInitialAlignment :: Functor f => f (SymbolContext s) -> f (SymbolContext s)
-setInitialAlignment = fmap g
-  where
-    g e@(Delete {}) = reverseContext e
-    g e             = e
+setInitialAlignment = fmap deleteionToInserion
+
+    
+deleteionToInserion e@(Delete {}) = reverseContext e
+deleteionToInserion e             = e
 
 
 deriveLeafAlignment
