@@ -44,7 +44,7 @@ import           Data.Vector.NonEmpty
 import           GHC.Generics
 
 
-type SymbolString = Vector (SymbolContext String)
+type SymbolString = Vector (SymbolContext Char)
 
 
 data  SymbolContext a
@@ -88,65 +88,55 @@ instance Show a => Show (SymbolContext a) where
     show (Insert _ x   _) = "I" <> show x
 
 
-renderString :: Foldable1 f => Alphabet String -> f (SymbolAmbiguityGroup String) -> String
+renderString :: Foldable1 f => Alphabet Char -> f (SymbolAmbiguityGroup Char) -> String
 renderString alphabet = (\s -> "["<>s<>"]") . intercalate1 "," . fmap renderAmbiguityGroup . toNonEmpty
   where
-    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
-    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
+    renderAmbiguityGroup xs = foldMap f alphabet
       where
-        f k v
-          | k `elem` xs = k
-          | otherwise   = v
-
-    blankSpace   = foldMap id alphabetTags
-
-    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+        f v
+          | v `elem` xs = [v]
+          | otherwise   = " "
 
 
-renderSymbolString :: Alphabet String -> SymbolString -> String
+renderSymbolString :: Alphabet Char -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
     renderContext (Align  _ x y z) = mconcat ["α:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", renderAmbiguityGroup z]
     renderContext (Delete _ x y  ) = mconcat ["δ:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", blankSpace            ]
     renderContext (Insert _ x   z) = mconcat ["ι:", renderAmbiguityGroup x, "|", blankSpace            , "|", renderAmbiguityGroup z]
 
-    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
-    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
+    renderAmbiguityGroup xs = foldMap f alphabet
       where
-        f k v
-          | k `elem` xs = k
-          | otherwise   = v
+        f v
+          | v `elem` xs = [v]
+          | otherwise   = " "
 
-    blankSpace   = foldMap id alphabetTags
-
-    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+    blankSpace   = replicate (length alphabet) ' ' 
 
 
-renderAligns :: Alphabet String -> SymbolString -> String
+renderAligns :: Alphabet Char -> SymbolString -> String
 renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
     renderContext (Align  _ x _ _) = renderAmbiguityGroup x
-    renderContext (Delete _ x _  ) = renderAmbiguityGroup (point "-")
-    renderContext (Insert _ x   _) = renderAmbiguityGroup (point "-")
+    renderContext (Delete _ x _  ) = renderAmbiguityGroup (point '-')
+    renderContext (Insert _ x   _) = renderAmbiguityGroup (point '-')
 
-    renderAmbiguityGroup :: SymbolAmbiguityGroup String -> String
-    renderAmbiguityGroup xs = foldMapWithKey f alphabetTags
+    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
+    renderAmbiguityGroup xs = foldMap f alphabet
       where
-        f k v
-          | k `elem` xs = k
-          | otherwise   = v
-
-    blankSpace   = foldMap id alphabetTags
-
-    alphabetTags = foldMap (\s -> M.singleton s $ replicate (length s) ' ') $ toList alphabet
+        f v
+          | v `elem` xs = [v]
+          | otherwise   = " "
 
 
-renderSingleton :: Alphabet String -> SymbolString -> String
+renderSingleton :: Alphabet Char -> SymbolString -> String
 renderSingleton alphabet = foldMap renderContext . toNonEmpty
   where
     gap = gapSymbol alphabet
-    renderContext (Align  _ x _ _) = NE.head $ toNonEmpty x
-    renderContext _  = gap
+    renderContext (Align  _ x _ _) = pure . NE.head $ toNonEmpty x
+    renderContext _  = [gap]
 
 
 symbolAlignmentCost :: SymbolContext a -> Word
