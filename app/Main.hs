@@ -69,9 +69,13 @@ runInput = do
           putStrLn ""
           putStrLn $ renderPhylogeny inputRenderer tree
           putStrLn ""
-          let postResult = force $ postorder' tree
+          let postResult    = force $ postorder' tree
+              alignmentCost = getNodeDatum postResult ^. subtreeCost
           putStrLn "Post-order complete"
+          putStrLn ""
+          putStrLn $ "Alignment Cost: " <> show alignmentCost
 --          let preResult  = force $ preorder' postResult
+          putStrLn ""
           putStrLn "Pre-order complete"
           putStrLn ""
           putStrLn "Output Alignment:"
