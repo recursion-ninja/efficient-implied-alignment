@@ -2,7 +2,7 @@
 
 module UserInput
   ( UserInput(..)
-  , ExampleFileRequest(..)
+--  , ExampleFileRequest(..)
   , parseUserInput
   ) where
 

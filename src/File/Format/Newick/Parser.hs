@@ -1,6 +1,8 @@
 {-# LANGUAGE FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
 
-module File.Format.Newick.Parser where
+module File.Format.Newick.Parser
+  ( newickStandardDefinition
+  ) where
 
 import Data.Char                   (isSpace)
 import Data.Foldable

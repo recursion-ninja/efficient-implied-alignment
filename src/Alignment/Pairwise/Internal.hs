@@ -17,23 +17,22 @@
 {-# LANGUAGE BangPatterns, ConstraintKinds, FlexibleContexts, TypeFamilies #-}
 
 module Alignment.Pairwise.Internal
- ( Cost
- , Direction(..)
- , MatrixConstraint
- , MatrixFunction
- , NeedlemanWunchMatrix
- -- * Direct Optimization primative construction functions
- , directOptimization
- , measureCharacters
- , needlemanWunschDefinition
- , renderCostMatrix
- , traceback
- -- * Probably removable
--- , overlap
- , overlapConst
--- , getOverlap
--- , minimalChoice
- ) where
+  ( Cost
+  , Direction()
+  , MatrixConstraint
+  , MatrixFunction
+  , NeedlemanWunchMatrix
+  -- * Direct Optimization primative construction functions
+  , directOptimization
+  , measureCharacters
+  , needlemanWunschDefinition
+  , renderCostMatrix
+--  , traceback
+--  , overlap
+--  , overlapConst
+--  , getOverlap
+--  , minimalChoice
+  ) where
 
 
 import           Control.Arrow            ((&&&))

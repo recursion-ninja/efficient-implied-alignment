@@ -1,6 +1,11 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module File.Format.Fastc.Internal where
+module File.Format.Fastc.Internal
+  ( CharacterSequence
+  , Identifier
+  , Symbol
+  , identifierLine
+  ) where
 
 import Data.Char              (isSpace)
 import Data.List.NonEmpty

@@ -18,7 +18,6 @@ import Control.DeepSeq
 import Control.Lens
 import Data.Decoration.Class
 import Data.SymbolString
-import Data.Vector.NonEmpty
 import GHC.Generics
 
 

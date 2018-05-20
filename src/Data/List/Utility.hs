@@ -1,4 +1,7 @@
-module Data.List.Utility where
+module Data.List.Utility
+  ( duplicates
+  , mostCommon
+  ) where
 
 import Data.Foldable
 import Data.Key           (Zip(..))

@@ -12,9 +12,14 @@
 
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module Alignment.Internal where
+module Alignment.Internal
+  ( postorderLogic
+  , preorderInternalLogic
+  , preorderLeafLogic
+  , preorderRootLogic
+  ) where
 
-import           Alignment.Pairwise
+--import           Alignment.Pairwise
 import           Control.Lens
 import           Data.Decoration
 import           Data.Foldable
@@ -23,7 +28,6 @@ import qualified Data.IntMap          as IM
 import           Data.Key
 import           Data.List.NonEmpty          (NonEmpty( (:|) ))
 import qualified Data.List.NonEmpty   as NE
-import           Data.List.Utility           (invariantTransformation)
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup
@@ -33,7 +37,7 @@ import           Data.TCM
 import           Data.MonoTraversable hiding (headMay)
 import           Data.Vector.NonEmpty hiding (reverse)
 import           Data.Word
-import           Numeric.Extended.Natural
+--import           Numeric.Extended.Natural
 import           Prelude              hiding (lookup, zipWith)
 import           Safe
 

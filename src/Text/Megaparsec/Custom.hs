@@ -2,19 +2,18 @@
 
 module Text.Megaparsec.Custom
   ( (<:>)
-  , (<++>)
-  , anythingTill
-  , comment
+--  , (<++>)
+--  , anythingTill
+--  , comment
   , double
   , endOfLine
   , fails
-  , inlineSpaceChar 
+--  , inlineSpaceChar
   , inlineSpace
-  , somethingTill
-  , string''
-  -- * Useful simplified stream parsers
-  , runParserOnFile
-  , parseWithDefaultErrorType
+--  , somethingTill
+--  , string''
+--  , runParserOnFile
+--  , parseWithDefaultErrorType
   ) where
 
 import           Data.CaseInsensitive

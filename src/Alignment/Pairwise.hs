@@ -16,11 +16,8 @@ module Alignment.Pairwise
   ( naiveDO
   , naiveDOMemo
   , ukkonenDO
---  , getOverlap
---  , minimalChoice
   ) where
 
 
-import Alignment.Pairwise.Internal
 import Alignment.Pairwise.NeedlemanWunsch
 import Alignment.Pairwise.Ukkonen

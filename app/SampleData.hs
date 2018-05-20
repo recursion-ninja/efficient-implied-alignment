@@ -4,8 +4,8 @@ module SampleData
   ( LeafInput
   , TreeInput
   , defaultAlphabet
-  , defaultTripleCompare
-  , discreteMetricTCM
+--  , defaultTripleCompare
+--  , discreteMetricTCM
   , sampleDataSets
   ) where
 

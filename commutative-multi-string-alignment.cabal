@@ -41,7 +41,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bimap
-    , bv-little
+--    , bv-little
     , case-insensitive
     -- >=0.5.8 Required for Data.Map.restrictKeys
     , containers       >=0.5.8
@@ -62,7 +62,7 @@ library
     , scientific
     , semigroupoids
     , semigroups
-    , text
+--    , text
     , transformers
     , unordered-containers
     , vector
@@ -79,6 +79,7 @@ library
       Data.Matrix.ZeroIndexed
       Data.SymbolString
       Data.TCM
+      Data.Vector.NonEmpty
       File.Format.Fastc
       File.Format.Newick
       File.Format.TransitionCostMatrix
@@ -95,7 +96,6 @@ library
       Data.Decoration.Internal
       Data.Decoration.Leaf
       Data.List.Utility
-      Data.Vector.NonEmpty
       File.Format.Fastc.Internal
       File.Format.Fastc.Parser
       File.Format.Newick.Internal
@@ -153,7 +153,7 @@ test-suite test-align
 
   build-depends:
       base >=4.7 && <5
-    , commutative-multi-string-alignment
+--    , commutative-multi-string-alignment
 
   other-modules:
       Paths_commutative_multi_string_alignment

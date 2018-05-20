@@ -1,6 +1,9 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module File.Format.TransitionCostMatrix.Parser where
+module File.Format.TransitionCostMatrix.Parser
+  ( TCM(..)
+  , tcmStreamParser
+  ) where
 
 
 import           Data.Char                     (isSpace)

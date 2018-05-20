@@ -18,9 +18,7 @@
 {-# LANGUAGE ConstraintKinds, DeriveFoldable, DeriveFunctor, FlexibleContexts, TypeFamilies #-}
 
 module Alignment.Pairwise.Ukkonen.Internal
-  ( UkkonenMethodMatrix()
-  , createUkkonenMethodMatrix
-  , ukkonenDO
+  ( ukkonenDO
   ) where
 
 

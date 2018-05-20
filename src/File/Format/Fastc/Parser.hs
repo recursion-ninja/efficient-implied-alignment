@@ -7,8 +7,8 @@ module File.Format.Fastc.Parser
   , Identifier
   , Symbol
   , fastcStreamParser
-  , fastcSymbolSequence
-  , fastcTaxonSequenceDefinition
+--  , fastcSymbolSequence
+--  , fastcTaxonSequenceDefinition
   ) where
 
 

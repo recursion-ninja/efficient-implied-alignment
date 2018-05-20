@@ -17,7 +17,7 @@
 
 module Numeric.Extended.Internal
   ( ExtendedNumber(..)
-  , Finite
+  , Finite()
   ) where
 
 
