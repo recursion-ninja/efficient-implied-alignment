@@ -53,7 +53,7 @@ type PairwiseAlignment s =  Vector (SymbolContext s)
 -- Parameterized over a 'PairwiseAlignment' function to allow for different
 -- atomic alignments depending on the character's metadata.
 postorderLogic
-  :: PairwiseAlignment String
+  :: PairwiseAlignment Char
   -> InitialInternalNode
   -> InitialInternalNode
   -> InitialInternalNode
@@ -82,7 +82,7 @@ preorderRootLogic =
   where
     deriveFinalizedString = toVector . foldMap f
     
-    gapGroup = point "-"
+    gapGroup = point '-'
 
     f x
       | gapGroup == v = []
@@ -109,7 +109,7 @@ preorderLeafLogic parent current =
       <*> const False
     ) $ either id id current
   where
-    gap    = point "-"
+    gap = point '-'
      
     (c, p, a) =
         case current of
@@ -123,7 +123,7 @@ preorderLeafLogic parent current =
 
     derivedStringAlignment = deriveLeafAlignment a p c
 
-    localAlignedStrings :: Vector (SymbolAmbiguityGroup String)
+    localAlignedStrings :: Vector (SymbolAmbiguityGroup Char)
     localAlignedStrings = fromNonEmpty . NE.fromList . snd $ foldl' f (toList c, []) p
       where
         f (ss, acc) e =
@@ -131,14 +131,14 @@ preorderLeafLogic parent current =
               Delete {} -> ([], gap : acc)
               _         ->
                   case ss of
-                    []   -> ([], point "?" : acc) -- error "Cannot Align or Insert when there is no child symbol."
+                    []   -> ([], point '?' : acc) -- error "Cannot Align or Insert when there is no child symbol."
                     x:xs -> (xs, symbolAlignmentMedian x : acc)
 
 
 -- |
 -- The pre-order scoring logic for intenral nodes.
 preorderInternalLogic
-  :: ThreewayCompare String
+  :: ThreewayCompare Char
   -> FinalizedInternalNode                          -- ^ Parent decoration
   -> Either InitialInternalNode InitialInternalNode -- ^ Current decoration, whether it is Left or Right child of parent.
   -> FinalizedInternalNode                          -- ^ Updated decoration
@@ -152,18 +152,18 @@ preorderInternalLogic sigma parent current =
       <*> const False
     ) $ either id id current
   where
-    finalSymbols :: Vector (SymbolAmbiguityGroup String)
+    finalSymbols :: Vector (SymbolAmbiguityGroup Char)
     finalSymbols = foldMap1 (\(a,b,c) -> pure . fst $ sigma a b c) alignedSurroundingStrings
 
     derivedStringAlignment = deriveAlignment (parent ^. alignedString) p c
       
-    gap    = point "-"
-     
+    gap    = point '-'
+
     (c, p) = case current of
                Left  x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
 
-    alignedSurroundingStrings :: NonEmpty (SymbolAmbiguityGroup String, SymbolAmbiguityGroup String, SymbolAmbiguityGroup String)
+    alignedSurroundingStrings :: NonEmpty (SymbolAmbiguityGroup Char, SymbolAmbiguityGroup Char, SymbolAmbiguityGroup Char)
     alignedSurroundingStrings = NE.fromList . reverse . (\(_,_,x) -> x) $ foldl' f (0, toList c, []) p
       where
         f (i,  [], acc) e =
@@ -257,9 +257,9 @@ deriveAlignment pAlignment pContext cContext = alignment
         , show $ reverse x
         ]
 
-    gap = point "-"
+    gap = point '-'
 
-    f :: ([SymbolContext String], [SymbolContext String], [SymbolContext String]) -> Int -> SymbolContext String -> ([SymbolContext String], [SymbolContext String], [SymbolContext String])
+    f :: ([SymbolContext Char], [SymbolContext Char], [SymbolContext Char]) -> Int -> SymbolContext Char -> ([SymbolContext Char], [SymbolContext Char], [SymbolContext Char])
     f (acc, [], []) k e =
         case e of
           Delete _ m _ -> (Delete 0 gap gap : acc, [], [])
