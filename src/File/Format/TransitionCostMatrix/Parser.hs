@@ -22,7 +22,7 @@ import           Text.Megaparsec.Char.Lexer    (scientific)
 -- |
 --Intermediate parse result prior to consistancy validation
 data TCMParseResult 
-   = TCMParseResult (NonEmpty String) (Matrix Double) deriving (Show)
+   = TCMParseResult (NonEmpty Char) (Matrix Double) deriving (Show)
 
 
 -- |
@@ -40,7 +40,7 @@ data TCMParseResult
 data TCM 
    = TCM
    { -- | The custom alphabet of 'Symbols' for which the TCM matrix is defined
-     customAlphabet  :: NonEmpty String
+     customAlphabet  :: NonEmpty Char
      -- | The cost to transition between any two symbols, square but not necessarily symetric
    , transitionCosts :: Matrix Double -- n+1 X n+1 matrix where n = length customAlphabet
    } deriving (Show)
@@ -72,7 +72,7 @@ tcmDefinition = do
 -- |
 -- Shorthand for the expected format of the alphabet lin in a TCM file.
 -- The same as 'alphabetLine inlineSpace'.
-tcmAlphabet :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty String)
+tcmAlphabet :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty Char)
 tcmAlphabet = alphabetLine inlineSpace
 
 
@@ -92,15 +92,15 @@ tcmMatrix   = matrixBlock  inlineSpace
 -- Basic usage:
 --
 -- >>> parse (alphabetLine inlineSpace) "" "a b c d\n"
--- Right ["a","b","c","d"]
+-- Right ['a','b','c','d']
 --
 -- >>> parse (alphabetLine (inlineSpace *> char '|' <* inlineSpace)) "" "2 | 3 | 5 | 7\n"
 -- Right ["2","3","5","7"]
-alphabetLine :: (MonadParsec e s m, Token s ~ Char) => m () -> m (NonEmpty String)
+alphabetLine :: (MonadParsec e s m, Token s ~ Char) => m () -> m (NonEmpty Char)
 alphabetLine spacing = validateAlphabet =<< NE.fromList <$> ((alphabetSymbol <* spacing) `someTill` endOfLine)
   where
-    alphabetSymbol = some nonSpace
-    nonSpace       = satisfy (not . isSpace)
+    alphabetSymbol :: (MonadParsec e s m, Token s ~ Char) => m Char
+    alphabetSymbol = satisfy (not . isSpace)
 
 
 -- |
@@ -163,7 +163,7 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
 --
 --   * Contains no duplicate elements
 --
-validateAlphabet :: (MonadParsec e s m, Token s ~ Char) => NonEmpty String -> m (NonEmpty String)
+validateAlphabet :: (MonadParsec e s m, Token s ~ Char) => NonEmpty Char -> m (NonEmpty Char)
 validateAlphabet alphabet
   | duplicatesExist = fail $ "The following symbols were listed multiple times in the custom alphabet: " <> show dupes
   | otherwise       = pure alphabet 
