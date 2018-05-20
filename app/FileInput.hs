@@ -54,7 +54,7 @@ parseFileInput input = do
             badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
             badLinking  = first (fmap show) . unifyInput leafDataMap $ newickNodeToBTree treeVal
         in  case toEither $ badLinking <* badSymbols of
-              Left  uErr -> pure . Left . fold1 $ intersperse "\n" $ show <$> uErr
+              Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
               Right tree ->
                 let TCM symbolList matrix = tcmVal
                     alphabet = fromSymbols symbolList
@@ -104,7 +104,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
       where
         preamble = "For leaf " <> i <> ", the following symbols were found but not specified in the alphabet: "
         
-        g :: Int -> (NonEmpty Char) -> Maybe String
+        g :: Int -> NonEmpty Char -> Maybe String
         g k v =
           case NE.filter (`notElem` symbolSet) v of
             []   -> Nothing

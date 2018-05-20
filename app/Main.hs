@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
 module Main where
 
@@ -26,7 +26,6 @@ import           Data.TCM
 import           Data.Validation
 import           FileInput
 import           Options.Applicative
-import           Prelude               hiding (lookup)
 import           UserInput
 import           System.IO
 

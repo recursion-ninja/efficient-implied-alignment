@@ -156,9 +156,9 @@ gap = SAG $ S.singleton "-"
 
 
 reverseContext :: SymbolContext a -> SymbolContext a
-reverseContext (Align  cost med lhs rhs) = (Align  cost med rhs lhs) 
-reverseContext (Delete cost med lhs    ) = (Insert cost med     lhs) 
-reverseContext (Insert cost med     rhs) = (Delete cost med rhs    ) 
+reverseContext (Align  cost med lhs rhs) = Align  cost med rhs lhs
+reverseContext (Delete cost med lhs    ) = Insert cost med     lhs 
+reverseContext (Insert cost med     rhs) = Delete cost med rhs     
 
 
 -- |

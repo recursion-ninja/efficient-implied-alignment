@@ -75,7 +75,7 @@ buildThreeWayCompare alphabet tcm = f
              LT -> (                 singleState,  combinedCost)
              GT -> acc
          where
-           combinedCost = sum $ (snd . tcm singleState) <$> [a, b, c]
+           combinedCost = sum $ snd . tcm singleState <$> [a, b, c]
 
 
 -- |
@@ -108,7 +108,7 @@ buildTransitionCostMatrix
   => Alphabet k
   -> SymbolChangeMatrix k
   -> TransitionCostMatrix k
-buildTransitionCostMatrix alphabet scm = overlap alphabet scm 
+buildTransitionCostMatrix = overlap
 
 
 -- |

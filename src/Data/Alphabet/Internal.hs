@@ -73,7 +73,7 @@ class InternalClass a where
 
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
-alphabetPreprocessing :: (Ord a, InternalClass (a), Foldable t) => t a -> NonEmpty a
+alphabetPreprocessing :: (Ord a, InternalClass a, Foldable t) => t a -> NonEmpty a
 alphabetPreprocessing = appendGapSymbol . sort . removeSpecialSymbolsAndDuplicates . toList
   where
     appendGapSymbol xs =

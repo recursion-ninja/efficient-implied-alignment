@@ -34,11 +34,10 @@ import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
 import           Data.TCM
-import           Data.MonoTraversable hiding (headMay)
+import           Data.MonoTraversable
 import           Data.Vector.NonEmpty hiding (reverse)
 import           Data.Word
 --import           Numeric.Extended.Natural
-import           Prelude              hiding (lookup, zipWith)
 import           Safe
 
 
@@ -276,7 +275,7 @@ deriveAlignment pAlignment pContext cContext = alignment
                               ]
     f z@(acc, [], y:ys) k e =
         case e of
-          Delete _ _ _   -> (Delete 0 gap gap : acc, [], [])
+          Delete {}      -> (Delete 0 gap gap : acc, [], [])
           Insert _ _   v -> (Delete 0 gap gap : acc, [], ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
@@ -329,7 +328,7 @@ deriveAlignment pAlignment pContext cContext = alignment
 countAlignInsert :: (Functor f, Foldable f) => f (SymbolContext s) -> Int
 countAlignInsert = sum . fmap g
   where
-    g (Delete {}) = 0
+    g Delete {} = 0
     g _           = 1
 
 
@@ -337,7 +336,7 @@ setInitialAlignment :: Functor f => f (SymbolContext s) -> f (SymbolContext s)
 setInitialAlignment = fmap deleteionToInserion
 
     
-deleteionToInserion e@(Delete {}) = reverseContext e
+deleteionToInserion e@Delete {} = reverseContext e
 deleteionToInserion e             = e
 
 
@@ -389,7 +388,7 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f z@(acc, [], y:ys) k e =
         case e of
-          Delete _ _ _   -> (e : acc, [], [])
+          Delete {}      -> (e : acc, [], [])
           Insert _ _   v -> (e : acc, [], ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
@@ -416,7 +415,7 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f (acc, x:xs, y:ys) k e =
         case e of
-          Delete _ _ _   -> (e : acc, x:xs, y:ys)
+          Delete {}      -> (e : acc, x:xs, y:ys)
           Insert _ v   _ -> -- (               x : acc,    xs, ys)
               case y of
                 Delete _ _ v   -> (e : acc,  x:xs, ys)

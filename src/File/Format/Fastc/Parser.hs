@@ -19,7 +19,7 @@ import qualified Data.List.NonEmpty   as NE
 import           Data.Semigroup
 import qualified Data.Vector.NonEmpty as V
 import           File.Format.Fastc.Internal
-import           Text.Megaparsec      hiding (sepBy1, some, someTill)
+import           Text.Megaparsec      hiding (some, someTill)
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
 
@@ -50,7 +50,7 @@ fastcStreamParser = some fastcTaxonSequenceDefinition <* eof
 fastcTaxonSequenceDefinition :: (MonadParsec e s m, Token s ~ Char) => m FastcSequence
 fastcTaxonSequenceDefinition = do
     name <- identifierLine
-    seq' <- try fastcSymbolSequence <?> ("Unable to read symbol sequence for label: '" ++ name ++ "'")
+    seq' <- try fastcSymbolSequence <?> ("Unable to read symbol sequence for label: '" <> name <> "'")
     _    <- space
     pure $ FastcSequence name seq'
 

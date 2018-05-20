@@ -190,7 +190,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         longerGaps  = countGaps longerTop
         lesserGaps  = countGaps lesserLeft
         countGaps   = length . filter containsGap . toList
-        containsGap = isJust . (/\ (point gapValue)) . symbolAlignmentMedian
+        containsGap = isJust . (/\ point gapValue) . symbolAlignmentMedian
 
     gapValue = gapSymbol alphabet
 

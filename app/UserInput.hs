@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
 module UserInput
   ( UserInput(..)
@@ -28,7 +28,6 @@ import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
 import           Options.Applicative
-import           Prelude               hiding (lookup)
 import           System.IO
 import           Text.PrettyPrint.ANSI.Leijen (string)
 
@@ -54,10 +53,10 @@ data  ExampleFileRequest
 
 instance NFData ExampleFileRequest where
 
-    rnf !DataFileRequest = ()
-    rnf !TreeFileRequest = ()
-    rnf !TcmFileRequest  = ()
-    rnf !NoFileRequest   = ()
+    rnf DataFileRequest = ()
+    rnf TreeFileRequest = ()
+    rnf TcmFileRequest  = ()
+    rnf NoFileRequest   = ()
 
 
 instance NFData UserInput where

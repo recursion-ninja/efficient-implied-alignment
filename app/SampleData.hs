@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
 module SampleData
   ( LeafInput
@@ -30,11 +30,8 @@ import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
-import           Prelude               hiding (lookup, zip)
+import           Prelude               hiding (zip)
 
-
-
---case toEither $ unifyInput dataSetA topologyA of
 
 type LeafInput = Map String (NonEmpty (NonEmpty Char)) 
 

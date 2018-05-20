@@ -10,6 +10,7 @@ module File.Format.Fastc.Internal
 import Data.Char              (isSpace)
 import Data.List.NonEmpty
 import Data.Map               (Map)
+import Data.Semigroup
 import Data.Vector.NonEmpty   (Vector)
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -49,8 +50,8 @@ identifierLine = do
     _ <- endOfLine <?> lineEndMessage x
     pure x
   where
-    commentMessage x = "Invalid comment for following label: '" ++ x ++ "'"
-    lineEndMessage x = "There is no end-of-line after label: '" ++ x ++ "'"
+    commentMessage x = "Invalid comment for following label: '" <> x <> "'"
+    lineEndMessage x = "There is no end-of-line after label: '" <> x <> "'"
 
 
 -- |
