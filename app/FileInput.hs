@@ -42,7 +42,7 @@ import           UserInput
 
 parseFileInput
   :: UserInput
-  -> IO (Either String (Alphabet String, TransitionCostMatrix String, BTree () InitialInternalNode))
+  -> IO (Either String (Alphabet Char, TransitionCostMatrix String, BTree () InitialInternalNode))
 parseFileInput input = do 
     dataResult <- readAndParse  fastcStreamParser $ dataFile input
     treeResult <- readAndParse newickStreamParser $ treeFile input
@@ -93,7 +93,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
       []   -> Right {}
       x:xs -> Left $ x:|xs
   where
-    symbolSet :: Set String
+    symbolSet :: Set Char
     symbolSet = foldMap point symbolList
 
     f :: Identifier -> CharacterSequence -> [String]
@@ -104,7 +104,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
       where
         preamble = "For leaf " <> i <> ", the following symbols were found but not specified in the alphabet: "
         
-        g :: Int -> (NonEmpty String) -> Maybe String
+        g :: Int -> (NonEmpty Char) -> Maybe String
         g k v =
           case NE.filter (`notElem` symbolSet) v of
             []   -> Nothing
@@ -112,7 +112,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
                 [ "  at index "
                 , show k
                 , " unrecognized symbols: { "
-                , fold1 . intersperse ", " $ x:|xs
+                , fold1 . intersperse ", " . fmap pure $ x:|xs
                 , " }"
                 ]
 
@@ -126,7 +126,7 @@ unifyInput
      , Lookup c
      , Traversable c
      )
-  => c (f (t String))
+  => c (f (t Char))
   -> BTree b a
   -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
 unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
