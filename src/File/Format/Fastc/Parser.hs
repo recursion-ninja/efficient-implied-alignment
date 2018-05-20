@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ApplicativeDo, FlexibleContexts, TypeFamilies #-}
 
 module File.Format.Fastc.Parser 
   ( CharacterSequence
@@ -62,31 +62,33 @@ fastcSymbolSequence :: (MonadParsec e s m, Token s ~ Char) => m CharacterSequenc
 fastcSymbolSequence = V.fromNonEmpty <$> (space *> fullSequence)
   where
     fullSequence = sconcat <$> some1 (inlineSpace *> sequenceLine)
-    sequenceLine = (symbolGroup <* inlineSpace) `someTill` endOfLine
+    sequenceLine = symbolGroup `someTill` endOfLine
 
 
 -- |
 -- Parses either an ambiguity group of 'Symbol's or a single, unambiguous
 -- 'Symbol'.
-symbolGroup :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty String)
+symbolGroup :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty Char)
 symbolGroup = ambiguityGroup <|> (pure <$> validSymbol)
 
 
 -- |
 -- Parses an ambiguity group of symbols. Ambiguity groups are delimited by the
 -- '\'|\'' character.
-ambiguityGroup :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty String)
-ambiguityGroup = (validSymbol `sepBy1` (char '|' <* inlineSpace))
+ambiguityGroup :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty Char)
+ambiguityGroup = begin *> (validSymbol `someTill` close) <* close
+  where
+    begin = char '[' <* inlineSpace
+    close = char ']' <* inlineSpace
 
 
 -- |
 -- Parses a 'Symbol' token ending with whitespace and excluding the forbidden
--- characters: '[\'>\',\'|\']'.
-validSymbol :: (MonadParsec e s m, Token s ~ Char) => m String
-validSymbol = (validStartChar <:> many validBodyChar) <* inlineSpace
+-- characters: '[\'>\',\'[\',\']\']'.
+validSymbol :: (MonadParsec e s m, Token s ~ Char) => m Char
+validSymbol = validChar <* inlineSpace
   where
-    validStartChar = satisfy $ \x -> x /= '>' -- need to be able to match new taxa lines
-                                  && x /= '|' -- need to be able to start an ambiguity list 
-                                  && (not . isSpace) x
-    validBodyChar  = satisfy $ \x -> x /= '|' -- need to be able to end an ambiguity sequence
-                                  && (not . isSpace) x
+    validChar = satisfy $ \x -> x /= '>' -- need to be able to match new taxa lines
+                             && x /= '[' -- need to be able to start an ambiguity list 
+                             && x /= ']' -- need to be able to close an ambiguity list 
+                             && (not . isSpace) x

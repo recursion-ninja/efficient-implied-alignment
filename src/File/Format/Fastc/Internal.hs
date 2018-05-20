@@ -23,12 +23,12 @@ type Identifier        = String
 
 -- |
 -- Component of a phylogenetic character
-type Symbol            = String
+type Symbol            = Char
 
 
 -- |
 -- Indexed sequences of 'Symbol's with possible abiguity at an index
-type CharacterSequence = Vector (NonEmpty Symbol)
+type CharacterSequence = Vector (NonEmpty Char)
 
 
 -- |
