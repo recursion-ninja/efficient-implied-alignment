@@ -24,39 +24,60 @@ import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
+import           FileInput
 import           Options.Applicative
 import           Prelude               hiding (lookup)
+import           UserInput
 import           System.IO
-import           Text.PrettyPrint.ANSI.Leijen (string)
 
 import SampleData
 
 
-data  UserInput
-    = UserInput
-    { dataFile    :: String
-    , treeFile    :: String
-    , tcmFile     :: String
-    , outputFile  :: String
-    , verbose     :: Bool
-    , commandHelp :: ExampleFileRequest
-    } deriving (Show)
-
-
-data  ExampleFileRequest
-    = DataFileRequest
-    | TreeFileRequest
-    | TcmFileRequest
-    | NoFileRequest
-    deriving (Eq, Show)
-
-
 main :: IO ()
-main = do
+main = runInput
+
+
+runTests :: IO ()
+runTests = do
     hSetBuffering stdout NoBuffering
     let maxWidth = maximum $ (\(x,_,_,_) -> length x) <$> sampleDataSets
     mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
 --    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 7
+
+
+runInput :: IO ()
+runInput = do
+    opts <- force <$> parseUserInput
+    vals <- parseFileInput opts
+    case vals of
+      Left  errs -> putStrLn errs
+      Right (alphabet, tcm, tree) ->
+        let maxLabelLen = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
+            inputRenderer x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
+            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
+--            nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
+
+            postorder'  = postorder stringAligner
+            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+            medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet tcm)
+            stringAligner = postorderLogic (ukkonenDO defaultAlphabet tcm)
+        in  do
+          putStrLn ""
+          print defaultAlphabet
+          putStrLn ""
+          putStrLn "Input Strings:"
+          putStrLn ""
+          putStrLn $ renderPhylogeny inputRenderer tree
+          putStrLn ""
+          let postResult = force $ postorder' tree
+          putStrLn "Post-order complete"
+          let preResult  = force $ preorder' postResult
+          putStrLn "Pre-order complete"
+          putStrLn ""
+          putStrLn "Output Alignment:"
+          putStrLn ""
+          putStrLn $ renderPhylogeny leafRenderer preResult
+--          putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 
 runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix String) -> IO ()
@@ -169,96 +190,5 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
 
 
-parseUserInput = customExecParser preferences $ info (helper <*> userInput) description
-  where
-    userInput =
-        UserInput
-          <$> argSpec 'd' "data"   "FASTC data file"
-          <*> argSpec 't' "tree"   "Newick tree file"
-          <*> argSpec 'm' "tcm"    "Transition Cost Matrix file with symbol alphabet"
-          <*> argSpec 'o' "output" "Output file for alignments"
-          <*> switch  (mconcat [short 'v', long "verbose", help "Display debugging informaion"])
-          <*> commandHelperDescriptions
-
-    argSpec c s h = strOption $ mconcat [short c, long s, help h, metavar (toUpper <$> s <> "FILE")]
-
-    description = mconcat
-        [ fullDesc
-        , headerDoc . Just $ string "\n  Tree-based multiple string alignment program"
-        , footerDoc $ Just mempty
-        ]
-
-    preferences = prefs $ mconcat [showHelpOnError, showHelpOnEmpty]
-
-    commandHelperDescriptions = hsubparser $ mconcat
-        [ command "DATAFILE" $ fileFormatHelp DataFileRequest
-            [ "The DATAFILE provided should be in FASTC format."
-            , "The FASTC file is similar to the FASTA file format in structure."
-            , "There are one or more ordered pairs of leaf identifier lines and string definition lines."
-            , "A leaf identifier line begins with a '>' symbol followed by an identifier for the leaf node on the same line."
-            , "An identifier for a leaf node is defined as one or more characters (excluding '>') that are not seperated by whitespace."
-            , "The string definition line is the the next non-whitespace line."
-            , "The string definition line contains one or more symbols and seperated by in-line whitespace."
-            , "A symbol is defined as one or more characters (excluding '>') that are not seperated by whitespace."
-            , "The leaf identifier line and the string definition line form a pair of leaf identifier and the corresponding string."
-            , "Pairs of leaf identifier lines and string definition lines alternate to enumerate the leafset and link each leaf to it's corresponding data."
-            , "Note the following:"
-            , "Each leaf identifier in the file must be unique!"
-            , "There is no way to represent the empty string! It is assumed that all strings are non-empty and finite."
-            , "A leaf set may be created by collecting the union of leaf identifiers that occurs in the FASTC file. This union should be an exact macth of the leaf set provided in the TREEFILE."
-            , "An 'observed symbol set' may be created by collecting the union of symbols that occurs in the FASTC file. This union should be a subset of the alphabet provided in the TCMFILE."
-            ]
-        , command "TREEFILE" $ fileFormatHelp TreeFileRequest ["Say goodbye"]
-        , command  "TCMFILE" $ fileFormatHelp  TcmFileRequest ["Silly option"]
-        ]
-
-    fileFormatHelp :: ExampleFileRequest -> [String] -> ParserInfo ExampleFileRequest
-    fileFormatHelp val = info (pure val) . progDesc . unlines
-
-
-unifyInput
-  :: ( Foldable  c
-     , Foldable1 f
-     , Foldable1 t
-     , Key c ~ String
-     , Keyed c
-     , Lookup c
-     , Traversable c
-     )
-  => c (f (t String))
-  -> BTree b a
-  -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
-unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
-  where
-    dataSetKeys   = mapWithKey const dataCollection
-    leafTaggedTree = setLeafLabels genericTree
-    leafTagSet :: Set String
-    leafTagSet    = foldMap point leafTaggedTree
-    
-    validatedDataSet = traverse f dataSetKeys
-      where
-        f :: String -> Validation (NonEmpty UnificationError) ()
-        f k = validate err (`elem` leafTagSet) k $> ()
-          where
-            err = pure $ DataLabelMissingInLeafSet k
-
-    initializedTree = traverse f leafTaggedTree
-      where
-        f :: String -> Validation (NonEmpty UnificationError) InitialInternalNode
-        f k = validationNel $
-            case k `lookup` dataCollection of
-              Nothing -> Left $ LeafLabelMissingInDataSet k
-              Just xs -> let !ss = buildSymbolString xs
-                         in  Right $ InitialInternalNode 0 0 ss
-          where
-            buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
-            buildAmbiguityGroup x =
-                let !y = foldMap1 point x
-                in  Align 0 y y y
-
-
-data  UnificationError
-    = LeafLabelMissingInDataSet String
-    | DataLabelMissingInLeafSet String
-    deriving (Eq, Show)
-    
+pad :: Int -> String -> String
+pad i str = str <> replicate (i - length str) ' '

@@ -11,10 +11,12 @@ import           Data.List.Utility             (duplicates, mostCommon)
 import           Data.Matrix.ZeroIndexed       (Matrix, ncols, nrows)
 import qualified Data.Matrix.ZeroIndexed as M  (fromList)
 import           Data.Maybe                    (catMaybes, fromJust)
+import           Data.Scientific               (toRealFloat)
 import           Data.Semigroup
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
+import           Text.Megaparsec.Char.Lexer    (scientific)
 
 
 -- |

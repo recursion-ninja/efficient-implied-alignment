@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor, TypeFamilies #-}
 
 module Data.BTree where
 
@@ -8,6 +8,7 @@ import Data.Bifunctor
 import Data.Bifoldable
 import Data.Bitraversable
 import Data.Foldable
+import Data.Key
 import Data.List.NonEmpty hiding (length, takeWhile)
 import Data.Semigroup
 import Prelude            hiding (head)
@@ -25,6 +26,9 @@ data NodeDatum a
    { identifier :: String
    , nodeDatum  :: a
    } deriving (Eq, Functor)
+
+
+type instance Key (BTree b) = String
 
 
 instance Bifunctor BTree where
@@ -70,6 +74,12 @@ instance Foldable (BTree b) where
 
     foldr f a (Leaf (NodeDatum _ x)) = f x a
     foldr f a (Internal _ lhs rhs)   = foldr f (foldr f a lhs) rhs
+
+
+instance FoldableWithKey (BTree b) where
+
+    foldrWithKey f a (Leaf (NodeDatum i x)) = f i x a
+    foldrWithKey f a (Internal _ lhs rhs) = foldrWithKey f (foldrWithKey f a lhs) rhs
 
 
 instance Traversable (BTree b) where

@@ -233,7 +233,10 @@ deriveAlignment pAlignment pContext cContext = alignment
   where
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
-    extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
+    extractVector e@ (x,ys,_) =
+        case ys of
+          [] -> fromNonEmpty . NE.fromList $ reverse x
+          ys -> error $ renderResult e
 
     traceResult e = trace (renderResult e) e
 
@@ -343,7 +346,10 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
   where
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
-    extractVector (x,_,_) = fromNonEmpty . NE.fromList $ reverse x
+    extractVector e@(x,ys,_) =
+        case ys of
+          [] -> fromNonEmpty . NE.fromList $ reverse x
+          ys -> error $ renderResult e
 
 {---}
     traceResult e = trace (renderResult e) e

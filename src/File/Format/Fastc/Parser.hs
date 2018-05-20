@@ -12,12 +12,14 @@ module File.Format.Fastc.Parser
   ) where
 
 
-import           Data.Char                 (isSpace)
-import           Data.List.NonEmpty        (NonEmpty)
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Vector        as V
+import           Control.Monad.Combinators.NonEmpty
+import           Data.Char                   (isSpace)
+import           Data.List.NonEmpty          (NonEmpty, some1)
+import qualified Data.List.NonEmpty   as NE
+import           Data.Semigroup
+import qualified Data.Vector.NonEmpty as V
 import           File.Format.Fastc.Internal
-import           Text.Megaparsec
+import           Text.Megaparsec      hiding (sepBy1, some, someTill)
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
 
@@ -39,7 +41,7 @@ data FastcSequence
 -- |
 -- Consumes a stream of 'Char's and parses the stream into a 'FastcParseResult'
 fastcStreamParser :: (MonadParsec e s m, Token s ~ Char) => m FastcParseResult
-fastcStreamParser = NE.fromList <$> some fastcTaxonSequenceDefinition <* eof
+fastcStreamParser = some fastcTaxonSequenceDefinition <* eof
 
 
 -- |
@@ -57,10 +59,10 @@ fastcTaxonSequenceDefinition = do
 -- Parses a sequence of 'Symbol's represneted by a 'CharacterSequence'.
 -- Symbols can be multi-character and are assumed to be seperated by whitespace.
 fastcSymbolSequence :: (MonadParsec e s m, Token s ~ Char) => m CharacterSequence
-fastcSymbolSequence = V.fromList <$> (space *> fullSequence)
+fastcSymbolSequence = V.fromNonEmpty <$> (space *> fullSequence)
   where
-    fullSequence = concat <$> some (inlineSpace *> sequenceLine)
-    sequenceLine = (symbolGroup <* inlineSpace) `manyTill` endOfLine
+    fullSequence = sconcat <$> some1 (inlineSpace *> sequenceLine)
+    sequenceLine = (symbolGroup <* inlineSpace) `someTill` endOfLine
 
 
 -- |
@@ -74,7 +76,7 @@ symbolGroup = ambiguityGroup <|> (pure <$> validSymbol)
 -- Parses an ambiguity group of symbols. Ambiguity groups are delimited by the
 -- '\'|\'' character.
 ambiguityGroup :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty String)
-ambiguityGroup = NE.fromList <$> (validSymbol `sepBy1` (char '|' <* inlineSpace))
+ambiguityGroup = (validSymbol `sepBy1` (char '|' <* inlineSpace))
 
 
 -- |
