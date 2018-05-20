@@ -12,7 +12,7 @@ import           Data.Decoration
 import           Data.Foldable
 import           Data.Functor                 (($>))
 import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..))
+import           Data.List.NonEmpty           (NonEmpty(..), intersperse)
 import qualified Data.List.NonEmpty    as NE
 import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Map                     (Map)
@@ -54,16 +54,16 @@ runInput = do
       Right (alphabet, tcm, tree) ->
         let maxLabelLen = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
             inputRenderer x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
---            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
---            nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
+            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
+            nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
 
             postorder'  = postorder stringAligner
---            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
             medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet tcm)
             stringAligner = postorderLogic (ukkonenDO defaultAlphabet tcm)
         in  do
           putStrLn ""
-          print defaultAlphabet
+          putStrLn $ renderAlphabet alphabet
           putStrLn ""
           putStrLn "Input Strings:"
           putStrLn ""
@@ -74,14 +74,14 @@ runInput = do
           putStrLn "Post-order complete"
           putStrLn ""
           putStrLn $ "Alignment Cost: " <> show alignmentCost
---          let preResult  = force $ preorder' postResult
+          let preResult  = force $ preorder' postResult
           putStrLn ""
           putStrLn "Pre-order complete"
           putStrLn ""
           putStrLn "Output Alignment:"
           putStrLn ""
-          putStrLn $ renderPhylogeny inputRenderer postResult
---          putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
+--          putStrLn $ renderPhylogeny inputRenderer postResult
+          putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 
 runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix Char) -> IO ()
@@ -196,3 +196,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 
 pad :: Int -> String -> String
 pad i str = str <> replicate (i - length str) ' '
+
+
+renderAlphabet :: Alphabet Char -> String
+renderAlphabet = (\x -> "Alphabet: { "<>x<>" }") . fold1 . intersperse ", " . fmap pure . toNonEmpty

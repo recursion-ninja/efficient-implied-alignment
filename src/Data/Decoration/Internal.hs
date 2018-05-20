@@ -35,7 +35,6 @@ data FinalizedInternalNode
    { _FIN_SubtreeCost       :: Word
    , _FIN_LocalCost         :: Word
    , _FIN_PreliminaryString :: SymbolString
-   , _FIN_FinalizedString   :: Vector (SymbolAmbiguityGroup Char)
    , _FIN_AlignedString     :: SymbolString
    , _FIN_IsRoot            :: Bool
    } deriving (Eq, Generic)
@@ -75,11 +74,6 @@ instance HasPreliminaryString InitialInternalNode SymbolString where
 instance HasPreliminaryString FinalizedInternalNode SymbolString where
 
     preliminaryString = lens _FIN_PreliminaryString (\e x -> e { _FIN_PreliminaryString = x })
-
-
-instance HasFinalizedString FinalizedInternalNode (Vector (SymbolAmbiguityGroup Char)) where
-
-    finalizedString = lens _FIN_FinalizedString (\e x -> e { _FIN_FinalizedString = x })
 
 
 instance HasAlignedString FinalizedInternalNode SymbolString where

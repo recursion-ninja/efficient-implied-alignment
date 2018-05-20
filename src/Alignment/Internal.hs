@@ -76,11 +76,11 @@ preorderRootLogic =
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
-      <*> deriveFinalizedString . (^. preliminaryString)
+--      <*> deriveFinalizedString . (^. preliminaryString)
       <*> setInitialAlignment   . (^. preliminaryString)
       <*> const True
   where
-    deriveFinalizedString = toVector . foldMap f
+--    deriveFinalizedString = toVector . foldMap f
     
     gapGroup = point '-'
 
@@ -104,7 +104,7 @@ preorderLeafLogic parent current =
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
-      <*> fmap symbolAlignmentMedian . (^. preliminaryString)
+--      <*> fmap symbolAlignmentMedian . (^. preliminaryString)
       <*> const derivedStringAlignment
       <*> const False
     ) $ either id id current
@@ -147,7 +147,7 @@ preorderInternalLogic sigma parent current =
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
-      <*> const finalSymbols
+--      <*> const finalSymbols
       <*> const derivedStringAlignment
       <*> const False
     ) $ either id id current
