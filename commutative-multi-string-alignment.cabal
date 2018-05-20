@@ -101,10 +101,8 @@ library
       File.Format.Newick.Internal
       File.Format.Newick.Parser
       File.Format.TransitionCostMatrix.Parser
-      Numeric.Extended
       Numeric.Extended.Internal
       Numeric.Extended.Natural
-      Numeric.Extended.Real
       Text.Megaparsec.Custom
 
   default-language: Haskell2010
