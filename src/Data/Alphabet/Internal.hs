@@ -73,7 +73,7 @@ class InternalClass a where
 
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
-alphabetPreprocessing :: (Ord a, InternalClass a, Foldable t) => t a -> NonEmpty a
+alphabetPreprocessing :: (Ord a, InternalClass (a), Foldable t) => t a -> NonEmpty a
 alphabetPreprocessing = appendGapSymbol . sort . removeSpecialSymbolsAndDuplicates . toList
   where
     appendGapSymbol xs =
@@ -280,17 +280,22 @@ instance Indexable Alphabet where
 
 instance (Eq a, IsString a) => InternalClass (AlphabetInputSingle a) where
 
-  gapSymbol'        = ASI $ fromString "-"
-  isGapSymboled     = (gapSymbol' ==)
-  isMissingSymboled = (ASI (fromString "?") ==)
+    gapSymbol'        = ASI $ fromString "-"
+    isGapSymboled     = (gapSymbol' ==)
+    isMissingSymboled = (ASI (fromString "?") ==)
 
 
 instance (Eq a, IsString a) => InternalClass (AlphabetInputTuple a) where
 
-  gapSymbol'                     = ASNI (fromString "-", fromString "-")
-  isGapSymboled     (ASNI (x,_)) = x == fromString "-"
-  isMissingSymboled (ASNI (x,_)) = x == fromString "?"
+    gapSymbol'                     = ASNI (fromString "-", fromString "-")
+    isGapSymboled     (ASNI (x,_)) = x == fromString "-"
+    isMissingSymboled (ASNI (x,_)) = x == fromString "?"
 
+
+instance IsString Char where
+
+    fromString = head
+  
 
 instance Lookup Alphabet where
 
