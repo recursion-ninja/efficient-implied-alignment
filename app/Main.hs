@@ -54,11 +54,11 @@ runInput = do
       Right (alphabet, tcm, tree) ->
         let maxLabelLen = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
             inputRenderer x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
-            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
+--            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
 --            nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
 
             postorder'  = postorder stringAligner
-            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+--            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
             medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet tcm)
             stringAligner = postorderLogic (ukkonenDO defaultAlphabet tcm)
         in  do
@@ -71,16 +71,16 @@ runInput = do
           putStrLn ""
           let postResult = force $ postorder' tree
           putStrLn "Post-order complete"
-          let preResult  = force $ preorder' postResult
+--          let preResult  = force $ preorder' postResult
           putStrLn "Pre-order complete"
           putStrLn ""
           putStrLn "Output Alignment:"
           putStrLn ""
-          putStrLn $ renderPhylogeny leafRenderer preResult
+          putStrLn $ renderPhylogeny inputRenderer postResult
 --          putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 
-runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix String) -> IO ()
+runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix Char) -> IO ()
 runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --    parseUserInput >>= print
     let dataSetNumber = "Data Set Number: " <> show num

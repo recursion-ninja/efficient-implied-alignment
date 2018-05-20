@@ -36,13 +36,13 @@ import           Prelude               hiding (lookup, zip)
 
 --case toEither $ unifyInput dataSetA topologyA of
 
-type LeafInput = Map String (NonEmpty (NonEmpty String)) 
+type LeafInput = Map String (NonEmpty (NonEmpty Char)) 
 
 
 type TreeInput = BTree () ()
 
 
-sampleDataSets :: [(String, LeafInput, TreeInput, TransitionCostMatrix String)]
+sampleDataSets :: [(String, LeafInput, TreeInput, TransitionCostMatrix Char)]
 sampleDataSets =
     [ ("Appended Deletions"                                         , dataSetA, topologyA, discreteMetricTCM)
     , ("Prepended Deletions"                                        , dataSetB, topologyB, discreteMetricTCM)
@@ -77,15 +77,15 @@ sampleDataSets =
     ]
 
 
-defaultAlphabet :: Alphabet String
-defaultAlphabet = fromSymbols $ pure <$> "ACGT-"
+defaultAlphabet :: Alphabet Char
+defaultAlphabet = fromSymbols "ACGT-"
 
 
-defaultTripleCompare :: ThreewayCompare String
+defaultTripleCompare :: ThreewayCompare Char
 defaultTripleCompare = buildThreeWayCompare defaultAlphabet discreteMetricTCM
 
 
-discreteMetricTCM :: TransitionCostMatrix String
+discreteMetricTCM :: TransitionCostMatrix Char
 discreteMetricTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
@@ -93,7 +93,7 @@ discreteMetricTCM = tcm
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
 
 
-preferGapsTCM :: TransitionCostMatrix String
+preferGapsTCM :: TransitionCostMatrix Char
 preferGapsTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
@@ -111,11 +111,11 @@ blank :: NodeDatum ()
 blank = NodeDatum "" ()
 
 
-toNonEmpties :: Foldable1 f => f Char -> NonEmpty (NonEmpty String)
-toNonEmpties = foldMap1 (pure . pure . pure) 
+toNonEmpties :: Foldable1 f => f Char -> NonEmpty (NonEmpty Char)
+toNonEmpties = foldMap1 (pure . pure) 
 
 
-dataSetA :: Map String (NonEmpty (NonEmpty String))
+dataSetA :: Map String (NonEmpty (NonEmpty Char))
 dataSetA = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"CGT"
     , 'A':|"CG"
@@ -137,7 +137,7 @@ topologyA =
     )
 
 
-dataSetB :: Map String (NonEmpty (NonEmpty String))
+dataSetB :: Map String (NonEmpty (NonEmpty Char))
 dataSetB = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|""
     , 'A':|"C"
@@ -159,7 +159,7 @@ topologyB =
     )
 
 
-dataSetC :: Map String (NonEmpty (NonEmpty String))
+dataSetC :: Map String (NonEmpty (NonEmpty Char))
 dataSetC = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'T':|"GCA"
     , 'G':|"CA"
@@ -181,7 +181,7 @@ topologyC =
     )
 
 
-dataSetD :: Map String (NonEmpty (NonEmpty String))
+dataSetD :: Map String (NonEmpty (NonEmpty Char))
 dataSetD = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|""
     , 'C':|"A"
@@ -203,7 +203,7 @@ topologyD =
     )
 
 
-dataSetE :: Map String (NonEmpty (NonEmpty String))
+dataSetE :: Map String (NonEmpty (NonEmpty Char))
 dataSetE = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"TA"
     , 'A':|"TA"
@@ -241,7 +241,7 @@ topologyE =
     )
 
 
-dataSetF :: Map String (NonEmpty (NonEmpty String))
+dataSetF :: Map String (NonEmpty (NonEmpty Char))
 dataSetF = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"TTA"
     , 'A':|"TTA"
@@ -283,7 +283,7 @@ topologyF =
     )
 
 
-dataSetG :: Map String (NonEmpty (NonEmpty String))
+dataSetG :: Map String (NonEmpty (NonEmpty Char))
 dataSetG = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AA"
     , 'A':|"AA"
@@ -337,7 +337,7 @@ topologyG =
     )
 
 
-dataSetH :: Map String (NonEmpty (NonEmpty String))
+dataSetH :: Map String (NonEmpty (NonEmpty Char))
 dataSetH = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"A"
     , 'A':|"A"
@@ -375,7 +375,7 @@ topologyH =
     )
 
 
-dataSetI :: Map String (NonEmpty (NonEmpty String))
+dataSetI :: Map String (NonEmpty (NonEmpty Char))
 dataSetI = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"TT"
     , 'A':|"TT"
@@ -409,7 +409,7 @@ topologyI =
     )
 
 
-dataSetJ :: Map String (NonEmpty (NonEmpty String))
+dataSetJ :: Map String (NonEmpty (NonEmpty Char))
 dataSetJ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"TTA"
     , 'A':|"TTA"
@@ -447,7 +447,7 @@ topologyJ =
     )
 
 
-dataSetK :: Map String (NonEmpty (NonEmpty String))
+dataSetK :: Map String (NonEmpty (NonEmpty Char))
 dataSetK = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"A"
     , 'A':|"A"
@@ -485,7 +485,7 @@ topologyK =
     )
 
 
-dataSetL :: Map String (NonEmpty (NonEmpty String))
+dataSetL :: Map String (NonEmpty (NonEmpty Char))
 dataSetL = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"A"
     , 'A':|"A"
@@ -531,7 +531,7 @@ topologyL =
     )
 
 
-dataSetM :: Map String (NonEmpty (NonEmpty String))
+dataSetM :: Map String (NonEmpty (NonEmpty Char))
 dataSetM = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"TA"
     , 'A':|"TA"
@@ -569,7 +569,7 @@ topologyM =
     )
 
 
-dataSetN :: Map String (NonEmpty (NonEmpty String))
+dataSetN :: Map String (NonEmpty (NonEmpty Char))
 dataSetN = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -607,7 +607,7 @@ topologyN =
     )
 
 
-dataSetO :: Map String (NonEmpty (NonEmpty String))
+dataSetO :: Map String (NonEmpty (NonEmpty Char))
 dataSetO = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -645,7 +645,7 @@ topologyO =
     )
 
 
-dataSetP :: Map String (NonEmpty (NonEmpty String))
+dataSetP :: Map String (NonEmpty (NonEmpty Char))
 dataSetP = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -683,7 +683,7 @@ topologyP =
     )
 
 
-dataSetQ :: Map String (NonEmpty (NonEmpty String))
+dataSetQ :: Map String (NonEmpty (NonEmpty Char))
 dataSetQ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -721,7 +721,7 @@ topologyQ =
     )
 
 
-dataSetR :: Map String (NonEmpty (NonEmpty String))
+dataSetR :: Map String (NonEmpty (NonEmpty Char))
 dataSetR = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -771,7 +771,7 @@ topologyR =
     )
 
 
-dataSetS :: Map String (NonEmpty (NonEmpty String))
+dataSetS :: Map String (NonEmpty (NonEmpty Char))
 dataSetS = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AGTT"
     , 'A':|"AGTT"
@@ -821,7 +821,7 @@ topologyS =
     )
 
 
-dataSetT :: Map String (NonEmpty (NonEmpty String))
+dataSetT :: Map String (NonEmpty (NonEmpty Char))
 dataSetT = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"ATT"
     , 'A':|"ATT"
@@ -883,7 +883,7 @@ topologyT =
     )
 
 
-dataSetU :: Map String (NonEmpty (NonEmpty String))
+dataSetU :: Map String (NonEmpty (NonEmpty Char))
 dataSetU = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AGTT"
     , 'A':|"AGTT"
@@ -945,7 +945,7 @@ topologyU =
     )
 
 
-dataSetV :: Map String (NonEmpty (NonEmpty String))
+dataSetV :: Map String (NonEmpty (NonEmpty Char))
 dataSetV = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AGTT"
     , 'A':|"AGTT"
@@ -1007,7 +1007,7 @@ topologyV =
     )
 
 
-dataSetW :: Map String (NonEmpty (NonEmpty String))
+dataSetW :: Map String (NonEmpty (NonEmpty Char))
 dataSetW = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"T"
     , 'A':|"T"
@@ -1037,7 +1037,7 @@ topologyW =
     )
 
 
-dataSetX :: Map String (NonEmpty (NonEmpty String))
+dataSetX :: Map String (NonEmpty (NonEmpty Char))
 dataSetX = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'G':|"AA"
     , 'G':|"AA"
@@ -1067,7 +1067,7 @@ topologyX =
     )
 
 
-dataSetY :: Map String (NonEmpty (NonEmpty String))
+dataSetY :: Map String (NonEmpty (NonEmpty Char))
 dataSetY = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'G':|"AA"
     , 'G':|"AA"
@@ -1097,7 +1097,7 @@ topologyY =
     )
 
 
-dataSetZ :: Map String (NonEmpty (NonEmpty String))
+dataSetZ :: Map String (NonEmpty (NonEmpty Char))
 dataSetZ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AG"
     , 'A':|"AG"
@@ -1127,7 +1127,7 @@ topologyZ =
     )
 
 
-dataSet0 :: Map String (NonEmpty (NonEmpty String))
+dataSet0 :: Map String (NonEmpty (NonEmpty Char))
 dataSet0 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AG"
     , 'A':|"AG"
@@ -1157,7 +1157,7 @@ topology0 =
     )
 
 
-dataSet1 :: Map String (NonEmpty (NonEmpty String))
+dataSet1 :: Map String (NonEmpty (NonEmpty Char))
 dataSet1 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"A"
     , 'A':|"A"
@@ -1187,7 +1187,7 @@ topology1 =
     )
 
 
-dataSet2 :: Map String (NonEmpty (NonEmpty String))
+dataSet2 :: Map String (NonEmpty (NonEmpty Char))
 dataSet2 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"AA"
     , 'A':|"AA"
@@ -1229,7 +1229,7 @@ topology2 =
     )
 
 
-dataSet3 :: Map String (NonEmpty (NonEmpty String))
+dataSet3 :: Map String (NonEmpty (NonEmpty Char))
 dataSet3 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
     [ 'A':|"A"
     , 'A':|"A"

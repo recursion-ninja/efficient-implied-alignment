@@ -42,7 +42,7 @@ import           UserInput
 
 parseFileInput
   :: UserInput
-  -> IO (Either String (Alphabet Char, TransitionCostMatrix String, BTree () InitialInternalNode))
+  -> IO (Either String (Alphabet Char, TransitionCostMatrix Char, BTree () InitialInternalNode))
 parseFileInput input = do 
     dataResult <- readAndParse  fastcStreamParser $ dataFile input
     treeResult <- readAndParse newickStreamParser $ treeFile input
