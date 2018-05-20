@@ -8,11 +8,12 @@ module File.Format.TransitionCostMatrix.Parser
 
 import           Data.Char                     (isSpace)
 import           Data.Foldable                 (toList)
+import           Data.List                     (elemIndex)
 import           Data.List.NonEmpty            (NonEmpty)
-import qualified Data.List.NonEmpty      as NE (fromList)
+import qualified Data.List.NonEmpty      as NE
 import           Data.List.Utility             (duplicates, mostCommon)
 import           Data.Matrix.ZeroIndexed       (Matrix, ncols, nrows)
-import qualified Data.Matrix.ZeroIndexed as M  (fromList)
+import qualified Data.Matrix.ZeroIndexed as M
 import           Data.Maybe                    (catMaybes, fromJust)
 import           Data.Scientific               (toRealFloat)
 import           Data.Semigroup
@@ -135,13 +136,22 @@ matrixBlock spacing = validateMatrix =<< many (symbol matrixRow)
 validateTCMParseResult :: (MonadParsec e s m {- , Token s ~ Char -}) => TCMParseResult -> m TCM
 validateTCMParseResult (TCMParseResult alphabet matrix)
   | dimMismatch  = fail errorMessage
-  | otherwise    = pure $ TCM alphabet matrix
+  | otherwise    = pure result
   where
-    size         = length alphabet
+    result =
+        case '-' `elemIndex` toList alphabet of
+          Nothing -> TCM (alphabet <> pure '-') matrix
+          Just k  -> let permuted = NE.fromList (NE.filter (/='-') alphabet) <> pure '-'
+                         g (i,j)  = let i' = if i < k then i else if i == size - 1 then k else i + 1
+                                        j' = if j < k then i else if j == size - 1 then k else j + 1
+                                    in  M.unsafeGet i' j' matrix
+                     in  TCM permuted $ M.matrix rows cols g
+
+    
+    size         = length alphabet + if '-' `elem` alphabet then 0 else 1
     rows         = nrows matrix
     cols         = ncols matrix
-    dimMismatch  = size + 1 /= rows                   
-                || size + 1 /= cols
+    dimMismatch  = size /= rows || size /= cols
     errorMessage = concat
         [ "The alphabet length is "
         , show size
@@ -169,8 +179,10 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
 validateAlphabet :: (MonadParsec e s m, Token s ~ Char) => NonEmpty Char -> m (NonEmpty Char)
 validateAlphabet alphabet
   | duplicatesExist = fail $ "The following symbols were listed multiple times in the custom alphabet: " <> show dupes
+  | tooManySymbols  = fail $ "The alphabet has more than 32 symbols (inluding gap). This is a technical limitation for efficiency."
   | otherwise       = pure alphabet 
   where
+    tooManySymbols  = if '-' `elem` alphabet then length alphabet > 32 else length alphabet > 31
     duplicatesExist = not $ null dupes
     dupes           = duplicates $ toList alphabet
 
