@@ -1,4 +1,4 @@
-cabal-version:  >= 1.10
+cabal-version:  2.2
 category:       Algorithms
 build-type:     Simple
 
@@ -8,7 +8,7 @@ version:        0.1.0
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
 copyright:      2018 Alex Washburn
-license:        BSD3
+license:        BSD-3-Clause
 license-file:   LICENSE
 
 synopsis:       Proof of concept of efficient multiple string alignment
@@ -33,7 +33,49 @@ source-repository head
   location: https://github.com/githubuser/commutative-multi-string-alignment
 
 
+-- A litany of GHC warnings designed to alert us during the build of any common
+-- pitfalls, future compatibility issues, or coding conventions.
+common ghc-flags
+
+  ghc-options:      -O2
+--                    -g
+                    -- Sanity check warnings
+                    -Wall
+                    -Wcompat
+                    -Wdodgy-foreign-imports
+                    -Wduplicate-exports
+                    -Wempty-enumerations
+                    -Widentities
+                    -Wincomplete-patterns
+                    -Wincomplete-record-updates
+                    -Wincomplete-uni-patterns
+                    -Wmissing-fields
+                    -Wmissing-home-modules
+                    -Wmissing-monadfail-instances
+                    -Wmissing-monadfail-instances
+                    -Wmissing-signatures
+                    -Wnoncanonical-monadfail-instances
+                    -Wnoncanonical-monad-instances
+                    -Wnoncanonical-monoid-instances
+                    -Woverflowed-literals
+                    -Woverlapping-patterns
+                    -Wredundant-constraints
+                    -Wsemigroup
+                    -Wtabs
+                    -Wunrecognised-warning-flags
+                    -Wunrecognised-warning-flags
+                    -Wunused-binds
+                    -Wunused-do-bind
+                    -Wunused-foralls
+                    -Wunused-imports
+                    -Wunused-matches
+                    -Wwrong-do-bind
+
+
 library
+
+  import:
+      ghc-flags
 
   hs-source-dirs:
       src
@@ -110,12 +152,15 @@ library
   
 executable tree-align
 
+  import:  ghc-flags
+
   main-is: Main.hs
 
   hs-source-dirs:
       app
 
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -g
+--               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
       ansi-wl-pprint

@@ -29,6 +29,7 @@ import Data.Semigroup.Foldable
 import Data.SymbolString
 import Data.Word
 
+import Debug.Trace
 
 -- |
 -- /O(1)/ for practical purposes, technically \( \mathcal{O} \left( \log_16 \left( a \right) \right) \)
@@ -118,9 +119,10 @@ buildTransitionCostMatrix
   -> TransitionCostMatrix
 buildTransitionCostMatrix alphabet scm = 
     let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
-        len     = length alphabet
+        len     = 1 `shiftL` length alphabet
         m       = M.matrix len len g
-    in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
+    in  \i j -> {- trace ("tcm["<>show len<>"] ! " <> show (fromEnum i, fromEnum j)) $ -}
+                unsafeGet (fromEnum i) (fromEnum j) m
 
 
 -- |

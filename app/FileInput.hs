@@ -39,6 +39,7 @@ import           System.IO
 import           Text.Megaparsec
 import           UserInput
 
+import Debug.Trace
 
 parseFileInput
   :: UserInput
@@ -78,7 +79,7 @@ fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols)
 validateSymbolsAndAlphabet :: TCM -> Map Identifier CharacterSequence -> Validation (NonEmpty String) ()
 validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
     case foldMapWithKey f m of
-      []   -> Right {}
+      []   -> Right ()
       x:xs -> Left $ x:|xs
   where
     symbolSet :: Set Char
