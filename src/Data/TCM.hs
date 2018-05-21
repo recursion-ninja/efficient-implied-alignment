@@ -41,41 +41,6 @@ type TransitionCostMatrix
      -> (SymbolAmbiguityGroup, Word)
 
 
-{-
--- |
--- /O(a^3)/
---
--- A generalized function representationing transition between two
--- 'SymbolAmbiguityGroup's, returning the corresponding median
--- 'SymbolAmbiguityGroup' and transition cost.
-type ThreewayCompare
-     =  SymbolAmbiguityGroup
-     -> SymbolAmbiguityGroup
-     -> SymbolAmbiguityGroup
-     -> (SymbolAmbiguityGroup, Word)
-
-
-buildThreeWayCompare
-  :: Ord k
-  => Alphabet k
-  -> TransitionCostMatrix
-  -> ThreewayCompare
-buildThreeWayCompare alphabet tcm = f
-  where
-   singletonStates = point <$> toNonEmpty alphabet
-   
-   f a b c = foldl' g (undefined, maxBound :: Word) singletonStates
-     where
-       g acc@(combinedState, curentMinCost) singleState =
-           case combinedCost `compare` curentMinCost of
-             EQ -> (combinedState <> singleState, curentMinCost)
-             LT -> (                 singleState,  combinedCost)
-             GT -> acc
-         where
-           combinedCost = sum $ snd . tcm singleState <$> [a, b, c]
--}
-
-
 -- |
 -- /O(a^2)/
 --
@@ -88,15 +53,6 @@ buildSymbolChangeMatrix
   -> SymbolChangeMatrix Int
 buildSymbolChangeMatrix matrix = let m = force matrix
                                  in  (\x y -> unsafeGet x y m)
-{-
-(completeStructure ! x) ! y
-  where
-    completeStructure = force . fromList $ foldMapWithKey buildRow alphabet
-      where
-        buildRow i rowSymbol = [(rowSymbol, fromList $ foldMapWithKey buildCell alphabet)]
-          where
-            buildCell j colSymbol = [(colSymbol, matrix ! (i, j))]
--}
 
 
 -- |
@@ -111,8 +67,7 @@ buildTransitionCostMatrix alphabet scm =
     let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
         len     = 1 `shiftL` length alphabet
         m       = M.matrix len len g
-    in  \i j -> {- trace ("tcm["<>show len<>"] ! " <> show (fromEnum i, fromEnum j)) $ -}
-                unsafeGet (fromEnum i) (fromEnum j) m
+    in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
 
 
 -- |

@@ -139,7 +139,7 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =
                 let !y = encodeAmbiguityGroup alphabet x
-                in  Align y
+                in  Align y y y
 
 
 data  UnificationError

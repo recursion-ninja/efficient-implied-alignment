@@ -63,12 +63,12 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
           let result = force . preorder' $ postorder' tree
           putStrLn $ renderAlignment nodeRendererA leafRendererA result          
           putStrLn ""
-{--          
+{--}
           putStrLn $ renderAlignment nodeRendererB leafRendererB result
           putStrLn ""
           putStrLn $ renderAlignment nodeRendererC leafRendererC result
           putStrLn ""
---}
+{--}
   where
     centerWithin width x = mconcat
         [ replicate pad ' '

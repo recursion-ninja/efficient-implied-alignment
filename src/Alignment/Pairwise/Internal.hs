@@ -339,9 +339,9 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
           where
             g j = fromMaybe "" $ (i,j) `lookup` m
 
-    renderContext (Align  x  ) = if x == gapGroup then "—" else "α"
-    renderContext (Delete x _) = if x == gapGroup then "—" else "δ"
-    renderContext (Insert x _) = if x == gapGroup then "—" else "ι"
+    renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
+    renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
+    renderContext (Insert x   _) = if x == gapGroup then "—" else "ι"
 
     pad :: Int -> String -> String
     pad n e = replicate (n - len) ' ' <> e <> " "
@@ -387,7 +387,7 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
               case directionArrow of
                 LeftArrow -> ((i    , j - 1), Delete medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
                 UpArrow   -> ((i - 1, j    ), Insert medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
-                DiagArrow -> ((i - 1, j - 1), Align  medianElement) -- (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
+                DiagArrow -> ((i - 1, j - 1), Align  medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
 
 
 {--

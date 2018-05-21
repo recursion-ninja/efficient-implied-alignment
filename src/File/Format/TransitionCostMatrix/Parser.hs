@@ -183,10 +183,10 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
 validateAlphabet :: MonadParsec e s m => NonEmpty Char -> m (NonEmpty Char)
 validateAlphabet alphabet
   | duplicatesExist = fail $ "The following symbols were listed multiple times in the custom alphabet: " <> show dupes
-  | tooManySymbols  = fail   "The alphabet has more than 32 symbols (inluding gap). This is a technical limitation for efficiency."
+  | tooManySymbols  = fail   "The alphabet has more than 16 symbols (inluding gap). This is a technical limitation for efficiency."
   | otherwise       = pure alphabet 
   where
-    tooManySymbols  = if '-' `elem` alphabet then length alphabet > 32 else length alphabet > 31
+    tooManySymbols  = if '-' `elem` alphabet then length alphabet > 16 else length alphabet > 15
     duplicatesExist = not $ null dupes
     dupes           = duplicates $ toList alphabet
 

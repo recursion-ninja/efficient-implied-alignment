@@ -47,15 +47,15 @@ type SymbolString = Vector SymbolContext
 
 
 data  SymbolContext
-    = Align  {-# UNPACK #-} SymbolAmbiguityGroup
+    = Align  {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
     | Delete {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
-    | Insert {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
+    | Insert {-# UNPACK #-} SymbolAmbiguityGroup                                     {-# UNPACK #-} SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 
 -- |
 -- A non-empty set of characters.
-newtype SymbolAmbiguityGroup = SAG Word32
+newtype SymbolAmbiguityGroup = SAG Word16
     deriving (Bits, Eq, Enum, Generic, Ord)
 
 
@@ -88,14 +88,14 @@ instance Semigroup SymbolAmbiguityGroup where
 
 instance Show SymbolAmbiguityGroup where
 
-    show (SAG v) = showHex v ""
+    show (SAG v) = show v --showHex v ""
 
 
 instance Show SymbolContext where
 
-    show (Align  x) = "A" <> show x
-    show (Delete x _) = "D" <> show x
-    show (Insert x _) = "I" <> show x
+    show (Align  x _ _) = "A" <> show x
+    show (Delete x _  ) = "D" <> show x
+    show (Insert x   _) = "I" <> show x
 
 
 renderString :: Foldable1 f => Alphabet Char -> f SymbolAmbiguityGroup -> String
@@ -110,9 +110,9 @@ renderString alphabet = foldMap renderGroup . toNonEmpty
 renderSymbolString :: Alphabet Char -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  x  ) = mconcat ["α: ", renderGroup x ]
-    renderContext (Delete x _) = mconcat ["δ: ", renderGroup x ]
-    renderContext (Insert x _) = mconcat ["ι: ", renderGroup x ]
+    renderContext (Align  x _ _) = mconcat ["α: ", renderGroup x ]
+    renderContext (Delete x _  ) = mconcat ["δ: ", renderGroup x ]
+    renderContext (Insert x   _) = mconcat ["ι: ", renderGroup x ]
 
     renderGroup grp = foldMapWithKey f alphabet
       where
@@ -124,16 +124,16 @@ renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap r
 renderAligns :: Alphabet Char -> SymbolString -> String
 renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  x) = renderAmbiguityGroup x
-    renderContext _          = renderAmbiguityGroup $ encodeAmbiguityGroup alphabet ('-':|[])
+    renderContext (Align x _ _) = renderAmbiguityGroup x
+    renderContext _             = renderAmbiguityGroup $ encodeAmbiguityGroup alphabet ('-':|[])
 
 
 renderSingleton :: Alphabet Char -> SymbolString -> String
 renderSingleton alphabet = foldMap renderContext . toNonEmpty
   where
     gap = gapSymbol alphabet
-    renderContext (Align x) = toList $ decodeAmbiguityGroup alphabet x
-    renderContext _  = [gap]
+    renderContext (Align x _ _) = toList $ decodeAmbiguityGroup alphabet x
+    renderContext _ = [gap]
 
 
 renderAmbiguityGroup :: SymbolAmbiguityGroup -> String
@@ -141,15 +141,15 @@ renderAmbiguityGroup = show
 
 
 symbolAlignmentMedian :: SymbolContext -> SymbolAmbiguityGroup
-symbolAlignmentMedian (Align  x)   = x
-symbolAlignmentMedian (Delete x _) = x
-symbolAlignmentMedian (Insert x _) = x
+symbolAlignmentMedian (Align  x _ _) = x
+symbolAlignmentMedian (Delete x _  ) = x
+symbolAlignmentMedian (Insert x   _) = x
 
 
 reverseContext :: SymbolContext -> SymbolContext
-reverseContext (Delete med x) = Insert med x
-reverseContext (Insert med x) = Delete med x
-reverseContext e = e
+reverseContext (Align  med x y) = Align  med y x
+reverseContext (Delete med x  ) = Insert med   x
+reverseContext (Insert med   y) = Delete med y
 
 
 -- |

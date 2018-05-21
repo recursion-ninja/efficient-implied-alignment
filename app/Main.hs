@@ -2,20 +2,20 @@
 
 module Main where
 
-import           Alignment
-import           Control.DeepSeq
-import           Control.Lens
-import           Data.Alphabet
-import           Data.BTree
-import           Data.Decoration
-import           Data.Key
-import           Data.List.NonEmpty           (intersperse)
-import           Data.Semigroup               ((<>))
-import           Data.Semigroup.Foldable
-import           Data.SymbolString
-import           File.Input
-import           InputParser
-import           System.IO
+import Alignment
+import Control.DeepSeq
+import Control.Lens
+import Data.Alphabet
+import Data.BTree
+import Data.Decoration
+import Data.Key
+import Data.List.NonEmpty      (intersperse)
+import Data.Semigroup          ((<>))
+import Data.Semigroup.Foldable
+import Data.SymbolString
+import File.Input
+import InputParser
+import System.IO
 
 
 main :: IO ()
@@ -31,9 +31,10 @@ runInput = do
       Left  errs -> putStrLn errs
       Right (alphabet, tcm, tree) ->
         let maxLabelLen = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
-            inputRenderer x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton alphabet $ x ^. preliminaryString ]
-            leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton alphabet $ x ^. alignedString     ]
-            nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton alphabet $ x ^. alignedString     ]
+            inputRenderer  x i = mconcat [ pad maxLabelLen (i<> ":"), " ", renderSingleton alphabet $ x ^. preliminaryString ]
+            prelimRenderer x i = mconcat [ pad maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
+            leafRenderer   x i = mconcat [ pad maxLabelLen (i<> ":"), " ", renderSingleton alphabet $ x ^. alignedString     ]
+            nodeRenderer   x _ = mconcat [ pad maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. alignedString     ]
 
             postorder'    = postorder stringAligner
             preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
@@ -50,6 +51,8 @@ runInput = do
               alignmentCost = getNodeDatum postResult ^. subtreeCost
           putStrLn "Post-order complete"
           putStrLn ""
+          putStrLn $ renderAlignment prelimRenderer inputRenderer postResult
+          putStrLn ""
           putStrLn $ "Alignment Cost: " <> show alignmentCost
           let preResult  = force $ preorder' postResult
           putStrLn ""
@@ -57,7 +60,8 @@ runInput = do
           putStrLn ""
           putStrLn "Output Alignment:"
           putStrLn ""
---          putStrLn $ renderPhylogeny inputRenderer postResult
+          putStrLn $ renderPhylogeny leafRenderer preResult
+          putStrLn ""
           putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 

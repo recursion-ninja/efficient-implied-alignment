@@ -131,8 +131,9 @@ preorderInternalLogic parent current =
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
 
 
+-- TODO: Make this Delete gap gap, don't assum alphabet of size 5
 del :: SymbolContext
-del = let x = bit 1 in Delete x x 
+del = let x = bit 4 in Delete x x 
 
 
 deriveAlignment
@@ -144,10 +145,10 @@ deriveAlignment pAlignment pContext cContext = alignment
   where
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
-    extractVector e@ (x,ys,_) =
-        case ys of
-          [] -> fromNonEmpty . NE.fromList $ reverse x
-          _  -> error $ renderResult e
+    extractVector e@ (x,ys,zs) =
+        case (ys, zs) of
+          ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
+          _       -> error $ renderResult e
 
 --    traceResult e = trace (renderResult e) e
 
@@ -258,10 +259,11 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
   where
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
-    extractVector e@(x,ys,_) =
-        case ys of
-          [] -> fromNonEmpty . NE.fromList $ reverse x
-          _  -> error $ renderResult e
+    extractVector e@ (x,ys,zs) =
+        case (ys, zs) of
+          ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
+          _       -> error $ renderResult e
+
 
 {---}
 --    traceResult e = trace (renderResult e) e
