@@ -6,27 +6,29 @@ module File.Format.TransitionCostMatrix.Parser
   ) where
 
 
-import           Data.Char                     (isSpace)
-import           Data.Foldable                 (toList)
-import           Data.List                     (elemIndex)
-import           Data.List.NonEmpty            (NonEmpty)
+import           Data.Char                      (isSpace)
+import           Data.Foldable                  (toList)
+import           Data.Key
+import           Data.List                      (elemIndex)
+import           Data.List.NonEmpty             (NonEmpty)
 import qualified Data.List.NonEmpty      as NE
-import           Data.List.Utility             (duplicates, mostCommon)
-import           Data.Matrix.ZeroIndexed       (Matrix, ncols, nrows)
+import           Data.List.Utility              (duplicates, mostCommon)
+import           Data.Matrix.ZeroIndexed        (Matrix, ncols, nrows)
 import qualified Data.Matrix.ZeroIndexed as M
-import           Data.Maybe                    (catMaybes, fromJust)
-import           Data.Scientific               (toRealFloat)
+import           Data.Maybe                     (catMaybes, fromJust)
+import           Data.Scientific                (toRealFloat)
 import           Data.Semigroup
+import           Prelude                 hiding (zip)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
-import           Text.Megaparsec.Char.Lexer    (scientific)
+import           Text.Megaparsec.Char.Lexer     (scientific)
 
 
 -- |
 --Intermediate parse result prior to consistancy validation
 data TCMParseResult 
-   = TCMParseResult (NonEmpty Char) (Matrix Double) deriving (Show)
+   = TCMParseResult (NonEmpty Char) (Matrix Word) deriving (Show)
 
 
 -- |
@@ -46,7 +48,7 @@ data TCM
    { -- | The custom alphabet of 'Symbols' for which the TCM matrix is defined
      customAlphabet  :: NonEmpty Char
      -- | The cost to transition between any two symbols, square but not necessarily symetric
-   , transitionCosts :: Matrix Double -- n+1 X n+1 matrix where n = length customAlphabet
+   , transitionCosts :: Matrix Word -- n+1 X n+1 matrix where n = length customAlphabet
    } deriving (Show)
 
 
@@ -83,8 +85,8 @@ tcmAlphabet = alphabetLine inlineSpace
 -- |
 -- Shorthand for the expected format of the matrix block in a TCM file
 -- The same as 'matrixBlock inlineSpace'.
-tcmMatrix   :: (MonadParsec e s m, Token s ~ Char) => m (Matrix Double)
-tcmMatrix   = matrixBlock  inlineSpace
+tcmMatrix   :: (MonadParsec e s m, Token s ~ Char) => m (Matrix Word)
+tcmMatrix   = matrixBlock inlineSpace
 
 
 -- |
@@ -123,7 +125,7 @@ alphabetLine spacing = validateAlphabet =<< NE.fromList <$> ((alphabetSymbol <* 
 -- >>> parse (matrixBlock (char ':') "" "1.0:1.0\n1.0:0.0"
 -- Right (( 1 2 )
 --        ( 3 4 ))
-matrixBlock :: (MonadParsec e s m, Token s ~ Char) => m () -> m (Matrix Double)
+matrixBlock :: (MonadParsec e s m, Token s ~ Char) => m () -> m (Matrix Word)
 matrixBlock spacing = validateMatrix =<< many (symbol matrixRow)
   where
     matrixRow   = (spacing *> matrixEntry <* spacing) `manyTill` endOfLine
@@ -198,10 +200,10 @@ validateAlphabet alphabet
 --
 --   * The number of rows match the number of columns
 --
-validateMatrix :: (MonadParsec e s m {- , Token s ~ Char -}) => [[Double]] -> m (Matrix Double)
+validateMatrix :: (MonadParsec e s m {- , Token s ~ Char -}) => [[Double]] -> m (Matrix Word)
 validateMatrix matrix
   | null matrix        = fail "No matrix specified"
-  | null matrixErrors  = pure . M.fromList rows cols $ concat matrix
+  | null matrixErrors  = pure . fmap truncate . M.fromList rows cols $ concat matrix
   | otherwise          = fails matrixErrors
   where
     rows               = length matrix
@@ -209,7 +211,7 @@ validateMatrix matrix
     badCols            = foldr getBadCols [] $ zip [(1::Int)..] matrix
     getBadCols (n,e) a = let x = length e in if x /= cols then (n,x):a else a  
     colMsg (x,y)       = (:) (Just $ mconcat [ "Matrix row ", show x, " has ", show y, " columns but ", show cols, " columns were expected"])
-    matrixErrors       = catMaybes $ badRowCount : badColCount
+    matrixErrors       = catMaybes $ badRowCount : badColCount <> negativeValues
     badColCount        = foldr colMsg [] badCols
     badRowCount        = if   rows == cols
                          then Nothing
@@ -220,6 +222,14 @@ validateMatrix matrix
                              , show cols
                              , " rows were expected"
                              ]
+
+    negativeValues = foldMapWithKey f matrix
+      where
+        f i = foldMapWithKey g
+          where
+            g j v
+              | v < 0     = [ Just $ mconcat ["Cell (",show i,",",show j,") has negative value: ", show v] ]
+              | otherwise = []
 
 
 -- |

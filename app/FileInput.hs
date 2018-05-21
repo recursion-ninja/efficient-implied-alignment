@@ -58,7 +58,7 @@ parseFileInput input = do
               Right tree ->
                 let TCM symbolList matrix = tcmVal
                     alphabet = fromSymbols symbolList
-                    scm      = force $ buildSymbolChangeMatrix alphabet (truncate <$> matrix)
+                    scm      = force $ buildSymbolChangeMatrix alphabet matrix
                     tcm      = force $ buildTransitionCostMatrix alphabet scm
                 in  pure . Right $ force (alphabet, tcm, tree)
   where
