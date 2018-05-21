@@ -119,7 +119,7 @@ buildTransitionCostMatrix
 buildTransitionCostMatrix alphabet scm = 
     let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
         len     = length alphabet
-        m       = force $ M.matrix len len g
+        m       = M.matrix len len g
     in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
 
 
