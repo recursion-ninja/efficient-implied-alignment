@@ -4,19 +4,21 @@ module File.Format.Newick.Parser
   ( newickStandardDefinition
   ) where
 
+import Control.Monad.Combinators.NonEmpty
+import Data.BTree
 import Data.Char                   (isSpace)
 import Data.Foldable
 import Data.Functor                (void)
 import Data.List                   (intercalate)
-import Data.List.NonEmpty          (some1)
-import Data.Map             hiding (filter, foldl', null)
+import Data.List.NonEmpty          (NonEmpty(..), some1)
+import Data.Map             hiding (filter, foldl', null, toList)
 import Data.Maybe                  (fromJust, fromMaybe, isJust)
 import Data.Proxy
 import Data.Semigroup
 import Data.String
 import File.Format.Newick.Internal
 import Prelude              hiding (lookup)
-import Text.Megaparsec      hiding (label)
+import Text.Megaparsec      hiding (label, sepBy1)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer  (skipBlockCommentNested)
 import Text.Megaparsec.Custom
@@ -24,57 +26,47 @@ import Text.Megaparsec.Custom
 
 -- |
 -- Parses a stream producing a standard Newick tree
-newickStandardDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickNode
+newickStandardDefinition :: (MonadParsec e s m, Token s ~ Char) => m (BTree () ())
 newickStandardDefinition = whitespace *> newickNodeDefinition <* symbol (char ';')
-
-
--- |
--- Parses a stream producing an extended Newick tree.
--- Directed cycles in extended Newick trees are not permitted.
-newickExtendedDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickNode
-newickExtendedDefinition = newickStandardDefinition >>= joinNonUniqueLabeledNodes
-
-
--- |
--- Parses a stream producing a forest of extended Newick trees.
-newickForestDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickForest
-newickForestDefinition = whitespace *> symbol (char '<') *> some1 newickExtendedDefinition <* symbol (char '>')
 
 
 -- |
 -- Definition of a serialized Newick node consisiting of the node's descendants,
 -- optional label, and optional branch length. Mutually recursive with
 -- 'subtreeDefinition '.
-newickNodeDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickNode
+newickNodeDefinition :: (MonadParsec e s m, Token s ~ Char) => m (BTree () ())
 newickNodeDefinition = do
-    descendants'  <- descendantListDefinition
-    label'        <- optional newickLabelDefinition
-    branchLength' <- optional branchLengthDefinition
-    pure $ NewickNode descendants' label' branchLength'
+    x:|xs  <- descendantListDefinition
+    case xs of
+      []  -> pure x
+      y:_ -> do
+        label'        <- optional newickLabelDefinition
+        branchLength' <- optional branchLengthDefinition
+        pure $ Internal (NodeDatum (fromMaybe "" label') ()) x y
 
 
 -- |
 -- Parses one or more subtrees consisting of a single node or a further
 -- descendant list.
-descendantListDefinition :: (MonadParsec e s m, Token s ~ Char) => m [NewickNode]
+descendantListDefinition :: (MonadParsec e s m, Token s ~ Char) => m (NonEmpty (BTree () ()))
 descendantListDefinition = char '(' *> trimmed subtreeDefinition `sepBy1` char ',' <* char ')' <* whitespace
 
 
 -- |
 -- Definition of a Newick subtree consisting of either a single leaf node or a
 -- greater subtree. Mutually recursive with 'newickNodeDefinition'.
-subtreeDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickNode
+subtreeDefinition :: (MonadParsec e s m, Token s ~ Char) => m (BTree () ())
 subtreeDefinition = newickNodeDefinition <|> newickLeafDefinition
 
 
 -- |
 -- Definition of a sigle leaf node in a Newick tree. Must contain a node label.
 -- Has no descendants be definition.
-newickLeafDefinition :: (MonadParsec e s m, Token s ~ Char) => m NewickNode
+newickLeafDefinition :: (MonadParsec e s m, Token s ~ Char) => m (BTree () ())
 newickLeafDefinition = do
-    label'        <- newickLabelDefinition
-    branchLength' <- optional branchLengthDefinition
-    pure . NewickNode [] (Just label') $ branchLength'
+    label' <- newickLabelDefinition
+    _      <- optional branchLengthDefinition
+    pure . Leaf $ NodeDatum label' ()
 
 
 -- |
@@ -116,7 +108,7 @@ quotedLabel = do
 -- format. However, if a user really want to put '<' & '>' characters in
 -- a node label, they can always put such characters in a quoted label.
 unquotedLabel :: (MonadParsec e s m, Token s ~ Char) => m String
-unquotedLabel = some $ noneOf invalidUnquotedLabelChars
+unquotedLabel = fmap toList . some1 $ noneOf invalidUnquotedLabelChars
 
 
 -- |

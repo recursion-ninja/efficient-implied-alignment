@@ -52,7 +52,7 @@ parseFileInput input = do
       Right (dataVal, treeVal, tcmVal) ->
         let leafDataMap = fastaToMap dataVal
             badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
-            badLinking  = first (fmap show) . unifyInput leafDataMap $ newickNodeToBTree treeVal
+            badLinking  = first (fmap show) $ unifyInput leafDataMap treeVal
         in  case toEither $ badLinking <* badSymbols of
               Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
               Right tree ->
@@ -73,18 +73,6 @@ parseFileInput input = do
 
 fastaToMap :: FastaParseResult -> Map String CharacterSequence
 fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols) 
-
-
-newickNodeToBTree :: NewickNode -> BTree () ()
-newickNodeToBTree node =
-    case descendants node of
-      []    -> Leaf $ NodeDatum (fromJust (newickLabel node)) ()
-      [x]   -> newickNodeToBTree x
-      x:y:_ -> let label = fromMaybe "" $ newickLabel node
-               in  Internal
-                     (NodeDatum label ())
-                     (newickNodeToBTree x)
-                     (newickNodeToBTree y)
 
 
 validateSymbolsAndAlphabet :: TCM -> Map Identifier CharacterSequence -> Validation (NonEmpty String) ()

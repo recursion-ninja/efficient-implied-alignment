@@ -28,9 +28,9 @@ import           Data.Semigroup
   - This allowed for easy manual annotating of phylogentic trees.
   -
   - Another half decade later, the Forest Extended Newick was proposed by
-  - Professor Wheeler to model collections of disjoint phylogenetic trees.
-  - This new format allowed grouping many Extended Newick trees into a 
-  - forest to be analyzed collectively.
+  - Ward Wheeler to model collections of disjoint phylogenetic trees. This new
+  - format allowed grouping many Extended Newick trees into a  forest to be
+  - analyzed collectively.
   -
   - This parser correctly parses both Newick file formats, and the super set
   - Extended Newick filed format.
