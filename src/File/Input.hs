@@ -1,11 +1,10 @@
 {-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
 
-module FileInput
+module File.Input
   ( parseFileInput
   , unifyInput
   ) where
 
-import           Alignment
 import           Control.DeepSeq
 import           Control.Lens
 import           Data.Alphabet
@@ -18,7 +17,6 @@ import           Data.Functor                 (($>))
 import           Data.Key
 import           Data.List.NonEmpty           (NonEmpty(..), intersperse)
 import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Maybe
 import           Data.Map                     (Map)
 import qualified Data.Map              as M
@@ -29,17 +27,14 @@ import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
+import           Data.UserInput
 import           Data.Void
 import           File.Format.Fasta
 import           File.Format.Newick
 import           File.Format.TransitionCostMatrix
-import           Options.Applicative
 import           Prelude               hiding (lookup)
-import           System.IO
 import           Text.Megaparsec
-import           UserInput
 
-import Debug.Trace
 
 parseFileInput
   :: UserInput

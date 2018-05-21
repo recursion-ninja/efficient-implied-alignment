@@ -145,7 +145,7 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
           Nothing -> TCM (alphabet <> pure '-') matrix
           Just k  -> let permuted = NE.fromList (NE.filter (/='-') alphabet) <> pure '-'
                          g (i,j)  = let i' = if i < k then i else if i == size - 1 then k else i + 1
-                                        j' = if j < k then i else if j == size - 1 then k else j + 1
+                                        j' = if j < k then j else if j == size - 1 then k else j + 1
                                     in  M.unsafeGet i' j' matrix
                      in  TCM permuted $ M.matrix rows cols g
 

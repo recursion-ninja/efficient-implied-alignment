@@ -11,7 +11,7 @@
 -----------------------------------------------------------------------------
 
 {-# LANGUAGE DeriveFoldable, DeriveGeneric, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeFamilies, UnboxedSums #-}
+{-# LANGUAGE Strict, TypeFamilies, UnboxedSums #-}
 
 module Data.SymbolString
   ( SymbolAmbiguityGroup()
@@ -54,9 +54,9 @@ type SymbolString = Vector SymbolContext
 
 
 data  SymbolContext
-    = Align  SymbolAmbiguityGroup
-    | Delete SymbolAmbiguityGroup SymbolAmbiguityGroup
-    | Insert SymbolAmbiguityGroup SymbolAmbiguityGroup
+    = Align  {-# UNPACK #-} SymbolAmbiguityGroup
+    | Delete {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
+    | Insert {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 

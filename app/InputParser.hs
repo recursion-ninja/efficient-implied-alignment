@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module UserInput
+module InputParser
   ( UserInput(..)
 --  , ExampleFileRequest(..)
   , parseUserInput
@@ -26,45 +26,13 @@ import           Data.Semigroup.Foldable
 import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
+import           Data.UserInput
 import           Data.Validation
 import           Options.Applicative
 import           System.IO
 import           Text.PrettyPrint.ANSI.Leijen (string)
 
 
-data  UserInput
-    = UserInput
-    { dataFile    :: String
-    , treeFile    :: String
-    , tcmFile     :: String
-    , outputFile  :: String
-    , verbose     :: Bool
---    , commandHelp :: ExampleFileRequest
-    } deriving (Show)
-
-
-data  ExampleFileRequest
-    = DataFileRequest
-    | TreeFileRequest
-    | TcmFileRequest
-    | NoFileRequest
-    deriving (Eq, Show)
-
-
-instance NFData ExampleFileRequest where
-
-    rnf DataFileRequest = ()
-    rnf TreeFileRequest = ()
-    rnf TcmFileRequest  = ()
-    rnf NoFileRequest   = ()
-
-
-instance NFData UserInput where
-
-    rnf (UserInput a b c d e {-f-}) = rnf a `seq` rnf b `seq` rnf c `seq`
-                                  rnf d `seq` rnf e -- `seq` rnf f
-
-                                  
 parseUserInput = customExecParser preferences $ info (helper <*> userInput) description
   where
     userInput =
