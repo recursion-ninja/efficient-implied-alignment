@@ -29,6 +29,7 @@ import qualified Alignment.Pairwise.Ukkonen.Ribbon as Ribbon
 import           Data.Alphabet
 import           Data.Foldable
 import           Data.Key
+import           Data.List.NonEmpty       (NonEmpty(..))
 import           Data.Maybe               (isJust)
 import           Data.MonoTraversable
 import           Data.Pointed
@@ -80,14 +81,17 @@ ukkonenDO
      , Ord s
      )
   => Alphabet s
-  -> (SymbolAmbiguityGroup s -> SymbolAmbiguityGroup s -> (SymbolAmbiguityGroup s, Word))
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> (Word, Vector (SymbolContext s))
+  -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word))
+  -> f SymbolContext
+  -> f SymbolContext
+  -> (Word, Vector SymbolContext)
 ukkonenDO alphabet overlapFunction lhs rhs
   | noGainFromUkkonenMethod = naiveDOMemo alphabet overlapFunction lhs rhs
-  | otherwise               = directOptimization overlapFunction (renderCostMatrix (gapSymbol alphabet)) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
+  | otherwise               = directOptimization overlapFunction (renderCostMatrix gapGroup) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
   where
+    gap       = gapSymbol alphabet
+    gapGroup  = encodeAmbiguityGroup alphabet $ gap:|[]
+
     (_, longer, lesser) = measureCharacters lhs rhs
 
     -- If the longer character is 50% larger than the shorter character, then
@@ -127,13 +131,13 @@ ukkonenDO alphabet overlapFunction lhs rhs
     -- determine if optimality is preserved, and the Ukkonen algorithm will hang.
     -- Consequently, we do not perform Ukkonen's algorithm if the coefficient is
     -- zero.
-    coefficient = minimum $ indelCost <$> nonGapElements
+    coefficient = minimum $ indelCost <$> nonGapGroups
       where
-        gap            = gapSymbol alphabet
         alphabetSize   = length alphabet
-        nonGapElements = filter (/= gap) $ alphabetSymbols alphabet
-        distance x y   = snd $ overlapFunction (point x) (point y)
-        indelCost sym  = min (distance sym gap) (distance gap sym)
+        nonGapGroups   = fmap (encodeAmbiguityGroup alphabet . (:|[])) nonGapSymbols
+        nonGapSymbols  = filter (/= gap) $ alphabetSymbols alphabet
+        distance x y   = snd $ overlapFunction x y
+        indelCost sym  = min (distance sym gapGroup) (distance gapGroup sym)
 
 
 -- |
@@ -154,10 +158,10 @@ createUkkonenMethodMatrix
      )
   => Word -- ^ Coefficient value, representing the /minimum/ transition cost from a state to gap
   -> Alphabet s
-  -> TransitionCostMatrix s
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup s)
+  -> TransitionCostMatrix
+  -> f SymbolContext
+  -> f SymbolContext
+  -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup)
 createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop lesserLeft = U $ ukkonenUntilOptimal startOffset
   where
     -- General values that need to be in scope for the recursive computations.
@@ -190,9 +194,10 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         longerGaps  = countGaps longerTop
         lesserGaps  = countGaps lesserLeft
         countGaps   = length . filter containsGap . toList
-        containsGap = isJust . (/\ point gapValue) . symbolAlignmentMedian
+        containsGap = isJust . (/\ gapGroup) . symbolAlignmentMedian
 
     gapValue = gapSymbol alphabet
+    gapGroup = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :|[]
 
     ukkonenUntilOptimal offset
       | threshhold <= alignmentCost = ukkonenUntilOptimal $ 2 * offset
@@ -201,7 +206,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
       where
         ukkonenMatrix      = Ribbon.generate rows cols generatingFunction $ toEnum offset
 
-        generatingFunction = needlemanWunschDefinition gapValue overlapFunction longerTop lesserLeft ukkonenMatrix
+        generatingFunction = needlemanWunschDefinition gapGroup overlapFunction longerTop lesserLeft ukkonenMatrix
         
         (cost, _, _)       = ukkonenMatrix ! (lesserLen, longerLen)
         alignmentCost      = unsafeToFinite cost

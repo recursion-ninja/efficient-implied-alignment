@@ -112,11 +112,11 @@ type MatrixConstraint m = (Indexable m, Key m ~ (Int, Int))
 
 -- |
 -- A parameterized function to generate an alignment matrix.
-type MatrixFunction m f s
-    =  TransitionCostMatrix s
-    -> f (SymbolContext s)
-    -> f (SymbolContext s)
-    -> m (Cost, Direction, SymbolAmbiguityGroup s)
+type MatrixFunction m f
+    =  TransitionCostMatrix
+    -> f SymbolContext
+    -> f SymbolContext
+    -> m (Cost, Direction, SymbolAmbiguityGroup)
 
 -- |
 -- Wraps the primative operations in this module to a cohesive operation that is
@@ -132,14 +132,13 @@ directOptimization
      , Key f ~ Int
      , Key m ~ (Int, Int)
      , MatrixConstraint m
-     , Ord s
      )
-  => TransitionCostMatrix s
-  -> (f (SymbolContext s) -> f (SymbolContext s) -> m (Cost, Direction, SymbolAmbiguityGroup s) -> String)
-  -> MatrixFunction m f s
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> (Word, Vector (SymbolContext s))
+  => TransitionCostMatrix
+  -> (f SymbolContext -> f SymbolContext -> m (Cost, Direction, SymbolAmbiguityGroup) -> String)
+  -> MatrixFunction m f
+  -> f SymbolContext
+  -> f SymbolContext
+  -> (Word, Vector SymbolContext)
 directOptimization overlapFunction renderingFunction matrixFunction lhs rhs = {- trace (renderingFunction lhs rhs traversalMatrix) -} (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
@@ -188,16 +187,15 @@ needlemanWunschDefinition
      , Indexable m
      , Key f ~ Int
      , Key m ~ (Int, Int)
-     , Ord s
      )
-  => s
-  -> TransitionCostMatrix s
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> m (Cost, Direction, SymbolAmbiguityGroup s)
+  => SymbolAmbiguityGroup
+  -> TransitionCostMatrix
+  -> f SymbolContext
+  -> f SymbolContext
+  -> m (Cost, Direction, SymbolAmbiguityGroup)
   -> (Int, Int)
-  -> (Cost, Direction, SymbolAmbiguityGroup s)
-needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row, col)
+  -> (Cost, Direction, SymbolAmbiguityGroup)
+needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
 {--
   |  p == (0,0)              = (            0,  DiagArrow, gapGroup)
   |  isInDel topContext
@@ -260,7 +258,6 @@ needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row,
     isInDel Align {} = False
     isInDel _ = True
     
-    gapGroup                      = point gapValue
     topContext                    = (col - 1) `lookup` topChar
     leftContext                   = (row - 1) `lookup` leftChar
     topElement                    = maybe gapGroup symbolAlignmentMedian topContext
@@ -274,7 +271,7 @@ needlemanWunschDefinition gapValue overlapFunction topChar leftChar memo p@(row,
     rightCost                     = rightOverlapCost + leftwardValue
     diagCost                      =  diagOverlapCost + diagonalValue
     downCost                      =  downOverlapCost +   upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gapValue
+    (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
@@ -293,24 +290,22 @@ renderCostMatrix
      , Functor m
      , Indexable m
      , Key m ~ (Int, Int)
-     , Ord s
 --     , Show a
 --     , Show b
      )
-  => s
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> m (Cost, Direction, SymbolAmbiguityGroup s)
+  => SymbolAmbiguityGroup
+  -> f SymbolContext
+  -> f SymbolContext
+  -> m (Cost, Direction, SymbolAmbiguityGroup)
 --  -> m (a, b, c) -- ^ The Needleman-Wunsch alignment matrix
   -> String
-renderCostMatrix gapValue lhs rhs mtx = unlines
+renderCostMatrix gapGroup lhs rhs mtx = unlines
     [ dimensionPrefix
     , headerRow
     , barRow
     , renderedRows
     ]
   where
-    gapGroup          = point gapValue
     (_,longer,lesser) = measureCharacters lhs rhs
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
@@ -357,9 +352,9 @@ renderCostMatrix gapValue lhs rhs mtx = unlines
           where
             g j = fromMaybe "" $ (i,j) `lookup` m
 
-    renderContext (Align  _ x _ _) = if x == gapGroup then "—" else "α"
-    renderContext (Delete _ x _  ) = if x == gapGroup then "—" else "δ"
-    renderContext (Insert _ x   _) = if x == gapGroup then "—" else "ι"
+    renderContext (Align  x  ) = if x == gapGroup then "—" else "α"
+    renderContext (Delete x _) = if x == gapGroup then "—" else "δ"
+    renderContext (Insert x _) = if x == gapGroup then "—" else "ι"
 
     pad :: Int -> String -> String
     pad n e = replicate (n - len) ' ' <> e <> " "
@@ -383,10 +378,10 @@ traceback
      , Key f ~ Int
      , Key m ~ (Int, Int)
      )
-  => m (Cost, Direction, SymbolAmbiguityGroup s)
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> (Word, Vector (SymbolContext s))
+  => m (Cost, Direction, SymbolAmbiguityGroup)
+  -> f SymbolContext
+  -> f SymbolContext
+  -> (Word, Vector SymbolContext)
 traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ unfoldr go lastCell)
   where
       lastCell     = (row, col)
@@ -403,9 +398,9 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
 
           (nextCell, contextElement) =
               case directionArrow of
-                LeftArrow -> ((i    , j - 1), Delete (unsafeToFinite cost) medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
-                UpArrow   -> ((i - 1, j    ), Insert (unsafeToFinite cost) medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
-                DiagArrow -> ((i - 1, j - 1), Align  (unsafeToFinite cost) medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
+                LeftArrow -> ((i    , j - 1), Delete medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
+                UpArrow   -> ((i - 1, j    ), Insert medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
+                DiagArrow -> ((i - 1, j - 1), Align  medianElement) -- (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
 
 
 {--
@@ -417,10 +412,9 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
 -- An overlap function that applies the discrete metric to aligning two
 -- 'SymbolAmbiguityGroup'.
 overlapConst
-  :: Ord a
-  => SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> (SymbolAmbiguityGroup a, Word)
+  :: SymbolAmbiguityGroup
+  -> SymbolAmbiguityGroup
+  -> (SymbolAmbiguityGroup, Word)
 overlapConst lhs rhs =
     case lhs /\ rhs of
       Nothing -> (lhs <> rhs, 1)
@@ -428,17 +422,15 @@ overlapConst lhs rhs =
 
 
 getMinimalCostDirection
-  :: ( Ord a
-     , Ord c
-     )
-  => a
-  -> (c, SymbolAmbiguityGroup a)
-  -> (c, SymbolAmbiguityGroup a)
-  -> (c, SymbolAmbiguityGroup a)
-  -> (c, SymbolAmbiguityGroup a, Direction)
+  :: Ord c
+  => SymbolAmbiguityGroup
+  -> (c, SymbolAmbiguityGroup)
+  -> (c, SymbolAmbiguityGroup)
+  -> (c, SymbolAmbiguityGroup)
+  -> (c, SymbolAmbiguityGroup, Direction)
 getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar) =
     minimumBy (comparing (\(c,_,d) -> (c,d)))
-      [ (diagCost ,  diagChar             , DiagArrow)
-      , (rightCost, rightChar <> point gap, LeftArrow)
-      , (downCost ,  downChar <> point gap, UpArrow  )
+      [ (diagCost ,  diagChar       , DiagArrow)
+      , (rightCost, rightChar <> gap, LeftArrow)
+      , (downCost ,  downChar <> gap, UpArrow  )
       ]

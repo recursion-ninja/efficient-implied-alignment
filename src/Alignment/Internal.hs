@@ -21,6 +21,7 @@ module Alignment.Internal
 
 --import           Alignment.Pairwise
 import           Control.Lens
+import           Data.Bits
 import           Data.Decoration
 import           Data.Foldable
 import           Data.IntMap                 (IntMap)
@@ -45,9 +46,9 @@ import Debug.Trace
 
 -- |
 -- A function representing an alignment of two strings.
-type PairwiseAlignment s =  Vector (SymbolContext s)
-                         -> Vector (SymbolContext s)
-                         -> (Word, Vector (SymbolContext s))
+type PairwiseAlignment s =  Vector SymbolContext
+                         -> Vector SymbolContext
+                         -> (Word, Vector SymbolContext)
 
 
 -- |
@@ -83,7 +84,8 @@ preorderRootLogic =
       <*> setInitialAlignment   . (^. preliminaryString)
       <*> const True
   where
---    deriveFinalizedString = toVector . foldMap f
+{-
+    deriveFinalizedString = toVector . foldMap f
     
     gapGroup = point '-'
 
@@ -94,6 +96,7 @@ preorderRootLogic =
         v = symbolAlignmentMedian x
 
     toVector = fromNonEmpty . NE.fromList
+-}
 
 
 -- |
@@ -112,12 +115,12 @@ preorderLeafLogic parent current =
       <*> const False
     ) $ either id id current
   where
-    gap = point '-'
+--    gap = point '-'
      
     (c, p, a) =
         case current of
           Left  x -> (x ^. preliminaryString, r <$> parent ^. preliminaryString, parent ^. alignedString)
-          Right x -> (x ^. preliminaryString,  parent ^. preliminaryString,  parent ^. alignedString)
+          Right x -> (x ^. preliminaryString,       parent ^. preliminaryString, parent ^. alignedString)
 
     r = reverseContext
 
@@ -126,7 +129,8 @@ preorderLeafLogic parent current =
 
     derivedStringAlignment = deriveLeafAlignment a p c
 
-    localAlignedStrings :: Vector (SymbolAmbiguityGroup Char)
+{-
+    localAlignedStrings :: Vector SymbolAmbiguityGroup
     localAlignedStrings = fromNonEmpty . NE.fromList . snd $ foldl' f (toList c, []) p
       where
         f (ss, acc) e =
@@ -136,16 +140,16 @@ preorderLeafLogic parent current =
                   case ss of
                     []   -> ([], point '?' : acc) -- error "Cannot Align or Insert when there is no child symbol."
                     x:xs -> (xs, symbolAlignmentMedian x : acc)
+-}
 
 
 -- |
 -- The pre-order scoring logic for intenral nodes.
 preorderInternalLogic
-  :: ThreewayCompare Char
-  -> FinalizedInternalNode                          -- ^ Parent decoration
+  :: FinalizedInternalNode                          -- ^ Parent decoration
   -> Either InitialInternalNode InitialInternalNode -- ^ Current decoration, whether it is Left or Right child of parent.
   -> FinalizedInternalNode                          -- ^ Updated decoration
-preorderInternalLogic sigma parent current =
+preorderInternalLogic parent current =
     ( FinalizedInternalNode
       <$> (^. subtreeCost)
       <*> (^. localCost)
@@ -155,24 +159,25 @@ preorderInternalLogic sigma parent current =
       <*> const False
     ) $ either id id current
   where
-    finalSymbols :: Vector (SymbolAmbiguityGroup Char)
-    finalSymbols = foldMap1 (\(a,b,c) -> pure . fst $ sigma a b c) alignedSurroundingStrings
+--    finalSymbols :: Vector (SymbolAmbiguityGroup Char)
+--    finalSymbols = foldMap1 (\(a,b,c) -> pure . fst $ sigma a b c) alignedSurroundingStrings
 
     derivedStringAlignment = deriveAlignment (parent ^. alignedString) p c
       
-    gap    = point '-'
+--    gap    = point '-'
 
     (c, p) = case current of
                Left  x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
 
-    alignedSurroundingStrings :: NonEmpty (SymbolAmbiguityGroup Char, SymbolAmbiguityGroup Char, SymbolAmbiguityGroup Char)
+{-
+    alignedSurroundingStrings :: NonEmpty (SymbolAmbiguityGroup, SymbolAmbiguityGroup, SymbolAmbiguityGroup)
     alignedSurroundingStrings = NE.fromList . reverse . (\(_,_,x) -> x) $ foldl' f (0, toList c, []) p
       where
         f (i,  [], acc) e =
             case e of
-              Delete _ m _   -> (i+1, [], (m, gap, gap) : acc)
-              _              -> error $ unlines
+              Delete m -> (i+1, [], (m, gap, gap) : acc)
+              _        -> error $ unlines
                                   [ "Cannot Align or Insert when there is no child symbol:"
                                   , "at index " <> show i <> ": " <> show e
                                   , "Parent: " <> show p
@@ -180,16 +185,17 @@ preorderInternalLogic sigma parent current =
                                   ]
         f (i, x:xs, acc) e =
             case e of
-              Delete _ m _   ->     (i+1, x:xs, (  m, gap, gap) : acc)
-              Insert _ m   _ -> let (lhs, rhs) = getLhsRhs x
-                                in  (i+1,   xs, (gap, lhs, rhs) : acc)
-              Align  _ m _ _ -> let (lhs, rhs) = getLhsRhs x
-                                in  (i+1,   xs, (  m, lhs, rhs) : acc)
+              Delete m ->     (i+1, x:xs, (  m, gap, gap) : acc)
+              Insert m -> let (lhs, rhs) = getLhsRhs x
+                          in  (i+1,   xs, (gap, lhs, rhs) : acc)
+              Align  m -> let (lhs, rhs) = getLhsRhs x
+                          in  (i+1,   xs, (  m, lhs, rhs) : acc)
 
     getLhsRhs x = case x of
                     Align  _ _ a b -> (  a,   b)
                     Delete _ _ a   -> (  a, gap)
                     Insert _ _   b -> (gap,   b)
+-}
 
 
 {-
@@ -225,7 +231,7 @@ preorderInternalLogic sigma parent current =
           ys' = maybe ys (:ys) $ headMay xs
 -}
 
-
+del = let x = bit 1 in Delete x x 
 
 deriveAlignment
   :: SymbolString -- ^ Parent Alignment
@@ -260,31 +266,31 @@ deriveAlignment pAlignment pContext cContext = alignment
         , show $ reverse x
         ]
 
-    gap = point '-'
+--    gap = point '-'
 
-    f :: ([SymbolContext Char], [SymbolContext Char], [SymbolContext Char]) -> Int -> SymbolContext Char -> ([SymbolContext Char], [SymbolContext Char], [SymbolContext Char])
+    f :: ([SymbolContext], [SymbolContext], [SymbolContext]) -> Int -> SymbolContext -> ([SymbolContext], [SymbolContext], [SymbolContext])
     f (acc, [], []) k e =
         case e of
-          Delete _ m _ -> (Delete 0 gap gap : acc, [], [])
-          _            -> error $ unlines
-                              [ "Cannot Align or Insert when there is no child symbol:"
-                              , "at index " <> show k <> ": " <> show e
-                              , "Parent Alignment: " <> show pAlignment
-                              , "Parent Context:   " <> show pContext
-                              , "Child  Context:   " <> show cContext
-                              ]
+          Delete {} -> (del : acc, [], [])
+          _         -> error $ unlines
+                           [ "Cannot Align or Insert when there is no child symbol:"
+                           , "at index " <> show k <> ": " <> show e
+                           , "Parent Alignment: " <> show pAlignment
+                           , "Parent Context:   " <> show pContext
+                           , "Child  Context:   " <> show cContext
+                           ]
     f z@(acc, [], y:ys) k e =
         case e of
-          Delete {}      -> (Delete 0 gap gap : acc, [], [])
-          Insert _ _   v -> (Delete 0 gap gap : acc, [], ys)
+          Delete {} -> (del : acc, [], [])
+          Insert {} -> (del : acc, [], ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
 --            else case y of
 --                   Delete {} -> (Delete 0 gap gap : acc,  [], ys)
 --                   _         -> error "SAD!"
-          Align  _ _ _ v ->
+          Align  {} ->
             case y of
-              Delete {}  -> (Delete 0 gap gap : acc, [], ys)
+              Delete {}  -> (del : acc, [], ys)
               _          -> error $ unlines
                                 [ "BAD!"
                                 , "at index " <> show k <> ": " <> show e
@@ -298,13 +304,13 @@ deriveAlignment pAlignment pContext cContext = alignment
 
     f (acc, x:xs, y:ys) k e =
         case e of
-          Delete _ _ w  ->
+          Delete {}  ->
             case y of
-              Delete {} -> (Delete 0 gap gap : acc, x:xs,  y:ys)
-              _         -> (Delete 0 gap gap : acc, x:xs,  y:ys)
-          Insert _ v   _ -> -- (               x : acc,    xs, ys)
+              Delete {} -> (del : acc, x:xs,  y:ys)
+              _         -> (del : acc, x:xs,  y:ys)
+          Insert {} -> -- (               x : acc,    xs, ys)
               case y of
-                Delete {} -> (     Delete 0 gap gap : acc, x:xs, ys)
+                Delete {} -> (                  del : acc, x:xs, ys)
                 Insert {} -> (deleteionToInserion x : acc,   xs, ys)
                 Align  {} -> (                    x : acc,   xs, ys)
 --            if v == gap
@@ -312,11 +318,11 @@ deriveAlignment pAlignment pContext cContext = alignment
 --            else case y of
 --                   Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
 --                   _         -> (               x : acc,    xs, ys)
-          Align  _ v _ _     -> -- (               x : acc,    xs, ys)
+          Align  {} -> -- (               x : acc,    xs, ys)
               case y of
-                Delete {} -> (Delete 0 gap gap : acc, x:xs, ys)
-                Insert {} -> (               x : acc,   xs, ys)
-                Align  {} -> (               y : acc,   xs, ys)
+                Delete {} -> (del : acc, x:xs, ys)
+                Insert {} -> (  x : acc,   xs, ys)
+                Align  {} -> (  y : acc,   xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
 --            else case y of
@@ -325,19 +331,19 @@ deriveAlignment pAlignment pContext cContext = alignment
 
 
 
-countAlignInsert :: (Functor f, Foldable f) => f (SymbolContext s) -> Int
+countAlignInsert :: (Functor f, Foldable f) => f SymbolContext -> Int
 countAlignInsert = sum . fmap g
   where
     g Delete {} = 0
     g _           = 1
 
 
-setInitialAlignment :: Functor f => f (SymbolContext s) -> f (SymbolContext s)
+setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
 setInitialAlignment = fmap deleteionToInserion
 
     
 deleteionToInserion e@Delete {} = reverseContext e
-deleteionToInserion e             = e
+deleteionToInserion e           = e
 
 
 deriveLeafAlignment
@@ -377,25 +383,25 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f (acc, [], []) k e =
         case e of
-          Delete _ m _ -> (e : acc, [], [])
-          _            -> error $ unlines
-                              [ "Cannot Align or Insert when there is no child symbol:"
-                              , "at index " <> show k <> ": " <> show e
-                              , "Parent Alignment: " <> show pAlignment
-                              , "Parent Context:   " <> show pContext
-                              , "Child  Context:   " <> show cContext
-                              ]
+          Delete {} -> (e : acc, [], [])
+          _         -> error $ unlines
+                           [ "Cannot Align or Insert when there is no child symbol:"
+                           , "at index " <> show k <> ": " <> show e
+                           , "Parent Alignment: " <> show pAlignment
+                           , "Parent Context:   " <> show pContext
+                           , "Child  Context:   " <> show cContext
+                           ]
 
     f z@(acc, [], y:ys) k e =
         case e of
-          Delete {}      -> (e : acc, [], [])
-          Insert _ _   v -> (e : acc, [], ys)
+          Delete {} -> (e : acc, [], [])
+          Insert {} -> (e : acc, [], ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
 --            else case y of
 --                   Delete {} -> (Delete 0 gap gap : acc,  [], ys)
 --                   _         -> error "SAD!"
-          Align  _ _ _ v ->
+          Align  {} ->
               case y of
                 Insert {} -> (y : acc, [], ys)
                 Delete {} -> (y : acc, [], ys)
@@ -415,11 +421,11 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f (acc, x:xs, y:ys) k e =
         case e of
-          Delete {}      -> (e : acc, x:xs, y:ys)
-          Insert _ v   _ -> -- (               x : acc,    xs, ys)
+          Delete {} -> (e : acc, x:xs, y:ys)
+          Insert {} -> -- (               x : acc,    xs, ys)
               case y of
-                Delete _ _ v   -> (e : acc,  x:xs, ys)
-                Insert _ _   v ->
+                Delete {} -> (e : acc,  x:xs, ys)
+                Insert _ v  ->
                   if v == symbolAlignmentMedian x
                   then (x : acc,    xs, ys)
                   else (e : acc,  x:xs, ys)
@@ -429,11 +435,11 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 --            else case y of
 --                   Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
 --                   _         -> (               x : acc,    xs, ys)
-          Align  _ v _ _     -> -- (               x : acc,    xs, ys)
+          Align {} -> -- (               x : acc,    xs, ys)
               case y of
                 v@Delete {} -> (v : acc, x:xs, ys)
-                Insert {} -> (x : acc,    xs, ys)
-                Align  {} -> (x : acc,    xs, ys)
+                Insert   {} -> (x : acc,   xs, ys)
+                Align    {} -> (x : acc,   xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
 --            else case y of

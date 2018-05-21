@@ -3,10 +3,10 @@
 module Data.TCM
   ( SymbolChangeMatrix
   , TransitionCostMatrix
-  , ThreewayCompare
+--  , ThreewayCompare
   -- * Construction
   , buildSymbolChangeMatrix
-  , buildThreeWayCompare
+--  , buildThreeWayCompare
   , buildTransitionCostMatrix
   -- * Querries
   , overlap
@@ -14,16 +14,19 @@ module Data.TCM
 
 import Control.DeepSeq
 import Data.Alphabet
+import Data.Bits
 import Data.Foldable
-import Data.Hashable
-import Data.HashMap.Strict hiding ((!), foldl')
+--import Data.Hashable
+--import Data.HashMap.Strict hiding ((!), foldl', mapWithKey)
 import Data.Key
 import Data.List.NonEmpty         (NonEmpty)
-import Data.Matrix.ZeroIndexed    (Matrix)
+import qualified Data.List.NonEmpty as NE
+import Data.Matrix.ZeroIndexed    (Matrix, unsafeGet)
 import Data.Pointed
 import Data.Semigroup
 import Data.Semigroup.Foldable
 import Data.SymbolString
+import Data.Word
 
 
 -- |
@@ -39,30 +42,31 @@ type SymbolChangeMatrix k = k -> k -> Word
 -- A generalized function representationing transition between two
 -- 'SymbolAmbiguityGroup's, returning the corresponding median
 -- 'SymbolAmbiguityGroup' and transition cost.
-type TransitionCostMatrix k
-     =  SymbolAmbiguityGroup k
-     -> SymbolAmbiguityGroup k
-     -> (SymbolAmbiguityGroup k, Word)
+type TransitionCostMatrix
+     =  SymbolAmbiguityGroup
+     -> SymbolAmbiguityGroup
+     -> (SymbolAmbiguityGroup, Word)
 
 
+{-
 -- |
 -- /O(a^3)/
 --
 -- A generalized function representationing transition between two
 -- 'SymbolAmbiguityGroup's, returning the corresponding median
 -- 'SymbolAmbiguityGroup' and transition cost.
-type ThreewayCompare k
-     =  SymbolAmbiguityGroup k
-     -> SymbolAmbiguityGroup k
-     -> SymbolAmbiguityGroup k
-     -> (SymbolAmbiguityGroup k, Word)
+type ThreewayCompare
+     =  SymbolAmbiguityGroup
+     -> SymbolAmbiguityGroup
+     -> SymbolAmbiguityGroup
+     -> (SymbolAmbiguityGroup, Word)
 
 
 buildThreeWayCompare
-  :: (Ord k, Hashable k)
+  :: Ord k
   => Alphabet k
-  -> TransitionCostMatrix k
-  -> ThreewayCompare k
+  -> TransitionCostMatrix
+  -> ThreewayCompare
 buildThreeWayCompare alphabet tcm = f
   where
    singletonStates = point <$> toNonEmpty alphabet
@@ -76,6 +80,7 @@ buildThreeWayCompare alphabet tcm = f
              GT -> acc
          where
            combinedCost = sum $ snd . tcm singleState <$> [a, b, c]
+-}
 
 
 -- |
@@ -86,28 +91,30 @@ buildThreeWayCompare alphabet tcm = f
 -- @cols matrix == length alphabet@ and that the index of each row & column
 -- corresponds to that index of the alphabet.
 buildSymbolChangeMatrix
-  :: (Eq k, Hashable k, NFData k)
-  => Alphabet k
-  -> Matrix Word
-  -> SymbolChangeMatrix k
-buildSymbolChangeMatrix alphabet matrix x y = (completeStructure ! x) ! y
+  :: Matrix Word
+  -> SymbolChangeMatrix Int
+buildSymbolChangeMatrix matrix = let m = force matrix
+                                 in  (\x y -> unsafeGet x y m)
+{-
+(completeStructure ! x) ! y
   where
     completeStructure = force . fromList $ foldMapWithKey buildRow alphabet
       where
         buildRow i rowSymbol = [(rowSymbol, fromList $ foldMapWithKey buildCell alphabet)]
           where
             buildCell j colSymbol = [(colSymbol, matrix ! (i, j))]
-                  
+-}
+
 
 -- |
 -- /O(1)/
 --
 -- Build a 'TransitionCostMatrix' from an 'Alphabet' and a 'SymbolChangeMatrix'.
 buildTransitionCostMatrix
-  :: (Ord k, Hashable k)
+  :: Ord k
   => Alphabet k
-  -> SymbolChangeMatrix k
-  -> TransitionCostMatrix k
+  -> SymbolChangeMatrix Int
+  -> TransitionCostMatrix
 buildTransitionCostMatrix = overlap
 
 
@@ -128,10 +135,10 @@ overlap
      , Ord a
      )
   => f a
-  -> SymbolChangeMatrix a
-  -> SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> (SymbolAmbiguityGroup a, Word)
+  -> SymbolChangeMatrix Int
+  -> SymbolAmbiguityGroup
+  -> SymbolAmbiguityGroup
+  -> (SymbolAmbiguityGroup, Word)
 overlap allSymbols costStruct lhs rhs = 
     case lhs /\ rhs of
       Nothing -> minimalChoice $ symbolDistances allSymbols costStruct lhs rhs
@@ -162,15 +169,20 @@ minimalChoice = foldl1 f
 symbolDistances
   :: Foldable1 f
   => f a
-  -> SymbolChangeMatrix a
-  -> SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> NonEmpty (SymbolAmbiguityGroup a, Word)
-symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol allSymbols
+  -> SymbolChangeMatrix Int
+  -> SymbolAmbiguityGroup
+  -> SymbolAmbiguityGroup
+  -> NonEmpty (SymbolAmbiguityGroup, Word)
+symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol allKeys
   where
-    costAndSymbol i = pure (point i, cost1 + cost2)
+    allKeys :: NonEmpty Int
+    allKeys = mapWithKey const $ toNonEmpty allSymbols
+
+    costAndSymbol :: Int -> NonEmpty (SymbolAmbiguityGroup, Word)
+    costAndSymbol i = pure (bit i, cost1 + cost2)
       where
         cost1 = getDistance i group1
         cost2 = getDistance i group2
 
-    getDistance i e = minimum $ costStruct i <$> toNonEmpty e
+    getDistance :: Int -> SymbolAmbiguityGroup -> Word
+    getDistance i e = minimum $ costStruct i <$> NE.filter (e `testBit`) allKeys

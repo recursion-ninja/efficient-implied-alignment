@@ -42,7 +42,7 @@ import           UserInput
 
 parseFileInput
   :: UserInput
-  -> IO (Either String (Alphabet Char, TransitionCostMatrix Char, BTree () InitialInternalNode))
+  -> IO (Either String (Alphabet Char, TransitionCostMatrix, BTree () InitialInternalNode))
 parseFileInput input = do 
     dataResult <- readAndParse  fastaStreamParser $ dataFile input
     treeResult <- readAndParse newickStreamParser $ treeFile input
@@ -50,16 +50,16 @@ parseFileInput input = do
     case toEither $ (,,) <$> dataResult <*> treeResult <*> tcmResult of
       Left  pErr -> pure . Left . fold1 $ intersperse "\n\n" pErr
       Right (dataVal, treeVal, tcmVal) ->
-        let leafDataMap = fastaToMap dataVal
+        let TCM symbolList matrix = tcmVal
+            alphabet    = fromSymbols symbolList
+            leafDataMap = fastaToMap dataVal
             badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
-            badLinking  = first (fmap show) $ unifyInput leafDataMap treeVal
+            badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
         in  case toEither $ badLinking <* badSymbols of
               Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
               Right tree ->
-                let TCM symbolList matrix = tcmVal
-                    alphabet = fromSymbols symbolList
-                    scm      = force $ buildSymbolChangeMatrix alphabet matrix
-                    tcm      = force $ buildTransitionCostMatrix alphabet scm
+                let scm = force $ buildSymbolChangeMatrix matrix
+                    tcm = force $ buildTransitionCostMatrix alphabet scm
                 in  pure . Right $ force (alphabet, tcm, tree)
   where
     readAndParse
@@ -114,10 +114,11 @@ unifyInput
      , Lookup c
      , Traversable c
      )
-  => c (f (t Char))
+  => Alphabet Char
+  -> c (f (t Char))
   -> BTree b a
   -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
-unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
+unifyInput alphabet dataCollection genericTree = validatedDataSet *> initializedTree
   where
     dataSetKeys   = mapWithKey const dataCollection
     leafTaggedTree = setLeafLabels genericTree
@@ -142,8 +143,8 @@ unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
           where
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =
-                let !y = foldMap1 point x
-                in  Align 0 y y y
+                let !y = encodeAmbiguityGroup alphabet x
+                in  Align y
 
 
 data  UnificationError

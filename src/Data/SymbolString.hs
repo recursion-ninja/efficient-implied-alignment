@@ -10,16 +10,19 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveFoldable, DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
+{-# LANGUAGE DeriveFoldable, DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies, UnboxedSums #-}
 
 module Data.SymbolString
   ( SymbolAmbiguityGroup()
   , SymbolContext(..)
   , SymbolString()
   , (/\)
-  , gap
+  , encodeAmbiguityGroup
+  , decodeAmbiguityGroup
+--  , gap
   , reverseContext
-  , symbolAlignmentCost
+--  , symbolAlignmentCost
   , symbolAlignmentMedian
   , renderAligns
   , renderSingleton
@@ -29,6 +32,7 @@ module Data.SymbolString
 
 import           Control.DeepSeq
 import           Data.Alphabet
+import           Data.Bits
 import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty       (NonEmpty(..), intersperse)
@@ -41,124 +45,108 @@ import qualified Data.Set           as S
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
+import           Data.Word
 import           GHC.Generics
+import           Numeric
 
 
-type SymbolString = Vector (SymbolContext Char)
+type SymbolString = Vector SymbolContext
 
 
-data  SymbolContext a
-    = Align  Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
-    | Delete Word (SymbolAmbiguityGroup a) (SymbolAmbiguityGroup a)
-    | Insert Word (SymbolAmbiguityGroup a)                          (SymbolAmbiguityGroup a)
+data  SymbolContext
+    = Align  SymbolAmbiguityGroup
+    | Delete SymbolAmbiguityGroup SymbolAmbiguityGroup
+    | Insert SymbolAmbiguityGroup SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 
 -- |
 -- A non-empty set of characters.
-newtype SymbolAmbiguityGroup a = SAG (Set a)
-    deriving (Eq, Foldable, Generic, Ord, Pointed, Semigroup)
+newtype SymbolAmbiguityGroup = SAG Word32
+    deriving (Bits, Eq, Generic, Ord)
 
 
-instance Foldable1 SymbolAmbiguityGroup where
-
-    foldMap1 f = foldMap1 f . toNonEmpty
-
-    toNonEmpty (SAG x) =
-        case toList x of
-          x:xs -> x:|xs
-          _    -> error "The impossible happened when calling toNonEmpty on a SymbolAmbiguityGroup"
+encodeAmbiguityGroup :: (Eq a, Foldable1 f) => Alphabet a -> f a -> SymbolAmbiguityGroup
+encodeAmbiguityGroup alphabet xs = force . SAG $ foldlWithKey f 0 alphabet
+  where
+    f a k e
+      | e `elem` xs = a `setBit` k
+      | otherwise   = a
 
 
-instance NFData a => NFData (SymbolContext a)
+decodeAmbiguityGroup :: Eq a => Alphabet a -> SymbolAmbiguityGroup -> NonEmpty a
+decodeAmbiguityGroup alphabet xs = NE.fromList $ foldMapWithKey f alphabet
+  where
+    f k e
+      | xs `testBit` k = [e]
+      | otherwise      = []
+
+  
+instance NFData SymbolContext
 
 
-instance NFData a => NFData (SymbolAmbiguityGroup a)
+instance NFData SymbolAmbiguityGroup
 
 
-instance Show a => Show (SymbolAmbiguityGroup a) where
+instance Semigroup SymbolAmbiguityGroup where
 
-    show = (\x -> "{"<>x<>"}") . sconcat . intersperse ", " . fmap show . toNonEmpty
-
-
-instance Show a => Show (SymbolContext a) where
-
-    show (Align  _ x _ _) = "A" <> show x
-    show (Delete _ x _  ) = "D" <> show x
-    show (Insert _ x   _) = "I" <> show x
+    (<>) (SAG lhs) (SAG rhs) = SAG $ lhs .|. rhs
 
 
-renderString :: Foldable1 f => Alphabet Char -> f (SymbolAmbiguityGroup Char) -> String
+instance Show SymbolAmbiguityGroup where
+
+    show (SAG v) = showHex v ""
+
+
+instance Show SymbolContext where
+
+    show (Align  x) = "A" <> show x
+    show (Delete x _) = "D" <> show x
+    show (Insert x _) = "I" <> show x
+
+
+renderString :: Foldable1 f => Alphabet Char -> f SymbolAmbiguityGroup -> String
 renderString alphabet = (\s -> "["<>s<>"]") . intercalate1 "," . fmap renderAmbiguityGroup . toNonEmpty
   where
-    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
-    renderAmbiguityGroup xs = foldMap f alphabet
-      where
-        f v
-          | v `elem` xs = [v]
-          | otherwise   = " "
 
 
 renderSymbolString :: Alphabet Char -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  _ x y z) = mconcat ["α:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", renderAmbiguityGroup z]
-    renderContext (Delete _ x y  ) = mconcat ["δ:", renderAmbiguityGroup x, "|", renderAmbiguityGroup y, "|", blankSpace            ]
-    renderContext (Insert _ x   z) = mconcat ["ι:", renderAmbiguityGroup x, "|", blankSpace            , "|", renderAmbiguityGroup z]
-
-    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
-    renderAmbiguityGroup xs = foldMap f alphabet
-      where
-        f v
-          | v `elem` xs = [v]
-          | otherwise   = " "
-
-    blankSpace   = replicate (length alphabet) ' ' 
+    renderContext (Align  x  ) = mconcat ["α:", renderAmbiguityGroup x ]
+    renderContext (Delete x _) = mconcat ["δ:", renderAmbiguityGroup x ]
+    renderContext (Insert x _) = mconcat ["ι:", renderAmbiguityGroup x ]
 
 
 renderAligns :: Alphabet Char -> SymbolString -> String
 renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  _ x _ _) = renderAmbiguityGroup x
-    renderContext (Delete _ x _  ) = renderAmbiguityGroup (point '-')
-    renderContext (Insert _ x   _) = renderAmbiguityGroup (point '-')
-
-    renderAmbiguityGroup :: SymbolAmbiguityGroup Char -> String
-    renderAmbiguityGroup xs = foldMap f alphabet
-      where
-        f v
-          | v `elem` xs = [v]
-          | otherwise   = " "
+    renderContext (Align  x) = renderAmbiguityGroup x
+    renderContext _          = renderAmbiguityGroup $ encodeAmbiguityGroup alphabet ('-':|[])
 
 
 renderSingleton :: Alphabet Char -> SymbolString -> String
 renderSingleton alphabet = foldMap renderContext . toNonEmpty
   where
     gap = gapSymbol alphabet
-    renderContext (Align  _ x _ _) = pure . NE.head $ toNonEmpty x
+    renderContext (Align x) = toList $ decodeAmbiguityGroup alphabet x
     renderContext _  = [gap]
 
 
-symbolAlignmentCost :: SymbolContext a -> Word
-symbolAlignmentCost (Align  x _ _ _) = x
-symbolAlignmentCost (Delete x _ _  ) = x
-symbolAlignmentCost (Insert x _ _  ) = x
+renderAmbiguityGroup :: SymbolAmbiguityGroup -> String
+renderAmbiguityGroup = show
 
 
-symbolAlignmentMedian :: SymbolContext a -> SymbolAmbiguityGroup a
-symbolAlignmentMedian (Align  _ x _ _) = x
-symbolAlignmentMedian (Delete _ x _  ) = x
-symbolAlignmentMedian (Insert _ x _  ) = x
+symbolAlignmentMedian :: SymbolContext -> SymbolAmbiguityGroup
+symbolAlignmentMedian (Align  x)   = x
+symbolAlignmentMedian (Delete x _) = x
+symbolAlignmentMedian (Insert x _) = x
 
 
-gap :: SymbolAmbiguityGroup String
-gap = SAG $ S.singleton "-"
-
-
-reverseContext :: SymbolContext a -> SymbolContext a
-reverseContext (Align  cost med lhs rhs) = Align  cost med rhs lhs
-reverseContext (Delete cost med lhs    ) = Insert cost med     lhs 
-reverseContext (Insert cost med     rhs) = Delete cost med rhs     
+reverseContext :: SymbolContext -> SymbolContext
+reverseContext (Delete med x) = Insert med x
+reverseContext (Insert med x) = Delete med x
+reverseContext e = e
 
 
 -- |
@@ -166,12 +154,11 @@ reverseContext (Insert cost med     rhs) = Delete cost med rhs
 -- @Nothing@ value is the 'SymbolAmbiguityGroup's are disjoint or the @Just@ the
 -- intersection.
 (/\)
-  :: Ord a
-  => SymbolAmbiguityGroup a
-  -> SymbolAmbiguityGroup a
-  -> Maybe (SymbolAmbiguityGroup a)
+  :: SymbolAmbiguityGroup
+  -> SymbolAmbiguityGroup
+  -> Maybe SymbolAmbiguityGroup
 (/\) (SAG lhs) (SAG rhs)
-  | null intersect = Nothing
-  | otherwise      = Just $ SAG intersect
+  | zeroBits == intersect = Nothing
+  | otherwise             = Just $ SAG intersect
   where
-    intersect = S.intersection lhs rhs
+    intersect = lhs .&. rhs

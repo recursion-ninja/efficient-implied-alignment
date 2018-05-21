@@ -39,7 +39,7 @@ type LeafInput = Map String (NonEmpty (NonEmpty Char))
 type TreeInput = BTree () ()
 
 
-sampleDataSets :: [(String, LeafInput, TreeInput, TransitionCostMatrix Char)]
+sampleDataSets :: [(String, LeafInput, TreeInput, TransitionCostMatrix)]
 sampleDataSets =
     [ ("Appended Deletions"                                         , dataSetA, topologyA, discreteMetricTCM)
     , ("Prepended Deletions"                                        , dataSetB, topologyB, discreteMetricTCM)
@@ -78,23 +78,25 @@ defaultAlphabet :: Alphabet Char
 defaultAlphabet = fromSymbols "ACGT-"
 
 
+{-
 defaultTripleCompare :: ThreewayCompare Char
 defaultTripleCompare = buildThreeWayCompare defaultAlphabet discreteMetricTCM
+-}
 
 
-discreteMetricTCM :: TransitionCostMatrix Char
+discreteMetricTCM :: TransitionCostMatrix
 discreteMetricTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
-    scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
+    scm = buildSymbolChangeMatrix   fakeParseInput
     fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
 
 
-preferGapsTCM :: TransitionCostMatrix Char
+preferGapsTCM :: TransitionCostMatrix
 preferGapsTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
-    scm = buildSymbolChangeMatrix   defaultAlphabet fakeParseInput
+    scm = buildSymbolChangeMatrix   fakeParseInput
     fakeParseInput = matrix 5 5 f
       where
         f (i,j)

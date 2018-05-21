@@ -56,9 +56,8 @@ runInput = do
             leafRenderer  x i = mconcat [ pad maxLabelLen (i<>":"), " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
             nodeRenderer  x _ = mconcat [ pad maxLabelLen     "?:", " ", renderSingleton defaultAlphabet $ x ^. alignedString     ]
 
-            postorder'  = postorder stringAligner
-            preorder'   = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
-            medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet tcm)
+            postorder'    = postorder stringAligner
+            preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
             stringAligner = postorderLogic (ukkonenDO defaultAlphabet tcm)
         in  do
           putStrLn ""
@@ -83,7 +82,7 @@ runInput = do
           putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 
-runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix Char) -> IO ()
+runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix) -> IO ()
 runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --    parseUserInput >>= print
     let dataSetNumber = "Data Set Number: " <> show num
@@ -91,7 +90,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
     putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-" ]    
     putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=-" ]
     putStrLn ""
-    case toEither $ unifyInput leafData treeData of
+    case toEither $ unifyInput defaultAlphabet leafData treeData of
       Left  errors -> mapM_ print $ toList errors
       Right tree   -> do
           putStrLn ""
@@ -125,7 +124,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
     postorder' = postorder stringAligner
     preorder'  = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
 
-    medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet op)
+    medianStateFinalizer = preorderInternalLogic -- (buildThreeWayCompare defaultAlphabet op)
     
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
 
