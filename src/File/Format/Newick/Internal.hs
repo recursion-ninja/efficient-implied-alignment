@@ -12,7 +12,6 @@ module File.Format.Newick.Internal
 import           Data.Tree
 import           Data.Maybe
 import           Data.List.NonEmpty  (NonEmpty, toList)
-import           Data.Semigroup
 
 
 {----

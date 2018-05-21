@@ -6,27 +6,6 @@ module Data.UserInput
   ) where
 
 import           Control.DeepSeq
-import           Control.Lens
-import           Data.Alphabet
-import           Data.BTree
-import           Data.Char
-import           Data.Decoration
-import           Data.Foldable
-import           Data.Functor                 (($>))
-import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..))
-import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
-import           Data.Map                     (Map)
-import qualified Data.Map              as M
-import           Data.Pointed
-import           Data.Semigroup               ((<>))
-import           Data.Semigroup.Foldable
-import           Data.Set                     (Set)
-import           Data.SymbolString
-import           Data.TCM
-import           Data.Validation
-import           System.IO
 
 
 data  UserInput

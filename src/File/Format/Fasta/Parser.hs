@@ -15,7 +15,6 @@ module File.Format.Fasta.Parser
 import           Control.Monad.Combinators.NonEmpty
 import           Data.Char                   (isSpace)
 import           Data.List.NonEmpty          (NonEmpty, some1)
-import qualified Data.List.NonEmpty   as NE
 import           Data.Semigroup
 import qualified Data.Vector.NonEmpty as V
 import           File.Format.Fasta.Internal

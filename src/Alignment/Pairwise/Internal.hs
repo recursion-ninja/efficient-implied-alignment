@@ -27,35 +27,22 @@ module Alignment.Pairwise.Internal
   , measureCharacters
   , needlemanWunschDefinition
   , renderCostMatrix
---  , traceback
---  , overlap
---  , overlapConst
---  , getOverlap
---  , minimalChoice
   ) where
 
 
-import           Control.Arrow            ((&&&))
-import           Data.Bits
-import           Data.DList               (snoc)
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty       (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 import           Data.Matrix.ZeroIndexed  (Matrix)
-import           Data.Maybe               (fromJust, fromMaybe)
-import           Data.MonoTraversable
+import           Data.Maybe               (fromMaybe)
 import           Data.Ord
-import           Data.Pointed
 import           Data.Semigroup
-import           Data.Semigroup.Foldable
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude            hiding (lookup, reverse, zipWith)
 
-import Debug.Trace
+--import Debug.Trace
 
 
 -- |
@@ -125,10 +112,10 @@ type MatrixFunction m f
 -- Reused internally by different implementations.
 directOptimization
   :: ( Foldable f
-     , Foldable m
-     , Functor m
+--     , Foldable m
+--     , Functor m
      , Indexable f
-     , Indexable m
+--     , Indexable m
      , Key f ~ Int
      , Key m ~ (Int, Int)
      , MatrixConstraint m
@@ -139,7 +126,7 @@ directOptimization
   -> f SymbolContext
   -> f SymbolContext
   -> (Word, Vector SymbolContext)
-directOptimization overlapFunction renderingFunction matrixFunction lhs rhs = {- trace (renderingFunction lhs rhs traversalMatrix) -} (alignmentCost, alignmentContext)
+directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {- trace (renderingFunction lhs rhs traversalMatrix) -} (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
@@ -255,8 +242,8 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    isInDel Align {} = False
-    isInDel _ = True
+--    isInDel Align {} = False
+--    isInDel _ = True
     
     topContext                    = (col - 1) `lookup` topChar
     leftContext                   = (row - 1) `lookup` leftChar
@@ -394,7 +381,7 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
         | nextCell < (0,0) = (contextElement, Nothing)
         | otherwise        = (contextElement, Just nextCell)
         where
-          (cost, directionArrow, medianElement) = alignMatrix ! currentCell
+          (_, directionArrow, medianElement) = alignMatrix ! currentCell
 
           (nextCell, contextElement) =
               case directionArrow of
@@ -408,6 +395,7 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
  -}
 
 
+{-
 -- |
 -- An overlap function that applies the discrete metric to aligning two
 -- 'SymbolAmbiguityGroup'.
@@ -419,6 +407,7 @@ overlapConst lhs rhs =
     case lhs /\ rhs of
       Nothing -> (lhs <> rhs, 1)
       Just xs -> (xs , 0)
+-}
 
 
 getMinimalCostDirection

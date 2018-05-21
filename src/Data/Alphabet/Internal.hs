@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies #-}
 
+-- We do this because we added an orphan instanc IsString Char
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Data.Alphabet.Internal
   ( Alphabet()
   , AmbiguityGroup

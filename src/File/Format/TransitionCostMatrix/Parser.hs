@@ -16,13 +16,11 @@ import           Data.List.Utility              (duplicates, mostCommon)
 import           Data.Matrix.ZeroIndexed        (Matrix, ncols, nrows)
 import qualified Data.Matrix.ZeroIndexed as M
 import           Data.Maybe                     (catMaybes, fromJust)
-import           Data.Scientific                (toRealFloat)
 import           Data.Semigroup
 import           Prelude                 hiding (zip)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
-import           Text.Megaparsec.Char.Lexer     (scientific)
 
 
 -- |
@@ -144,8 +142,12 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
         case '-' `elemIndex` toList alphabet of
           Nothing -> TCM (alphabet <> pure '-') matrix
           Just k  -> let permuted = NE.fromList (NE.filter (/='-') alphabet) <> pure '-'
-                         g (i,j)  = let i' = if i < k then i else if i == size - 1 then k else i + 1
-                                        j' = if j < k then j else if j == size - 1 then k else j + 1
+                         g (i,j)  = let i' | i < k = i
+                                           | i == size - 1 = k
+                                           | otherwise = i + 1
+                                        j' | j < k = j
+                                           | j == size - 1 = k
+                                           | otherwise = j + 1
                                     in  M.unsafeGet i' j' matrix
                      in  TCM permuted $ M.matrix rows cols g
 
@@ -178,10 +180,10 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
 --
 --   * Contains no duplicate elements
 --
-validateAlphabet :: (MonadParsec e s m, Token s ~ Char) => NonEmpty Char -> m (NonEmpty Char)
+validateAlphabet :: MonadParsec e s m => NonEmpty Char -> m (NonEmpty Char)
 validateAlphabet alphabet
   | duplicatesExist = fail $ "The following symbols were listed multiple times in the custom alphabet: " <> show dupes
-  | tooManySymbols  = fail $ "The alphabet has more than 32 symbols (inluding gap). This is a technical limitation for efficiency."
+  | tooManySymbols  = fail   "The alphabet has more than 32 symbols (inluding gap). This is a technical limitation for efficiency."
   | otherwise       = pure alphabet 
   where
     tooManySymbols  = if '-' `elem` alphabet then length alphabet > 32 else length alphabet > 31

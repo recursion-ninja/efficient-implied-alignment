@@ -23,12 +23,9 @@ module Alignment.Pairwise.NeedlemanWunsch
 
 import Alignment.Pairwise.Internal
 import Data.Alphabet
-import Data.Foldable
 import Data.List.NonEmpty      (NonEmpty(..))
 import Data.Key
 import Data.Matrix.ZeroIndexed (matrix)
-import Data.MonoTraversable
-import Data.Pointed
 import Data.SymbolString
 import Data.TCM
 import Data.Vector.NonEmpty

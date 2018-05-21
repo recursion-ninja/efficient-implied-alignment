@@ -24,6 +24,7 @@ main = runInput
 
 runInput :: IO ()
 runInput = do
+    hSetBuffering stdout NoBuffering
     opts <- force <$> parseUserInput
     vals <- parseFileInput opts
     case vals of

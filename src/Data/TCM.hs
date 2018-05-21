@@ -3,33 +3,24 @@
 module Data.TCM
   ( SymbolChangeMatrix
   , TransitionCostMatrix
---  , ThreewayCompare
   -- * Construction
   , buildSymbolChangeMatrix
---  , buildThreeWayCompare
   , buildTransitionCostMatrix
   -- * Querries
   , overlap
   ) where
 
-import Control.DeepSeq
-import Data.Alphabet
-import Data.Bits
-import Data.Foldable
---import Data.Hashable
---import Data.HashMap.Strict hiding ((!), foldl', mapWithKey)
-import Data.Key
-import Data.List.NonEmpty         (NonEmpty)
-import qualified Data.List.NonEmpty as NE
-import Data.Matrix.ZeroIndexed    (Matrix, unsafeGet)
+import           Control.DeepSeq
+import           Data.Alphabet
+import           Data.Bits
+import           Data.Key
+import           Data.List.NonEmpty            (NonEmpty)
+import qualified Data.List.NonEmpty      as NE
+import           Data.Matrix.ZeroIndexed       (Matrix, unsafeGet)
 import qualified Data.Matrix.ZeroIndexed as M
-import Data.Pointed
-import Data.Semigroup
-import Data.Semigroup.Foldable
-import Data.SymbolString
-import Data.Word
+import           Data.Semigroup.Foldable
+import           Data.SymbolString
 
-import Debug.Trace
 
 -- |
 -- /O(1)/ for practical purposes, technically \( \mathcal{O} \left( \log_16 \left( a \right) \right) \)
@@ -113,8 +104,7 @@ buildSymbolChangeMatrix matrix = let m = force matrix
 --
 -- Build a 'TransitionCostMatrix' from an 'Alphabet' and a 'SymbolChangeMatrix'.
 buildTransitionCostMatrix
-  :: Ord k
-  => Alphabet k
+  :: Alphabet k
   -> SymbolChangeMatrix Int
   -> TransitionCostMatrix
 buildTransitionCostMatrix alphabet scm = 
@@ -138,9 +128,7 @@ buildTransitionCostMatrix alphabet scm =
 -- @ char2 == G,C @, and the two (non-overlapping) least cost pairs are @ A,C @
 -- and @ T,G @, then the return value is @ A,C,G,T @sy.
 overlap
-  :: ( Foldable1 f
-     , Ord a
-     )
+  :: Foldable1 f
   => f a
   -> SymbolChangeMatrix Int
   -> SymbolAmbiguityGroup
@@ -158,7 +146,7 @@ overlap allSymbols costStruct lhs rhs
 -- Given a structure of unambiguous symbols and costs, calculates the least 
 -- costly intersection of unambiguous character elements and the cost of that
 -- intersection.
-minimalChoice :: (Semigroup a, Foldable1 t, Ord a, Ord c) => t (a, c) -> (a, c)
+minimalChoice :: (Semigroup a, Foldable1 t, Ord c) => t (a, c) -> (a, c)
 minimalChoice = foldl1 f
   where
     f (!symbol1, !cost1) (!symbol2, !cost2) =

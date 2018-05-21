@@ -31,8 +31,6 @@ import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty       (NonEmpty(..))
 import           Data.Maybe               (isJust)
-import           Data.MonoTraversable
-import           Data.Pointed
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.Instances    ()
@@ -133,7 +131,6 @@ ukkonenDO alphabet overlapFunction lhs rhs
     -- zero.
     coefficient = minimum $ indelCost <$> nonGapGroups
       where
-        alphabetSize   = length alphabet
         nonGapGroups   = fmap (encodeAmbiguityGroup alphabet . (:|[])) nonGapSymbols
         nonGapSymbols  = filter (/= gap) $ alphabetSymbols alphabet
         distance x y   = snd $ overlapFunction x y
@@ -196,7 +193,6 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         countGaps   = length . filter containsGap . toList
         containsGap = isJust . (/\ gapGroup) . symbolAlignmentMedian
 
-    gapValue = gapSymbol alphabet
     gapGroup = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :|[]
 
     ukkonenUntilOptimal offset

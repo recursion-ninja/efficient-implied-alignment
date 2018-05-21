@@ -102,8 +102,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
 
 
 unifyInput
-  :: ( Foldable  c
-     , Foldable1 f
+  :: ( Foldable1 f
      , Foldable1 t
      , Key c ~ String
      , Keyed c

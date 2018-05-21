@@ -4,15 +4,12 @@ module Data.List.Utility
   ) where
 
 import Data.Foldable
-import Data.Key           (Zip(..))
 import Data.List          (sort, sortBy)
-import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map           (assocs, empty, insertWith)
-import Data.Semigroup
 import Data.Ord           (comparing)
-import Data.Set           (insert, intersection)
 
 
+{-
 -- |
 -- \( \mathcal{O} \left( n * k \right) \)
 --
@@ -75,7 +72,7 @@ isSingleton = f . toList
   where
     f [_] = True
     f  _  = False
-
+-}
 
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
@@ -151,6 +148,7 @@ occurances = collateOccuranceMap . buildOccuranceMap
         descending x   = x
 
 
+{-
 -- |
 -- \( \mathcal{O} \left( n * \right) \)
 --
@@ -341,3 +339,4 @@ minimaBy cmp = foldr f []
                 EQ -> e:es
                 GT -> es
                 LT -> [e]
+-}

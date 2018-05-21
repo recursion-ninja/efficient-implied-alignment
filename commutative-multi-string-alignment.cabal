@@ -83,30 +83,22 @@ library
   build-depends:
       base >=4.7 && <5
     , bimap
---    , bv-little
-    , case-insensitive
     -- >=0.5.8 Required for Data.Map.restrictKeys
     , containers       >=0.5.8
     , deepseq
-    , dlist
     , hashable
     , integer-gmp
     , keys
     , lens
     , matrix
     , megaparsec         >=6.3
-    , mono-traversable   >=1.0
     , mtl
     , parser-combinators >=0.4
     , pointed
     , QuickCheck
-    , safe
-    , scientific
     , semigroupoids
     , semigroups
---    , text
     , transformers
-    , unordered-containers
     , validation
     , vector
     -- >=3.4 required for corrected definition of (!) & index
@@ -169,15 +161,11 @@ executable tree-align
       ansi-wl-pprint
     , base       >=4.7 && <5
     , commutative-multi-string-alignment
-    , containers >=0.5.8
     , deepseq
     , keys
     , lens
-    , megaparsec       >=6.3
     , optparse-applicative
-    , pointed
     , semigroupoids
-    , validation
 
   other-modules:
       Paths_commutative_multi_string_alignment
@@ -205,7 +193,6 @@ test-suite test-align
     , deepseq
     , keys
     , lens
-    , megaparsec >=6.3
     , pointed
     , semigroupoids
     , validation

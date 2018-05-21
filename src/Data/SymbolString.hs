@@ -10,8 +10,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveFoldable, DeriveGeneric, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE Strict, TypeFamilies, UnboxedSums #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, Strict, TypeFamilies, UnboxedSums #-}
 
 module Data.SymbolString
   ( SymbolAmbiguityGroup()
@@ -35,14 +34,8 @@ import           Data.Alphabet
 import           Data.Bits
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty       (NonEmpty(..), intersperse)
+import           Data.List.NonEmpty       (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
-import           Data.Pointed
-import           Data.Map                  (Map)
-import qualified Data.Map           as M
-import           Data.Set                  (Set)
-import qualified Data.Set           as S
-import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
 import           Data.Word
@@ -74,7 +67,7 @@ encodeAmbiguityGroup alphabet xs = force . SAG $ foldlWithKey f 0 alphabet
       | otherwise   = a
 
 
-decodeAmbiguityGroup :: Eq a => Alphabet a -> SymbolAmbiguityGroup -> NonEmpty a
+decodeAmbiguityGroup :: Alphabet a -> SymbolAmbiguityGroup -> NonEmpty a
 decodeAmbiguityGroup alphabet xs = NE.fromList $ foldMapWithKey f alphabet
   where
     f k e
@@ -106,16 +99,26 @@ instance Show SymbolContext where
 
 
 renderString :: Foldable1 f => Alphabet Char -> f SymbolAmbiguityGroup -> String
-renderString alphabet = (\s -> "["<>s<>"]") . intercalate1 "," . fmap renderAmbiguityGroup . toNonEmpty
+renderString alphabet = foldMap renderGroup . toNonEmpty
   where
+    renderGroup grp =
+      case decodeAmbiguityGroup alphabet grp of
+        x:|[] -> [x]
+        x:|xs -> mconcat ["[",[x],xs,"]"]
 
 
 renderSymbolString :: Alphabet Char -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  x  ) = mconcat ["α:", renderAmbiguityGroup x ]
-    renderContext (Delete x _) = mconcat ["δ:", renderAmbiguityGroup x ]
-    renderContext (Insert x _) = mconcat ["ι:", renderAmbiguityGroup x ]
+    renderContext (Align  x  ) = mconcat ["α: ", renderGroup x ]
+    renderContext (Delete x _) = mconcat ["δ: ", renderGroup x ]
+    renderContext (Insert x _) = mconcat ["ι: ", renderGroup x ]
+
+    renderGroup grp = foldMapWithKey f alphabet
+      where
+        f k v
+          | grp `testBit` k = [v]
+          | otherwise       = " "
 
 
 renderAligns :: Alphabet Char -> SymbolString -> String
