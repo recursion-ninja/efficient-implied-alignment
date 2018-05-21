@@ -1,7 +1,7 @@
 
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module File.Format.Fastc.Test
+module File.Format.Fasta.Test
   ( testSuite
   ) where
 
@@ -10,23 +10,23 @@ import Data.List.NonEmpty       (NonEmpty)
 import qualified Data.List.NonEmpty as NE (fromList)
 import Data.Vector              (Vector,fromList)
 import File.Format.Fasta.Test   (validTaxonLines)
-import File.Format.Fastc.Parser
+import File.Format.Fasta.Parser
 import Test.Custom.Parse        (parseEquals)
 import Test.Tasty               (TestTree,testGroup)
 import Test.Tasty.HUnit
 
 
 testSuite :: TestTree
-testSuite = testGroup "Fastc Format"
-    [ testGroup "Fastc Parser"
-        [fastcSymbolSequence',fastcTaxonSequenceDefinition',fastcStreamParser']
+testSuite = testGroup "Fasta Format"
+    [ testGroup "Fasta Parser"
+        [fastaSymbolSequence',fastaTaxonSequenceDefinition',fastaStreamParser']
     ]
 
 
-fastcSymbolSequence' :: TestTree
-fastcSymbolSequence' = testGroup "fastcSymbolSequence" [valid]
+fastaSymbolSequence' :: TestTree
+fastaSymbolSequence' = testGroup "fastaSymbolSequence" [valid]
   where
-    f (res,str) = testCase (show str) $ parseEquals fastcSymbolSequence str res
+    f (res,str) = testCase (show str) $ parseEquals fastaSymbolSequence str res
     valid       = testGroup "Valid sequences" $ f <$> validSequences
 
 
@@ -41,22 +41,22 @@ validSequences = first (fromList . fmap NE.fromList) <$>
     ]
 
 
-fastcTaxonSequenceDefinition' :: TestTree
-fastcTaxonSequenceDefinition' = testGroup "fastaTaxonSequenceDefinition" [valid]
+fastaTaxonSequenceDefinition' :: TestTree
+fastaTaxonSequenceDefinition' = testGroup "fastaTaxonSequenceDefinition" [valid]
   where
-    f (res,str) = testCase (show str) $ parseEquals fastcTaxonSequenceDefinition str res
+    f (res,str) = testCase (show str) $ parseEquals fastaTaxonSequenceDefinition str res
     valid               = testGroup "Valid sequences" $ f <$> validTaxonSequences
 
 
-validTaxonSequences :: [(FastcSequence,String)]
+validTaxonSequences :: [(FastaSequence,String)]
 validTaxonSequences = zipWith f validTaxonLines validSequences
   where
-    f (x,str) (y,seq')  = (FastcSequence x y, concat [str,"\n",seq'])
+    f (x,str) (y,seq')  = (FastaSequence x y, concat [str,"\n",seq'])
 
 
-fastcStreamParser' :: TestTree
-fastcStreamParser' = testGroup "fastaStreamParser" [testGroup "Valid stream" [validStream]]
+fastaStreamParser' :: TestTree
+fastaStreamParser' = testGroup "fastaStreamParser" [testGroup "Valid stream" [validStream]]
   where
-    validStream = testCase "Fastc concatenated stream" $ parseEquals fastcStreamParser str (NE.fromList res)
+    validStream = testCase "Fasta concatenated stream" $ parseEquals fastaStreamParser str (NE.fromList res)
     (res,str)   = second concat $ unzip validTaxonSequences
 

@@ -80,7 +80,7 @@ library
       Data.SymbolString
       Data.TCM
       Data.Vector.NonEmpty
-      File.Format.Fastc
+      File.Format.Fasta
       File.Format.Newick
       File.Format.TransitionCostMatrix
 
@@ -96,8 +96,8 @@ library
       Data.Decoration.Internal
       Data.Decoration.Leaf
       Data.List.Utility
-      File.Format.Fastc.Internal
-      File.Format.Fastc.Parser
+      File.Format.Fasta.Internal
+      File.Format.Fasta.Parser
       File.Format.Newick.Internal
       File.Format.Newick.Parser
       File.Format.TransitionCostMatrix.Parser

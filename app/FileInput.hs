@@ -30,7 +30,7 @@ import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
 import           Data.Void
-import           File.Format.Fastc
+import           File.Format.Fasta
 import           File.Format.Newick
 import           File.Format.TransitionCostMatrix
 import           Options.Applicative
@@ -44,13 +44,13 @@ parseFileInput
   :: UserInput
   -> IO (Either String (Alphabet Char, TransitionCostMatrix Char, BTree () InitialInternalNode))
 parseFileInput input = do 
-    dataResult <- readAndParse  fastcStreamParser $ dataFile input
+    dataResult <- readAndParse  fastaStreamParser $ dataFile input
     treeResult <- readAndParse newickStreamParser $ treeFile input
     tcmResult  <- readAndParse    tcmStreamParser $  tcmFile input
     case toEither $ (,,) <$> dataResult <*> treeResult <*> tcmResult of
       Left  pErr -> pure . Left . fold1 $ intersperse "\n\n" pErr
       Right (dataVal, treeVal, tcmVal) ->
-        let leafDataMap = fastcToMap dataVal
+        let leafDataMap = fastaToMap dataVal
             badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
             badLinking  = first (fmap show) . unifyInput leafDataMap $ newickNodeToBTree treeVal
         in  case toEither $ badLinking <* badSymbols of
@@ -71,8 +71,8 @@ parseFileInput input = do
         pure . first (pure . parseErrorPretty' stream). fromEither $ parse parser filePath stream
 
 
-fastcToMap :: FastcParseResult -> Map String CharacterSequence
-fastcToMap = foldMap (M.singleton <$> fastcLabel <*> fastcSymbols) 
+fastaToMap :: FastaParseResult -> Map String CharacterSequence
+fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols) 
 
 
 newickNodeToBTree :: NewickNode -> BTree () ()

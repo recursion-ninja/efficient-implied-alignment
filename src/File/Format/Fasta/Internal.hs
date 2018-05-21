@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies #-}
 
-module File.Format.Fastc.Internal
+module File.Format.Fasta.Internal
   ( CharacterSequence
   , Identifier
   , Symbol
