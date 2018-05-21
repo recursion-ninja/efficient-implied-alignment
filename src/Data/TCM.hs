@@ -22,6 +22,7 @@ import Data.Key
 import Data.List.NonEmpty         (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 import Data.Matrix.ZeroIndexed    (Matrix, unsafeGet)
+import qualified Data.Matrix.ZeroIndexed as M
 import Data.Pointed
 import Data.Semigroup
 import Data.Semigroup.Foldable
@@ -115,7 +116,11 @@ buildTransitionCostMatrix
   => Alphabet k
   -> SymbolChangeMatrix Int
   -> TransitionCostMatrix
-buildTransitionCostMatrix = overlap
+buildTransitionCostMatrix alphabet scm = 
+    let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
+        len     = length alphabet
+        m       = force $ M.matrix len len g
+    in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
 
 
 -- |
@@ -139,7 +144,9 @@ overlap
   -> SymbolAmbiguityGroup
   -> SymbolAmbiguityGroup
   -> (SymbolAmbiguityGroup, Word)
-overlap allSymbols costStruct lhs rhs = 
+overlap allSymbols costStruct lhs rhs
+  | zeroBits == lhs || zeroBits == rhs = (zeroBits, 0)
+  | otherwise =
     case lhs /\ rhs of
       Nothing -> minimalChoice $ symbolDistances allSymbols costStruct lhs rhs
       Just xs -> (xs, 0)
