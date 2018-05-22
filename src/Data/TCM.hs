@@ -8,6 +8,7 @@ module Data.TCM
   , buildTransitionCostMatrix
   -- * Querries
   , overlap
+  , renderTCM
   ) where
 
 import           Control.DeepSeq
@@ -53,6 +54,17 @@ buildSymbolChangeMatrix
   -> SymbolChangeMatrix Int
 buildSymbolChangeMatrix matrix = let m = force matrix
                                  in  (\x y -> unsafeGet x y m)
+
+
+renderTCM :: Alphabet Char -> TransitionCostMatrix -> String
+renderTCM alphabet tcm = unlines . (headerRow:) $ fmap (foldMap render) listOfRows
+  where
+    g (i,j)      = tcm (toEnum $ i + 1) (toEnum $ j + 1)
+    len          = 1 `shiftL` length alphabet
+    m            = M.matrix (len-1) (len-1) g
+    listOfRows   = M.toLists m
+    headerRow    = foldMap (\x -> mconcat ["|", renderMonospacedGroup alphabet (toEnum x),"|   "]) [1..len-1]
+    render (x,y) = mconcat ["(", renderMonospacedGroup alphabet x, ",", show y,") "]
 
 
 -- |

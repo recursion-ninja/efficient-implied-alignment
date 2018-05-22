@@ -8,11 +8,13 @@ import Control.Lens
 import Data.Alphabet
 import Data.BTree
 import Data.Decoration
+import Data.Foldable
 import Data.Key
 import Data.List.NonEmpty      (intersperse)
 import Data.Semigroup          ((<>))
 import Data.Semigroup.Foldable
 import Data.SymbolString
+import Data.TCM
 import File.Input
 import InputParser
 import System.IO
@@ -40,6 +42,8 @@ runInput = do
             preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
             stringAligner = postorderLogic (ukkonenDO alphabet tcm)
         in  do
+          putStrLn ""
+          putStrLn $ renderTCM alphabet tcm
           putStrLn ""
           putStrLn $ renderAlphabet alphabet
           putStrLn ""

@@ -19,11 +19,10 @@ module Data.SymbolString
   , (/\)
   , encodeAmbiguityGroup
   , decodeAmbiguityGroup
---  , gap
   , reverseContext
---  , symbolAlignmentCost
   , symbolAlignmentMedian
   , renderAligns
+  , renderMonospacedGroup
   , renderSingleton
   , renderString
   , renderSymbolString
@@ -93,9 +92,17 @@ instance Show SymbolAmbiguityGroup where
 
 instance Show SymbolContext where
 
-    show (Align  x _ _) = "A" <> show x
-    show (Delete x _  ) = "D" <> show x
-    show (Insert x   _) = "I" <> show x
+    show (Align  m x y) = mconcat ["A|", showPad m, "|", showPad x, "|", showPad y, "|"]
+    show (Delete m x  ) = mconcat ["D|", showPad m, "|", showPad x, "|",   "     ", "|"]
+    show (Insert m   y) = mconcat ["I|", showPad m, "|",   "     ", "|", showPad y, "|"]
+
+
+-- We pad things to be exactly 5 characters long with leading space because a
+-- Word16 can have at most five, base 10 digits
+showPad :: SymbolAmbiguityGroup -> String
+showPad (SAG x) = replicate (5 - length shown) ' ' <> shown
+  where
+    shown = show x 
 
 
 renderString :: Foldable1 f => Alphabet Char -> f SymbolAmbiguityGroup -> String
@@ -114,11 +121,15 @@ renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap r
     renderContext (Delete x _  ) = mconcat ["δ: ", renderGroup x ]
     renderContext (Insert x   _) = mconcat ["ι: ", renderGroup x ]
 
-    renderGroup grp = foldMapWithKey f alphabet
-      where
-        f k v
-          | grp `testBit` k = [v]
-          | otherwise       = " "
+    renderGroup = renderMonospacedGroup alphabet
+
+
+renderMonospacedGroup :: Alphabet Char -> SymbolAmbiguityGroup -> String
+renderMonospacedGroup alphabet grp = foldMapWithKey f alphabet
+  where
+    f k v
+      | grp `testBit` k = [v]
+      | otherwise       = " "
 
 
 renderAligns :: Alphabet Char -> SymbolString -> String
