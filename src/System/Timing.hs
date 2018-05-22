@@ -23,11 +23,17 @@ instance NFData CPUTime where
 instance Show CPUTime where
 
     show (CPUTime x)
-      | x < 1000          = let (q,_) = x `quotRem` 1             in mconcat [show q, ".", "???"                   , "ps"]
-      | x < 1000000       = let (q,r) = x `quotRem` 1000          in mconcat [show q, ".", show (r `div` 1        ), "ns"]
-      | x < 1000000000    = let (q,r) = x `quotRem` 1000000       in mconcat [show q, ".", show (r `div` 1000      ), "μs"]
-      | x < 1000000000000 = let (q,r) = x `quotRem` 1000000000    in mconcat [show q, ".", show (r `div` 1000000   ), "ms"]
-      | otherwise         = let (q,r) = x `quotRem` 1000000000000 in mconcat [show q, ".", show (r `div` 1000000000), "s "]
+      | x < 1000          = let (q,_) = x `quotRem` 1             in mconcat [show q, ".", "???"                       , "ps"]
+      | x < 1000000       = let (q,r) = x `quotRem` 1000          in mconcat [show q, ".", zeroPad (r `div` 1         ), "ns"]
+      | x < 1000000000    = let (q,r) = x `quotRem` 1000000       in mconcat [show q, ".", zeroPad (r `div` 1000      ), "μs"]
+      | x < 1000000000000 = let (q,r) = x `quotRem` 1000000000    in mconcat [show q, ".", zeroPad (r `div` 1000000   ), "ms"]
+      | otherwise         = let (q,r) = x `quotRem` 1000000000000 in mconcat [show q, ".", zeroPad (r `div` 1000000000), "s "]
+
+
+zeroPad :: Integer -> String
+zeroPad i = shown <> replicate (3 - length shown) '0'
+  where
+    shown = show i
 
 
 timeOp :: MonadIO m => m a -> m (CPUTime, a)
