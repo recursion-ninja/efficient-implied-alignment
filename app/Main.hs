@@ -85,7 +85,7 @@ runInput = do
                 , "Diagnostics:"
                 , "  Parse Files: " <> padL dPad shownParseTime
                 , "  Unify Input: " <> padL dPad shownUnifyTime
-                , "  Precompute:  " <> padL dPad shownPreCompute
+                , "  Setup TCM:   " <> padL dPad shownPreCompute
                 , "  Postorder:   " <> padL dPad shownPostorder
                 , "  Preorder:    " <> padL dPad shownPreorder
                 ]
