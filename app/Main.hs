@@ -33,7 +33,7 @@ import SampleData
 
 
 main :: IO ()
-main = runInput
+main = runInput2
 
 
 runTests :: IO ()
@@ -80,6 +80,49 @@ runInput = do
           putStrLn "Output Alignment:"
           putStrLn ""
 --          putStrLn $ renderPhylogeny inputRenderer postResult
+          putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
+
+
+runInput2 :: IO ()
+runInput2 = do
+    hSetBuffering stdout NoBuffering
+    opts <- force <$> parseUserInput
+    vals <- parseFileInput opts
+    case vals of
+      Left  errs -> putStrLn errs
+      Right (alphabet, tcm, tree) ->
+        let maxLabelLen = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
+            inputRenderer  x i = mconcat [ pad maxLabelLen (i<> ":"), " ", renderSingleton alphabet $ x ^. preliminaryString ]
+            prelimRenderer x i = mconcat [ pad maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
+            leafRenderer   x i = mconcat [ pad maxLabelLen (i<> ":"), " ", renderSingleton alphabet $ x ^. alignedString     ]
+            nodeRenderer   x _ = mconcat [ pad maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. alignedString     ]
+            postorder'    = postorder stringAligner
+            preorder'     = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+            medianStateFinalizer = preorderInternalLogic (buildThreeWayCompare defaultAlphabet tcm)
+            stringAligner = postorderLogic (ukkonenDO alphabet tcm)
+        in  do
+          putStrLn ""
+          putStrLn $ renderAlphabet alphabet
+          putStrLn ""
+          putStrLn "Input Strings:"
+          putStrLn ""
+          putStrLn $ renderPhylogeny inputRenderer tree
+          putStrLn ""
+          let postResult    = force $ postorder' tree
+              alignmentCost = getNodeDatum postResult ^. subtreeCost
+          putStrLn "Post-order complete"
+          putStrLn ""
+          putStrLn $ renderAlignment prelimRenderer inputRenderer postResult
+          putStrLn ""
+          putStrLn $ "Alignment Cost: " <> show alignmentCost
+          let preResult  = force $ preorder' postResult
+          putStrLn ""
+          putStrLn "Pre-order complete"
+          putStrLn ""
+          putStrLn "Output Alignment:"
+          putStrLn ""
+          putStrLn $ renderPhylogeny leafRenderer preResult
+          putStrLn ""
           putStrLn $ renderAlignment nodeRenderer leafRenderer preResult
 
 
