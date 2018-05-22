@@ -37,4 +37,5 @@ renderAlignments alphabet = foldMapWithKey f
     f k v = unlines
         [ "> " <> k
         , renderString alphabet $ symbolAlignmentMedian <$> v
+        , ""
         ]
