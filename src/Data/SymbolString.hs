@@ -143,7 +143,7 @@ renderSingleton :: Alphabet Char -> SymbolString -> String
 renderSingleton alphabet = foldMap renderContext . toNonEmpty
   where
     gap = gapSymbol alphabet
-    renderContext (Align x _ _) = toList $ decodeAmbiguityGroup alphabet x
+    renderContext (Align x _ _) = pure . NE.head $ decodeAmbiguityGroup alphabet x
     renderContext _ = [gap]
 
 
