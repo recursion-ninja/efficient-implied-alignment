@@ -1,13 +1,14 @@
 {-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
 
-module FileInput
-  ( parseFileInput
+module File.Input
+  ( FileInput(..)
+  , parseFileInput
   , unifyInput
   ) where
 
-import           Alignment
 import           Control.DeepSeq
 import           Control.Lens
+import           Control.Monad.IO.Class
 import           Data.Alphabet
 import           Data.Bifunctor
 import           Data.BTree
@@ -18,10 +19,10 @@ import           Data.Functor                 (($>))
 import           Data.Key
 import           Data.List.NonEmpty           (NonEmpty(..), intersperse)
 import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Maybe
 import           Data.Map                     (Map)
 import qualified Data.Map              as M
+import           Data.Matrix.ZeroIndexed      (Matrix)
 import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
@@ -29,38 +30,58 @@ import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
+import           Data.UserInput
 import           Data.Void
 import           File.Format.Fasta
 import           File.Format.Newick
 import           File.Format.TransitionCostMatrix
-import           Options.Applicative
 import           Prelude               hiding (lookup)
-import           System.IO
+import           System.Timing
 import           Text.Megaparsec
-import           UserInput
+
+
+data  FileInput
+    = FileInput
+    { inputAlphabet  :: Alphabet Char
+    , inputTCM       :: TransitionCostMatrix
+    , inputTree      :: BTree () InitialInternalNode
+    , parseTime      :: CPUTime
+    , unifyTime      :: CPUTime
+    , precomputeTime :: CPUTime
+    }
 
 
 parseFileInput
   :: UserInput
-  -> IO (Either String (Alphabet Char, TransitionCostMatrix Char, BTree () InitialInternalNode))
-parseFileInput input = do 
+  -> IO (Either String FileInput)
+parseFileInput input = do
+    (parseTime', parseResults) <- runFileParsers input
+    case toEither parseResults of
+      Left  pErr -> pure . Left . fold1 $ intersperse "\n\n" pErr
+      Right parseData -> do
+          (unifyTime', unifyResults)  <- runUnification parseData
+          case toEither unifyResults of
+            Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
+            Right (alphabet, matrix, tree) -> do
+                (tcmTime, tcm) <- precomputeTCM alphabet matrix
+                pure . Right $ FileInput
+                    { inputAlphabet  = alphabet
+                    , inputTCM       = tcm
+                    , inputTree      = tree
+                    , parseTime      = parseTime'
+                    , unifyTime      = unifyTime'
+                    , precomputeTime = tcmTime
+                    }
+
+
+runFileParsers
+  :: UserInput
+  -> IO (CPUTime, Validation (NonEmpty String) (FastaParseResult, BTree () (), TCM))
+runFileParsers input = timeOp $ do
     dataResult <- readAndParse  fastaStreamParser $ dataFile input
     treeResult <- readAndParse newickStreamParser $ treeFile input
     tcmResult  <- readAndParse    tcmStreamParser $  tcmFile input
-    case toEither $ (,,) <$> dataResult <*> treeResult <*> tcmResult of
-      Left  pErr -> pure . Left . fold1 $ intersperse "\n\n" pErr
-      Right (dataVal, treeVal, tcmVal) ->
-        let leafDataMap = fastaToMap dataVal
-            badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
-            badLinking  = first (fmap show) $ unifyInput leafDataMap treeVal
-        in  case toEither $ badLinking <* badSymbols of
-              Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
-              Right tree ->
-                let TCM symbolList matrix = tcmVal
-                    alphabet = fromSymbols symbolList
-                    scm      = force $ buildSymbolChangeMatrix alphabet matrix
-                    tcm      = force $ buildTransitionCostMatrix alphabet scm
-                in  pure . Right $ force (alphabet, tcm, tree)
+    pure $ (,,) <$> dataResult <*> treeResult <*> tcmResult
   where
     readAndParse
       :: Parsec Void String a
@@ -71,6 +92,25 @@ parseFileInput input = do
         pure . first (pure . parseErrorPretty' stream). fromEither $ parse parser filePath stream
 
 
+runUnification
+  :: MonadIO m
+  => (FastaParseResult, BTree b a, TCM)
+  -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b InitialInternalNode))
+runUnification (dataVal, treeVal, tcmVal) = timeOp $ do
+    let TCM symbolList matrix = tcmVal
+        alphabet    = fromSymbols symbolList
+        leafDataMap = fastaToMap dataVal
+        badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
+        badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
+    pure $ (\x -> (alphabet, matrix, x)) <$> (badLinking <* badSymbols)
+  
+
+precomputeTCM :: Alphabet a -> Matrix Word -> IO (CPUTime, TransitionCostMatrix)
+precomputeTCM alphabet matrix = timeOp $ do
+    let scm  = force $ buildSymbolChangeMatrix matrix
+    pure . force $ buildTransitionCostMatrix alphabet scm 
+
+
 fastaToMap :: FastaParseResult -> Map String CharacterSequence
 fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols) 
 
@@ -78,7 +118,7 @@ fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols)
 validateSymbolsAndAlphabet :: TCM -> Map Identifier CharacterSequence -> Validation (NonEmpty String) ()
 validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
     case foldMapWithKey f m of
-      []   -> Right {}
+      []   -> Right ()
       x:xs -> Left $ x:|xs
   where
     symbolSet :: Set Char
@@ -106,18 +146,18 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
 
 
 unifyInput
-  :: ( Foldable  c
-     , Foldable1 f
+  :: ( Foldable1 f
      , Foldable1 t
      , Key c ~ String
      , Keyed c
      , Lookup c
      , Traversable c
      )
-  => c (f (t Char))
+  => Alphabet Char
+  -> c (f (t Char))
   -> BTree b a
   -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
-unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
+unifyInput alphabet dataCollection genericTree = validatedDataSet *> initializedTree
   where
     dataSetKeys   = mapWithKey const dataCollection
     leafTaggedTree = setLeafLabels genericTree
@@ -142,8 +182,8 @@ unifyInput dataCollection genericTree = validatedDataSet *> initializedTree
           where
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =
-                let !y = foldMap1 point x
-                in  Align 0 y y y
+                let !y = encodeAmbiguityGroup alphabet x
+                in  Align y y y
 
 
 data  UnificationError

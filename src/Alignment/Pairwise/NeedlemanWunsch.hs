@@ -23,12 +23,9 @@ module Alignment.Pairwise.NeedlemanWunsch
 
 import Alignment.Pairwise.Internal
 import Data.Alphabet
-import Data.Foldable
---import Data.List.NonEmpty      (NonEmpty(..))
+import Data.List.NonEmpty      (NonEmpty(..))
 import Data.Key
 import Data.Matrix.ZeroIndexed (matrix)
-import Data.MonoTraversable
-import Data.Pointed
 import Data.SymbolString
 import Data.TCM
 import Data.Vector.NonEmpty
@@ -47,14 +44,14 @@ naiveDO
      , Key f ~ Int
      , Ord s
      )
-  => Alphabet s                       -- ^ Alphabet of symbols
-  -> (s -> s -> Word)                 -- ^ Structure defining the transition costs between character states
-  -> f (SymbolContext s)              -- ^ First  dynamic character
-  -> f (SymbolContext s)              -- ^ Second dynamic character
-  -> (Word, Vector (SymbolContext s)) -- ^ The cost of the alignment and the alignment context
+  => Alphabet s                   -- ^ Alphabet of symbols
+  -> (Int -> Int -> Word)         -- ^ Structure defining the transition costs between character states
+  -> f SymbolContext              -- ^ First  dynamic character
+  -> f SymbolContext              -- ^ Second dynamic character
+  -> (Word, Vector SymbolContext) -- ^ The cost of the alignment and the alignment context
 naiveDO alphabet costStruct = directOptimization (overlap alphabet costStruct) (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
   where
-    gap = gapSymbol alphabet
+    gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
 
 
 {-
@@ -79,19 +76,19 @@ naiveDOConst _ = directOptimization overlapConst createNeedlemanWunchMatrix
 -- The same as 'naiveDO' except that the "cost structure" parameter is assumed to
 -- be a memoized overlap function.
 naiveDOMemo
-  :: ( Foldable f
+  :: ( Eq s
+     , Foldable f
      , Indexable f
      , Key f ~ Int
-     , Ord s
      )
   => Alphabet s
-  -> TransitionCostMatrix s
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> (Word, Vector (SymbolContext s))
+  -> TransitionCostMatrix
+  -> f SymbolContext
+  -> f SymbolContext
+  -> (Word, Vector SymbolContext)
 naiveDOMemo alphabet tcm = directOptimization tcm (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
   where
-    gap = gapSymbol alphabet
+    gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
 
 
 -- |
@@ -107,13 +104,12 @@ createNeedlemanWunchMatrix
   :: ( Foldable f
      , Indexable f
      , Key f ~ Int
-     , Ord s
      )
-  => s
-  -> (SymbolAmbiguityGroup s -> SymbolAmbiguityGroup s -> (SymbolAmbiguityGroup s, Word))
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> NeedlemanWunchMatrix (SymbolAmbiguityGroup s)
+  => SymbolAmbiguityGroup
+  -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word))
+  -> f SymbolContext
+  -> f SymbolContext
+  -> NeedlemanWunchMatrix SymbolAmbiguityGroup
 --createNeedlemanWunchMatrix topString leftString overlapFunction = trace renderedMatrix result
 createNeedlemanWunchMatrix gap overlapFunction topString leftString = result
   where

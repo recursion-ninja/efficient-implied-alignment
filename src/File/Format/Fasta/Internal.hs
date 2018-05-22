@@ -9,17 +9,10 @@ module File.Format.Fasta.Internal
 
 import Data.Char              (isSpace)
 import Data.List.NonEmpty
-import Data.Map               (Map)
-import Data.Semigroup
 import Data.Vector.NonEmpty   (Vector)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Custom
-
-
--- |
--- Naive representation of a collection taxa sequences
-type TaxonSequenceMap  = Map Identifier CharacterSequence
 
 
 -- |

@@ -34,24 +34,24 @@ type instance Key (BTree b) = String
 instance Bifunctor BTree where
 
     bimap f g (Internal x lhs rhs) = Internal (f <$> x) (bimap f g lhs) (bimap f g rhs)
-    bimap f g (Leaf     x        ) = Leaf $ g <$> x
+    bimap _ g (Leaf     x        ) = Leaf $ g <$> x
 
     first  f (Internal x lhs rhs) = Internal (f <$> x) (first f lhs) (first f rhs)
-    first  f (Leaf     x        ) = Leaf x
+    first  _ (Leaf     x        ) = Leaf x
 
     second = fmap 
 
 
 instance Bifoldable BTree where
 
-    bifoldr f g a (Leaf (NodeDatum _ x)) = g x a
+    bifoldr _ g a (Leaf (NodeDatum _ x)) = g x a
     bifoldr f g a (Internal (NodeDatum _ x) lhs rhs) =
         f x $ bifoldr f g (bifoldr f g a lhs) rhs
 
 
 instance Bitraversable BTree where
 
-    bitraverse f g (Leaf (NodeDatum i x)) = Leaf . NodeDatum i <$> g x
+    bitraverse _ g (Leaf (NodeDatum i x)) = Leaf . NodeDatum i <$> g x
     bitraverse f g (Internal (NodeDatum i x) lhs rhs) =
         Internal
           <$> (NodeDatum i <$> f x)
@@ -118,7 +118,8 @@ preorder
   -> BTree b c
 preorder rootTransformation internalTransformation leafTransformation rootNode =
     case rootNode of
-      Leaf x -> undefined -- Single node trees are beyond the scope of this example.
+      Leaf {} -> error $ "Cannot perform pre order on single node tree.\n" <>
+                         "Single node trees are beyond the scope of this example."
       Internal (NodeDatum i x) lhs rhs ->
         let transformedRoot = rootTransformation x
             lhs' = go transformedRoot True  lhs

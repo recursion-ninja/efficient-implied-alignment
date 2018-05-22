@@ -9,16 +9,10 @@ import Data.BTree
 import Data.Char                   (isSpace)
 import Data.Foldable
 import Data.Functor                (void)
-import Data.List                   (intercalate)
 import Data.List.NonEmpty          (NonEmpty(..), some1)
-import Data.Map             hiding (filter, foldl', null, toList)
-import Data.Maybe                  (fromJust, fromMaybe, isJust)
+import Data.Maybe                  (fromMaybe)
 import Data.Proxy
-import Data.Semigroup
-import Data.String
-import File.Format.Newick.Internal
-import Prelude              hiding (lookup)
-import Text.Megaparsec      hiding (label, sepBy1)
+import Text.Megaparsec      hiding (sepBy1)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer  (skipBlockCommentNested)
 import Text.Megaparsec.Custom
@@ -40,8 +34,8 @@ newickNodeDefinition = do
     case xs of
       []  -> pure x
       y:_ -> do
-        label'        <- optional newickLabelDefinition
-        branchLength' <- optional branchLengthDefinition
+        label' <- optional newickLabelDefinition
+        _      <- optional branchLengthDefinition
         pure $ Internal (NodeDatum (fromMaybe "" label') ()) x y
 
 
@@ -163,64 +157,3 @@ whitespace = skipMany $ choice [ hidden single, hidden block ]
     single = void spaceChar
     block  = skipBlockCommentNested (tokenToChunk proxy '[') (tokenToChunk proxy ']')
     proxy  = Proxy :: Proxy s
-
-    
-{-
-whitespace = try commentDefinition <|> space
-  where
-    commentDefinition :: (MonadParsec e s m, Token s ~ Char) => m ()
-    commentDefinition = space *> some (comment commentStart commentEnd *> space) >> pure ()
-    commentStart, commentEnd :: (MonadParsec e s m, Token s ~ Char) => m String
-    commentStart = string "[" <?> "\"[\" comment start"
-    commentEnd   = string "]" <?> "\"]\" comment end"
--}
-
--- |
--- Joins the nodes of an extended Newick tree which share the same label.
--- Directed cycles from the tree's implicit root will result in a 'ParseError'.
-joinNonUniqueLabeledNodes :: (MonadParsec e s m, Token s ~ Char) => NewickNode -> m NewickNode
-joinNonUniqueLabeledNodes root = joinNonUniqueLabeledNodes' [] root
-  where
-    
-    -- We first fold over the Newick Tree to collect all labeled nodes and 
-    -- combine thier descendant lists. We use this Map of Newick labels to
-    -- combined descendant lists for substituting labeled node descendants
-    -- in a second pass over the Newick Tree.
-    joinedNodes :: Map String [NewickNode]
-    joinedNodes = foldl' joinNodes mempty labeledNodes
-      where
-        labeledNodes           = filter (isJust . newickLabel) $ toList' root 
-        joinNodes :: Map String [NewickNode] -> NewickNode -> Map String [NewickNode]
-        joinNodes mapping node = insertWith (<>) (fromJust $ newickLabel node) (descendants node) mapping
-        toList' node = node : ((=<<) toList' . descendants) node
-        
-    -- When transforming the Newick Tree to the Newick Network by joining 
-    -- identically labeled nodes, there exists the possiblily that a directed 
-    -- cycle is defined in the tree which will result in infinite recursion 
-    -- during the transformation process (and probably erroneous processing
-    -- in subsequent graph computations). To prevent this we track previously
-    -- processed nodes via a stack to detect cycles. Upon cycle detection we
-    -- return a Left value of type Either ParseError NewickNode to represent 
-    -- a parse error. It is assumed that cycles are note permitted in our
-    -- PhyloGraph data structures.
-    joinNonUniqueLabeledNodes' :: (MonadParsec e s m, Token s ~ Char) => [Maybe String] -> NewickNode -> m NewickNode
-    joinNonUniqueLabeledNodes' stack node
-      | hasCycle      = fail cycleError
-      | null children = pure $ newNode []
-      | otherwise     = resultNode children
-      where
-        label      = newickLabel node
-        joinedList = label >>= (`lookup` joinedNodes)
-        children   = fromMaybe (descendants node) joinedList
-        gatherList = traverse (joinNonUniqueLabeledNodes' stack')
-        resultNode = fmap newNode . gatherList
-        newNode x  = NewickNode x label (branchLength node)
-        stack'     = label : stack
-        hasCycle   = isJust label
-                  && (not . null . dropWhile (/=label)) stack
-        cycle'     = (label : takeWhile (/=label) stack) <> [label]
-        cycleError = init $ unlines -- we use init to remove trailing newline
-                   [ "Cycle detected in Newick tree definition"
-                   , prettyErr cycle'
-                   ]
-        prettyErr  = intercalate " -> " . fmap show

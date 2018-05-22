@@ -15,7 +15,7 @@ module Data.Decoration
   , InitialLeaf(InitialLeaf)
   , FinalizedInternalNode(FinalizedInternalNode)
   , FinalizedLeaf(FinalizedLeaf)
-  , alignedString
+  , HasAlignedString(..)
   , finalizedString
   , inputString
   , isRoot
