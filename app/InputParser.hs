@@ -17,11 +17,11 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
   where
     userInput =
         UserInput
-          <$> argSpec 'd' "data"   "FASTC data file"
+          <$> argSpec 'd' "data"   "FASTA data file"
           <*> argSpec 't' "tree"   "Newick tree file"
           <*> argSpec 'm' "tcm"    "Transition Cost Matrix file with symbol alphabet"
           <*> argSpec 'o' "output" "Output file for alignments"
-          <*> switch  (mconcat [short 'v', long "verbose", help "Display debugging informaion"])
+          <*> switch  (mconcat [short 'v', long "verbose", help "Display alignment & timing informaion"])
 --          <*> commandHelperDescriptions
 
     argSpec c s h = strOption $ mconcat [short c, long s, help h, metavar (toUpper <$> s <> "FILE")]
