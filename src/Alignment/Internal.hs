@@ -288,7 +288,7 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f (acc, [], []) k e =
         case e of
-          Delete {} -> (e : acc, [], [])
+          Delete {} -> (del : acc, [], [])
           _         -> error $ unlines
                            [ "Cannot Align or Insert when there is no child symbol:"
                            , "at index " <> show k <> ": " <> show e
@@ -299,8 +299,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f z@(acc, [], y:ys) _ e =
         case e of
-          Delete {} -> (e : acc, [], [])
-          Insert {} -> (e : acc, [], ys)
+          Delete {} -> (del : acc, [], [])
+          Insert {} -> (del : acc, [], ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
 --            else case y of
@@ -308,8 +308,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 --                   _         -> error "SAD!"
           Align  {} ->
               case y of
-                Insert {} -> (y : acc, [], ys)
-                Delete {} -> (y : acc, [], ys)
+                Insert {} -> (del : acc, [], ys)
+                Delete {} -> (del : acc, [], ys)
                 _         -> error $ "SAD!\n" <> renderResult z
 {-
               _          -> error $ unlines
@@ -326,14 +326,14 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f (acc, x:xs, y:ys) _ e =
         case e of
-          Delete {} -> (e : acc, x:xs, y:ys)
+          Delete {} -> (del : acc, x:xs, y:ys)
           Insert {} -> -- (               x : acc,    xs, ys)
               case y of
-                Delete {} -> (e : acc,  x:xs, ys)
+                Delete {} -> (del : acc,  x:xs, ys)
                 Insert _ v  ->
                   if v == symbolAlignmentMedian x
-                  then (x : acc,    xs, ys)
-                  else (e : acc,  x:xs, ys)
+                  then (  x : acc,    xs, ys)
+                  else (del : acc,  x:xs, ys)
                 Align  {} -> (x : acc,    xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
@@ -342,9 +342,9 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 --                   _         -> (               x : acc,    xs, ys)
           Align {} -> -- (               x : acc,    xs, ys)
               case y of
-                v@Delete {} -> (v : acc, x:xs, ys)
-                Insert   {} -> (x : acc,   xs, ys)
-                Align    {} -> (x : acc,   xs, ys)
+                Delete {} -> (del : acc, x:xs, ys)
+                Insert {} -> (  x : acc,   xs, ys)
+                Align  {} -> (  x : acc,   xs, ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, x:xs, y:ys)
 --            else case y of
