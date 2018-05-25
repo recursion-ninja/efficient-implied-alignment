@@ -23,15 +23,26 @@ instance NFData CPUTime where
 instance Show CPUTime where
 
     show (CPUTime x)
-      | x < 1000          = let (q,_) = x `quotRem` 1             in mconcat [show q, ".", "???"                       , "ps"]
-      | x < 1000000       = let (q,r) = x `quotRem` 1000          in mconcat [show q, ".", zeroPad (r `div` 1         ), "ns"]
-      | x < 1000000000    = let (q,r) = x `quotRem` 1000000       in mconcat [show q, ".", zeroPad (r `div` 1000      ), "μs"]
-      | x < 1000000000000 = let (q,r) = x `quotRem` 1000000000    in mconcat [show q, ".", zeroPad (r `div` 1000000   ), "ms"]
-      | otherwise         = let (q,r) = x `quotRem` 1000000000000 in mconcat [show q, ".", zeroPad (r `div` 1000000000), "s "]
+      | x < nSecond = let (q,_) = x `quotRem` 1       in mconcat [show q, ".", "???"                       , "ps" ]
+      | x < μSecond = let (q,r) = x `quotRem` nSecond in mconcat [show q, ".", zeroPad 3 (r `div` 1       ), "ns" ]
+      | x < mSecond = let (q,r) = x `quotRem` μSecond in mconcat [show q, ".", zeroPad 3 (r `div` nSecond ), "μs" ]
+      | x <  second = let (q,r) = x `quotRem` mSecond in mconcat [show q, ".", zeroPad 3 (r `div` μSecond ), "ms" ]
+      | x <  minute = let (q,r) = x `quotRem`  second in mconcat [show q, ".", zeroPad 3 (r `div` mSecond ), "s " ]
+      | x <    hour = let (q,r) = x `quotRem`  minute in mconcat [show q, "m", zeroPad 2 (r `div`  second ), "sec"]
+      | x <     day = let (q,r) = x `quotRem`    hour in mconcat [show q, "h", zeroPad 2 (r `div`  minute ), "min"]
+      | otherwise   = let (q,r) = x `quotRem`     day in mconcat [show q, "d", zeroPad 2 (r `div`    hour ), "hrs"]
+      where
+        nSecond = 1000
+        μSecond = 1000 * nSecond
+        mSecond = 1000 * μSecond
+        second  = 1000 * mSecond
+        minute  = 60   *  second
+        hour    = 60   *  minute
+        day     = 24   *  hour
 
 
-zeroPad :: Integer -> String
-zeroPad i = shown <> replicate (3 - length shown) '0'
+zeroPad :: Int -> Integer -> String
+zeroPad k i = shown <> replicate (k - length shown) '0'
   where
     shown = show i
 
