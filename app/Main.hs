@@ -56,10 +56,16 @@ runInput = do
               , ""
               ]
 
-          (postorderTime, postorderResult) <- timeOp . pure . force $ postorder' tree
+          (postorderTime, postorderResult) <- timeOp $ do
+                                                  let x = force $ postorder' tree
+                                                  pure x
+
           let alignmentCost = getNodeDatum postorderResult ^. subtreeCost
-          ( preorderTime,  preorderResult) <- timeOp . pure . force $ preorder' postorderResult
-          
+
+          ( preorderTime,  preorderResult) <- timeOp $ do
+                                                  let x = force $ preorder' postorderResult
+                                                  pure x
+
           when (verbose opts) $ do
               let shownParseTime  = show $ parseTime      fileInput
                   shownUnifyTime  = show $ unifyTime      fileInput
