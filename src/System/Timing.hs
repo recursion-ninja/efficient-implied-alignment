@@ -53,4 +53,4 @@ timeOp ioa = do
     a  <- ioa
     t2 <- liftIO getCPUTime
     let t = CPUTime (t2 - t1)
-    return (t, a)
+    pure (t, a)

@@ -1,5 +1,8 @@
 module Data.Alphabet.IUPAC
-  ( isAlphabetAminoAcid
+  ( decodeIUPAC
+  , encodeIUPAC
+  -- * IUPAC alphabets
+  , isAlphabetAminoAcid
   , isAlphabetDna
   , isAlphabetRna
   , iupacToAminoAcid
@@ -16,12 +19,39 @@ import qualified Data.Bimap         as BM
 import           Data.Foldable
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Set              as Set 
-import           Data.String
+
+
+decodeIUPAC
+  :: ( Functor f
+     , Ord a
+     )
+  => Bimap a a
+  -> f a 
+  -> f a
+decodeIUPAC iupacCodes = fmap f
+  where
+    f e
+      | e `BM.member` iupacCodes = iupacCodes BM.! e
+      | otherwise = e
+
+
+encodeIUPAC
+  :: ( Functor f
+     , Ord a
+     )
+  => Bimap a a
+  -> f a
+  -> f a
+encodeIUPAC iupacCodes = fmap f
+  where
+    f e
+      | e `BM.memberR` iupacCodes = iupacCodes BM.!> e
+      | otherwise = e
 
 
 -- |
 -- Substitutions for converting to an Amino Acid sequence based on IUPAC codes.
-iupacToAminoAcid :: Bimap (AmbiguityGroup String) (AmbiguityGroup String)
+iupacToAminoAcid :: Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
 iupacToAminoAcid = toBimap
     [ ('A', "A")
     , ('B', "DN")
@@ -53,7 +83,7 @@ iupacToAminoAcid = toBimap
 
 -- |
 -- Substitutions for converting to a DNA sequence based on IUPAC codes.
-iupacToDna :: Bimap (AmbiguityGroup String) (AmbiguityGroup String)
+iupacToDna :: Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
 iupacToDna = toBimap
     [ ('A', "A")
     , ('C', "C")
@@ -92,13 +122,13 @@ iupacToDna = toBimap
 
 
 -- | Substitutions for converting to a RNA sequence based on IUPAC codes.
-iupacToRna :: Bimap (AmbiguityGroup String) (AmbiguityGroup String)
+iupacToRna :: Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
 iupacToRna = BM.mapMonotonic setUpdate $ BM.mapMonotonicR setUpdate iupacToDna
   where
     setUpdate = fmap f
       where
         f x
-          | x == "T"  = "U"
+          | x == 'T'  = 'U'
           | otherwise =  x
 
 
@@ -109,7 +139,7 @@ iupacToRna = BM.mapMonotonic setUpdate $ BM.mapMonotonicR setUpdate iupacToDna
 --
 -- Useful for determining if an 'AmbiguityGroup' should be rendered as an IUPAC
 -- code.
-isAlphabetAminoAcid :: (IsString s, Ord s) => Alphabet s -> Bool
+isAlphabetAminoAcid :: Alphabet Char -> Bool
 isAlphabetAminoAcid = (`isAlphabetSubsetOf` "ACDEFGHIKLMNPQRSTVWY-")
 
 
@@ -120,7 +150,7 @@ isAlphabetAminoAcid = (`isAlphabetSubsetOf` "ACDEFGHIKLMNPQRSTVWY-")
 --
 -- Useful for determining if an 'AmbiguityGroup' should be rendered as an IUPAC
 -- code.
-isAlphabetDna :: (IsString s, Ord s) => Alphabet s -> Bool
+isAlphabetDna :: Alphabet Char -> Bool
 isAlphabetDna = (`isAlphabetSubsetOf` "ACGT-")
 
 
@@ -131,21 +161,21 @@ isAlphabetDna = (`isAlphabetSubsetOf` "ACGT-")
 --
 -- Useful for determining if an 'AmbiguityGroup' should be rendered as an IUPAC
 -- code.
-isAlphabetRna :: (IsString s, Ord s) => Alphabet s -> Bool
+isAlphabetRna :: Alphabet Char -> Bool
 isAlphabetRna = (`isAlphabetSubsetOf` "ACGU-")
 
 
-isAlphabetSubsetOf :: (IsString s, Ord s) => Alphabet s -> String -> Bool
+isAlphabetSubsetOf :: Alphabet Char -> String -> Bool
 isAlphabetSubsetOf alpha str = alphaSet `Set.isSubsetOf` strSet
   where
     alphaSet = Set.fromList $ toList alpha
-    strSet   = Set.fromList $ fromString . pure <$> str
+    strSet   = Set.fromList $ str
 
 
-toBimap :: [(Char, String)] ->  Bimap (AmbiguityGroup String) (AmbiguityGroup String)
+toBimap :: [(Char, String)] ->  Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
 toBimap = BM.fromList . fmap transform
   where
-    transform = pure . pure *** fmap pure . NE.fromList
+    transform = pure *** NE.fromList
     
 
 

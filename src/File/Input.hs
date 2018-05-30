@@ -10,6 +10,7 @@ import           Control.DeepSeq
 import           Control.Lens
 import           Control.Monad.IO.Class
 import           Data.Alphabet
+import           Data.Alphabet.IUPAC
 import           Data.Bifunctor
 import           Data.BTree
 import           Data.Char
@@ -59,7 +60,7 @@ parseFileInput input = do
     case toEither parseResults of
       Left  pErr -> pure . Left . fold1 $ intersperse "\n\n" pErr
       Right parseData -> do
-          (unifyTime', unifyResults)  <- runUnification parseData
+          (unifyTime', unifyResults)  <- runUnification (alphabetType input) parseData
           case toEither unifyResults of
             Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
             Right (alphabet, matrix, tree) -> do
@@ -94,12 +95,17 @@ runFileParsers input = timeOp $ do
 
 runUnification
   :: MonadIO m
-  => (FastaParseResult, BTree b a, TCM)
+  => AlphabetType
+  -> (FastaParseResult, BTree b a, TCM)
   -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b InitialInternalNode))
-runUnification (dataVal, treeVal, tcmVal) = timeOp $ do
+runUnification alphaType (dataVal, treeVal, tcmVal) = timeOp $ do
     let TCM symbolList matrix = tcmVal
         alphabet    = fromSymbols symbolList
-        leafDataMap = fastaToMap dataVal
+        alphaChange = case alphaType of
+                        Standard -> id
+                        DNA      -> decodeIUPAC iupacToDna 
+                        RNA      -> decodeIUPAC iupacToRna
+        leafDataMap = alphaChange <$> fastaToMap dataVal
         badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
         badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
     pure $ (\x -> (alphabet, matrix, x)) <$> (badLinking <* badSymbols)
