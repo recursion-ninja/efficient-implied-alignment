@@ -95,7 +95,7 @@ runInput = do
                 , "  Postorder:   " <> padL dPad shownPostorder
                 , "  Preorder:    " <> padL dPad shownPreorder
                 ]
-          writeFastaFile alphabet preorderResult $ outputFile opts 
+          writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts 
 
 
 padL :: Int -> String -> String
