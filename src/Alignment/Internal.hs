@@ -19,27 +19,14 @@ module Alignment.Internal
   , preorderRootLogic
   ) where
 
---import           Alignment.Pairwise
 import           Control.Lens
 import           Data.Bits
 import           Data.Decoration
 import           Data.Foldable
---import           Data.IntMap                 (IntMap)
---import qualified Data.IntMap          as IM
 import           Data.Key
---import           Data.List.NonEmpty          (NonEmpty( (:|) ))
 import qualified Data.List.NonEmpty   as NE
---import           Data.Maybe
---import           Data.Pointed
---import           Data.Semigroup
---import           Data.Semigroup.Foldable
 import           Data.SymbolString
---import           Data.TCM
---import           Data.MonoTraversable
 import           Data.Vector.NonEmpty hiding (reverse)
---import           Data.Word
---import           Numeric.Extended.Natural
---import           Safe
 
 --import Debug.Trace
 
@@ -153,7 +140,8 @@ deriveAlignment pAlignment pContext cContext = alignment
 --    traceResult e = trace (renderResult e) e
 
     renderResult (x,y,z) = ("\n"<>) $ unlines
-        [ "A & I in parent alignment: " <> show (countAlignInsert pAlignment)
+        [ "While deriving INTERNAL label"
+        , "A & I in parent alignment: " <> show (countAlignInsert pAlignment)
         , "Length parent context:     " <> show (length pContext)
         , if countAlignInsert pAlignment == length pContext
           then "Parental alignments valid"
@@ -176,16 +164,17 @@ deriveAlignment pAlignment pContext cContext = alignment
         case e of
           Delete {} -> (del : acc, [], [])
           _         -> error $ unlines
-                           [ "Cannot Align or Insert when there is no child symbol:"
-                           , "at index " <> show k <> ": " <> show e
+                           [ "While deriving INTERNAL label"
+                           , "Cannot Align or Insert when there is no child symbol:"
+                           , "at index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
                            , "Parent Alignment: " <> show pAlignment
                            , "Parent Context:   " <> show pContext
                            , "Child  Context:   " <> show cContext
                            ]
     f z@(acc, [], y:ys) k e =
         case e of
-          Delete {} -> (del : acc, [], [])
-          Insert {} -> (del : acc, [], ys)
+          Delete {} -> (del : acc, [], y:ys)
+          Insert {} -> (del : acc, [],   ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
 --            else case y of
@@ -269,7 +258,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 --    traceResult e = trace (renderResult e) e
 
     renderResult (x,y,z) = ("\n"<>) $ unlines
-        [ "A & I in parent alignment: " <> show (countAlignInsert pAlignment)
+        [ "While deriving LEAF label"
+        , "A & I in parent alignment: " <> show (countAlignInsert pAlignment)
         , "Length parent context:     " <> show (length pContext)
         , if countAlignInsert pAlignment == length pContext
           then "Parental alignments valid"
@@ -289,9 +279,11 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
     f (acc, [], []) k e =
         case e of
           Delete {} -> (del : acc, [], [])
+          Insert {} -> (del : acc, [], [])
           _         -> error $ unlines
-                           [ "Cannot Align or Insert when there is no child symbol:"
-                           , "at index " <> show k <> ": " <> show e
+                           [ "While deriving LEAF label"
+                           , "Cannot Align when there is no child symbol:"
+                           , "at index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
                            , "Parent Alignment: " <> show pAlignment
                            , "Parent Context:   " <> show pContext
                            , "Child  Context:   " <> show cContext
@@ -299,8 +291,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
     f z@(acc, [], y:ys) _ e =
         case e of
-          Delete {} -> (del : acc, [], [])
-          Insert {} -> (del : acc, [], ys)
+          Delete {} -> (del : acc, [], y:ys)
+          Insert {} -> (del : acc, [],   ys)
 --            if v == gap
 --            then (Delete 0 gap gap : acc, [], y:ys)
 --            else case y of
@@ -354,201 +346,6 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
 
 
 {-
--- |
--- The pre-order scoring logic for dynamic characters.
---
--- Parameterized over a 'PairwiseAlignment' function to allow for different
--- atomic alignments depending on the character's metadata.
-directOptimizationPreOrder
-  :: ( DirectOptimizationPostOrderDecoration d c
-     )
-  => PairwiseAlignment c
-  -> d
-  -> [(Word, DynamicDecorationDirectOptimization c)]
-  ->  DynamicDecorationDirectOptimization c
-directOptimizationPreOrder pairwiseAlignment charDecoration parents =
-    case parents of
-        []            -> initializeRoot charDecoration
-        (_, parent):_ -> updateFromParent pairwiseAlignment charDecoration parent
-
-
--- |
--- Given a post-order traversal result of a dynamic character as input,
--- initializes the root node decoration as the base case of the pre-order
--- traversal.
-initializeRoot
-  :: DirectOptimizationPostOrderDecoration d c
-  => d
-  -> DynamicDecorationDirectOptimization c
-initializeRoot =
-    extendPostOrderToDirectOptimization
-      <$> id
-      <*> (^. preliminaryUngapped)
-      <*> (^. preliminaryGapped)
-      <*> lexicallyDisambiguate . (^. preliminaryUngapped)
-
-
--- |
--- Disambiguate the elements of a dynamic character using only lexical ordering
--- of the alphabet.
-lexicallyDisambiguate :: (MonoFunctor f, FiniteBits (Element f)) => f -> f
-lexicallyDisambiguate = omap disambiguateElement
-
-
--- |
--- Disambiguate a single element of a Dynamic Character.
-disambiguateElement :: FiniteBits b => b -> b
-disambiguateElement x = zed `setBit` idx
-  where
-    idx = countLeadingZeros x
-    zed = x `xor` x
-
-
--- |
--- Disambiguate the elements of a dynamic Character so that they are consistent
--- with the ancestral disambiguation.
-disambiguateFromParent
-  :: EncodableDynamicCharacter c
-  => c -- ^ parent single disambiguation field
-  -> c -- ^ child  final gapped
-  -> c -- ^ child  single disambiguation field
-disambiguateFromParent {- pGaps cGaps -} pSingle cFinal = result
-  where
-    result = constructDynamic $ zipWith f (otoList pSingle) (otoList cFinal)
-    f pS cF
-      | popCount val /= 0 = val
-      | otherwise         = disambiguateElement cF
-      where
-        -- Since pS will have only one bit set,
-        -- there can only ever be an symbol intersection of size 1
-        val = pS .&. cF
-
-
--- |
--- Use the decoration(s) of the ancestral nodes to calculate the corrent node
--- decoration. The recursive logic of the pre-order traversal.
-updateFromParent
-  :: ( DirectOptimizationPostOrderDecoration d c
-     , Exportable (Element c)
-     -- , EncodedAmbiguityGroupContainer c
-     )
-  => PairwiseAlignment c
-  -> d
-  -> DynamicDecorationDirectOptimization c
-  -> DynamicDecorationDirectOptimization c
-updateFromParent pairwiseAlignment currentDecoration parentDecoration = resultDecoration
-  where
-    -- If the current node has a missing character value representing its
-    -- preliminary median assignment then we take the parent's final assignment
-    -- values and assign them to the current node as its own final assignments.
-    --
-    -- Otherwise we perform a local alignment between the parent's *UNGAPPED*
-    -- final assignment and the current node's *GAPPED* preliminary assignment.
-    -- Afterward we calculate the indices of the new gaps in the alignment and
-    -- insert these gaps into the current node's left and right child alignments.
-    -- Lastly, a three-way mean between the locally-aligned parent assignment and
-    -- the expanded left and right child alignments is used to calculate the
-    -- final assignment of the current node.
-    --
-    -- We do these convoluted operations to account for deletion events in the
-    -- parent assignment when comparing to child assignments.
-    resultDecoration = extendPostOrderToDirectOptimization currentDecoration ungapped gapped single
-    (ungapped, gapped, single)
-      | isMissing $ currentDecoration ^. preliminaryGapped = (pUngapped, pGapped, pSingle)
-      | otherwise = tripleComparison pairwiseAlignment currentDecoration pUngapped pSingle
-    pUngapped     = parentDecoration ^. finalUngapped
-    pGapped       = parentDecoration ^. finalGapped
-    pSingle       = parentDecoration ^. singleDisambiguation
-
-
--- |
--- A three way comparison of characters used in the DO preorder traversal.
-tripleComparison
-  :: ( Exportable (Element c)
-     -- , EncodedAmbiguityGroupContainer c
-     , DirectOptimizationPostOrderDecoration d c
-     )
-  => PairwiseAlignment c
-  -> d
-  -> c
-  -> c
-  -> (c, c, c)
-tripleComparison pairwiseAlignment childDecoration parentCharacter parentSingle =
-   {-  trace context () `seq` -} (ungapped, gapped, single)
-  where
-    childCharacter    = childDecoration ^. preliminaryGapped
-    childLeftAligned  = childDecoration ^. leftAlignment
-    childRightAligned = childDecoration ^. rightAlignment
-
-    -- We conditionally decide how to derive the metric.
-    -- If we are working with large alphabets we use the memoized TCM.
-    -- Otherwise we use the naive calculations.
-    --
-    -- We do this so that we don't allocate and begin using a memoized TCM
-    -- for all characters regardless of alphabet size on the pre-order.
-    -- If we have a small alphabet, there will not have been a call to
-    -- initialize a memoized TCM. We certainly don't want to force that here!
-    costStructure =
-        case childDecoration ^. denseTransitionCostMatrix of
-          Nothing -> getMedianAndCost3D (childDecoration ^. sparseTransitionCostMatrix)
-          -- Compute things naively
-          Just _  -> naiveMedianAndCost3D
-      where
-        !scm = childDecoration ^. symbolChangeMatrix
-        gap = gapOfStream parentCharacter
-        zed = gap `xor` gap
-        singletonStates = (zed `setBit`) <$> [0 .. fromEnum (symbolCount zed) - 1]
-        naiveMedianAndCost3D a b c = unsafeToFinite <$> foldl' g (zed, infinity :: ExtendedNatural) singletonStates
-          where
-            g acc@(combinedState, curentMinCost) singleState =
-                case combinedCost `compare` curentMinCost of
-                  EQ -> (combinedState .|. singleState, curentMinCost)
-                  LT -> (                  singleState, combinedCost)
-                  GT -> acc
-              where
-                combinedCost = fromFinite . sum $ snd . overlap scm singleState <$> [a, b, c]
-
-
-    single = lexicallyDisambiguate $ filterGaps almostSingle
-    (_, ungapped, gapped)  = threeWayMean costStructure extendedParentFinal  extendedLeftCharacter1 extendedRightCharacter1
-    (_, almostSingle, _)   = threeWayMean costStructure extendedParentSingle extendedLeftCharacter2 extendedRightCharacter2
-
-    (extendedParentFinal , extendedLeftCharacter1, extendedRightCharacter1) = alignAroundCurrentNode pairwiseAlignment childCharacter parentCharacter childLeftAligned childRightAligned
-    (extendedParentSingle, extendedLeftCharacter2, extendedRightCharacter2) = alignAroundCurrentNode pairwiseAlignment childCharacter parentSingle    childLeftAligned childRightAligned
-
-    {-
-    context = unlines
-        [ ""
-        , "Center char (prelim/final/single):"
-        , showStream alph childCharacter
-        , showStream alph ungapped
-        , showStream alph single
---        , showStream alph childAlignment
-        , ""
-        , "Parent Final Char:"
-        , showStream alph parentCharacter
---        , showStream alph parentAlignment
-        , mconcat [showStream alph extendedParentFinal, " (", show (olength extendedParentFinal), ")"]
-        , "Left  chars:"
-        , mconcat [showStream alph childLeftAligned, " (", show (olength childLeftAligned), ")"]
-        , mconcat [showStream alph extendedLeftCharacter1, " (", show (olength extendedLeftCharacter1), ")"]
-        , "Right chars:"
-        , mconcat [showStream alph childRightAligned, " (", show (olength childRightAligned), ")"]
-        , mconcat [showStream alph extendedRightCharacter1, " (", show (olength extendedRightCharacter1), ")"]
-        , ""
-        , "Parent Single char:"
-        , showStream alph parentSingle
---        , showStream alph singleAlignment
-        , mconcat [showStream alph extendedParentSingle, " (", show (olength extendedParentSingle), ")"]
-        , "Left  chars:"
-        , mconcat [showStream alph childLeftAligned, " (", show (olength childLeftAligned), ")"]
-        , mconcat [showStream alph extendedLeftCharacter2, " (", show (olength extendedLeftCharacter2), ")"]
-        , "Right chars:"
-        , mconcat [showStream alph childRightAligned, " (", show (olength childRightAligned), ")"]
-        , mconcat [showStream alph extendedRightCharacter2, " (", show (olength extendedRightCharacter2), ")"]
-        ]
-      where
-        alph = childDecoration ^. characterAlphabet
     -}
 
 
