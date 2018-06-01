@@ -322,39 +322,3 @@ instance Show a => Show (Alphabet a) where
         , intercalate ", " $ show <$> toList x
         , "}"
         ]
-
-
-{-
-
---fromUnnamed :: UnnamedSymbol t -> t
---fromUnnamed (Unnamed x) = x
-
-
---fromNamed   :: NamedSymbol t -> (t, t)
---fromNamed   (Named   x) = x
-
-{-
-symbolVector :: Alphabet b -> Vector b
-symbolVector (SimpleAlphabet     v) =       fromUnnamed <$> v
-symbolVector (StateNamedAlphabet v) = fst . fromNamed   <$> v
--}
-
-
-
--- | Constructs an 'Alphabet' with a corresponding TCM. Permutes TCM rows and
---   columns as the 'Alphabet' is reordered. Deletes TCM rows and columns where
---   'Alphabet' symbols are eliminated.
---
---   If the alphabet has been permuted the coresponding TCM needs to be permuted in the same mannor.
---
---   /O(n*log(n) + n^2)/
-constructAlphabetWithTCM :: (Ord a, IsString a, Foldable t) => t a -> Matrix b -> (Alphabet a, Matrix b)
-constructAlphabetWithTCM symbols originalTcm = (alphabet, permutedTcm)
-  where
-    alphabet    = constructAlphabet symbols
-    len         = length alphabet
-    oldOrdering = generate len (\x -> fromJust $ (alphabet ! x) `elemIndex` toList symbols)
-    permutedTcm = matrix len len f
-    f (i,j) =  originalTcm ! (oldOrdering NEV.! i, oldOrdering NEV.! j)
-
--}

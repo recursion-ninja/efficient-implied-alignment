@@ -169,7 +169,7 @@ isAlphabetSubsetOf :: Alphabet Char -> String -> Bool
 isAlphabetSubsetOf alpha str = alphaSet `Set.isSubsetOf` strSet
   where
     alphaSet = Set.fromList $ toList alpha
-    strSet   = Set.fromList $ str
+    strSet   = Set.fromList str
 
 
 toBimap :: [(Char, String)] ->  Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
