@@ -198,7 +198,6 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
     ukkonenUntilOptimal offset
       | threshhold <= alignmentCost = ukkonenUntilOptimal $ 2 * offset
       | otherwise                   = ukkonenMatrix
---      | otherwise                   = trace (renderedBounds <> renderedMatrix) ukkonenMatrix
       where
         ukkonenMatrix      = Ribbon.generate rows cols generatingFunction $ toEnum offset
 
@@ -208,15 +207,3 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         alignmentCost      = unsafeToFinite cost
         computedValue      = coefficient * (quasiDiagonalWidth + offset - gapsPresentInInputs)
         threshhold         = toEnum $ max 0 computedValue -- The threshhold value must be non-negative
-{--
-        renderedMatrix = renderCostMatrix longerTop lesserLeft ukkonenMatrix
-
-        renderedBounds = unlines
-            [ "Diag Width : " <> show quasiDiagonalWidth
-            , "Input Gaps : " <> show gapsPresentInInputs
-            , "Offset     : " <> show offset
-            , "Coefficient: " <> show coefficient
-            , "Threshhold : " <> show threshhold
-            , "Total Cost : " <> show alignmentCost
-            ]
---}

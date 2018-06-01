@@ -157,8 +157,6 @@ deriveAlignment pAlignment pContext cContext = alignment
         , show $ reverse x
         ]
 
---    gap = point '-'
-
     f :: ([SymbolContext], [SymbolContext], [SymbolContext]) -> Int -> SymbolContext -> ([SymbolContext], [SymbolContext], [SymbolContext])
     f (acc, [], []) k e =
         case e of
@@ -175,11 +173,6 @@ deriveAlignment pAlignment pContext cContext = alignment
         case e of
           Delete {} -> (del : acc, [], y:ys)
           Insert {} -> (del : acc, [],   ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, [], y:ys)
---            else case y of
---                   Delete {} -> (Delete 0 gap gap : acc,  [], ys)
---                   _         -> error "SAD!"
           Align  {} ->
             case y of
               Delete {}  -> (del : acc, [], ys)
@@ -200,27 +193,16 @@ deriveAlignment pAlignment pContext cContext = alignment
             case y of
               Delete {} -> (del : acc, x:xs,  y:ys)
               _         -> (del : acc, x:xs,  y:ys)
-          Insert {} -> -- (               x : acc,    xs, ys)
+          Insert {} ->
               case y of
                 Delete {} -> (                  del : acc, x:xs, ys)
                 Insert {} -> (deleteionToInserion x : acc,   xs, ys)
                 Align  {} -> (                    x : acc,   xs, ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, x:xs, y:ys)
---            else case y of
---                   Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
---                   _         -> (               x : acc,    xs, ys)
-          Align  {} -> -- (               x : acc,    xs, ys)
+          Align  {} ->
               case y of
                 Delete {} -> (del : acc, x:xs, ys)
                 Insert {} -> (  x : acc,   xs, ys)
                 Align  {} -> (  y : acc,   xs, ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, x:xs, y:ys)
---            else case y of
---                 Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
---                 _         -> (               x : acc,    xs, ys)
-
 
 
 countAlignInsert :: (Functor f, Foldable f) => f SymbolContext -> Int
@@ -253,8 +235,6 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
           ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
           _       -> error $ renderResult e
 
-
-{---}
 --    traceResult e = trace (renderResult e) e
 
     renderResult (x,y,z) = ("\n"<>) $ unlines
@@ -274,7 +254,6 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
         , "Result Alignment: " 
         , show $ reverse x
         ]
-{--}
 
     f (acc, [], []) k e =
         case e of
@@ -293,33 +272,18 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
         case e of
           Delete {} -> (del : acc, [], y:ys)
           Insert {} -> (del : acc, [],   ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, [], y:ys)
---            else case y of
---                   Delete {} -> (Delete 0 gap gap : acc,  [], ys)
---                   _         -> error "SAD!"
           Align  {} ->
               case y of
                 Insert {} -> (del : acc, [], ys)
                 Delete {} -> (del : acc, [], ys)
                 _         -> error $ "SAD!\n" <> renderResult z
-{-
-              _          -> error $ unlines
-                                [ "BAD!"
-                                , "at index " <> show k <> ": " <> show e
-                                , "Parent Alignment: " <> show pAlignment
-                                , "Parent Context:   " <> show pContext
-                                , "Child  Context:   " <> show cContext
-                                , renderResult z
-                                ]
--}
 
-    f (_, _:_, []) _ _ = error "MAD!"
+    f z@(_, _:_, []) _ _ = error $ "MAD!\n" <> renderResult z
 
     f (acc, x:xs, y:ys) _ e =
         case e of
           Delete {} -> (del : acc, x:xs, y:ys)
-          Insert {} -> -- (               x : acc,    xs, ys)
+          Insert {} ->
               case y of
                 Delete {} -> (del : acc,  x:xs, ys)
                 Insert _ v  ->
@@ -327,19 +291,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
                   then (  x : acc,    xs, ys)
                   else (del : acc,  x:xs, ys)
                 Align  {} -> (x : acc,    xs, ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, x:xs, y:ys)
---            else case y of
---                   Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
---                   _         -> (               x : acc,    xs, ys)
-          Align {} -> -- (               x : acc,    xs, ys)
+          Align {} ->
               case y of
                 Delete {} -> (del : acc, x:xs, ys)
                 Insert {} -> (  x : acc,   xs, ys)
                 Align  {} -> (  x : acc,   xs, ys)
---            if v == gap
---            then (Delete 0 gap gap : acc, x:xs, y:ys)
---            else case y of
---                 Delete {} -> (Delete 0 gap gap : acc,  x:xs, ys)
---                 _         -> (               x : acc,    xs, ys)
-

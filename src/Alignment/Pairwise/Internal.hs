@@ -112,10 +112,7 @@ type MatrixFunction m f
 -- Reused internally by different implementations.
 directOptimization
   :: ( Foldable f
---     , Foldable m
---     , Functor m
      , Indexable f
---     , Indexable m
      , Key f ~ Int
      , Key m ~ (Int, Int)
      , MatrixConstraint m
@@ -183,47 +180,6 @@ needlemanWunschDefinition
   -> (Int, Int)
   -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
-{--
-  |  p == (0,0)              = (            0,  DiagArrow, gapGroup)
-  |  isInDel topContext
-  && isInDel leftContext
-  && row /= 0
-  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
---  && col /= 0                = (diagonalValue,  DiagArrow, gapGroup)
-  |  isInDel topContext
-  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
-  |  isInDel leftContext
-  && row /= 0                = (  upwardValue,    UpArrow, gapGroup)
-  |  otherwise               = (      minCost,     minDir, minState)
-  |  otherwise               = (      minCost,     minDir, minState)
-  where
-    -- | Lookup with a default value of infinite cost.
-    {-# INLINE (!?) #-}
-    (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
-
-    isInDel Align {} = False
-    isInDel _ = True
-    
-    gapGroup                      = point gapValue
-    topContext                    = fromMaybe (Insert 0 gapGroup gapGroup) $ (col - 1) `lookup` topChar
-    leftContext                   = fromMaybe (Delete 0 gapGroup gapGroup) $ (row - 1) `lookup` leftChar
-    topElement                    = {-maybe gapGroup -}symbolAlignmentMedian topContext
-    leftElement                   = {-maybe gapGroup -}symbolAlignmentMedian leftContext
-    (leftwardValue, _, _)         = memo !? (row    , col - 1)
-    (diagonalValue, _, _)         = memo !? (row - 1, col - 1)
-    (  upwardValue, _, _)         = memo !? (row - 1, col    )
-    (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
-    ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
-    ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gapGroup   leftElement
-    rightCost                     = rightOverlapCost + leftwardValue
-    diagCost                      =  diagOverlapCost + diagonalValue
-    downCost                      =  downOverlapCost +   upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gapValue
-                                      ( diagCost,  diagChar)
-                                      (rightCost, rightChar)
-                                      ( downCost,  downChar)
---}
-{--}
   |  p == (0,0)              = (            0,  DiagArrow, gapGroup)
   |   topElement == gapGroup
   && leftElement == gapGroup
@@ -262,7 +218,6 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
-{--}
 
 
 -- |
@@ -270,21 +225,17 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
 -- and column labelings.
 --
 -- Useful for debugging purposes.
-{--}
 renderCostMatrix
   :: ( Foldable  f
      , Foldable m
      , Functor m
      , Indexable m
      , Key m ~ (Int, Int)
---     , Show a
---     , Show b
      )
   => SymbolAmbiguityGroup
   -> f SymbolContext
   -> f SymbolContext
   -> m (Cost, Direction, SymbolAmbiguityGroup)
---  -> m (a, b, c) -- ^ The Needleman-Wunsch alignment matrix
   -> String
 renderCostMatrix gapGroup lhs rhs mtx = unlines
     [ dimensionPrefix
@@ -309,7 +260,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     dimensionPrefix  = " " <> unwords
         [ "Dimensions:"
         , show rowCount
-        , "⨉" --"×"
+        , "⨉"
         , show colCount
         ]
 
@@ -347,7 +298,6 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     pad n e = replicate (n - len) ' ' <> e <> " "
       where
         len = length e
-{--}
 
 
 -- |
@@ -388,26 +338,6 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
                 LeftArrow -> ((i    , j - 1), Delete medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
                 UpArrow   -> ((i - 1, j    ), Insert medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
                 DiagArrow -> ((i - 1, j - 1), Align  medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
-
-
-{--
- - Internal computations
- -}
-
-
-{-
--- |
--- An overlap function that applies the discrete metric to aligning two
--- 'SymbolAmbiguityGroup'.
-overlapConst
-  :: SymbolAmbiguityGroup
-  -> SymbolAmbiguityGroup
-  -> (SymbolAmbiguityGroup, Word)
-overlapConst lhs rhs =
-    case lhs /\ rhs of
-      Nothing -> (lhs <> rhs, 1)
-      Just xs -> (xs , 0)
--}
 
 
 getMinimalCostDirection
