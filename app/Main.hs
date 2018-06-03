@@ -45,7 +45,8 @@ runInput = do
 
             postorder'    = postorder stringAligner
             preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
-            stringAligner = postorderLogic (ukkonenDO alphabet tcm)
+            stringAligner = postorderLogic (naiveDOMemo alphabet tcm)
+--            stringAligner = postorderLogic (ukkonenDO alphabet tcm)
         in  do
           when (verbose opts) $ mapM_ putStrLn
               [ ""
