@@ -2,6 +2,8 @@
 
 module SampleData
   ( LeafInput
+  , LeafOutputs
+  , StringValues
   , TreeInput
   , defaultAlphabet
 --  , defaultTripleCompare
@@ -10,6 +12,7 @@ module SampleData
   ) where
 
 import           Alignment
+import           Control.Arrow
 import           Control.Lens
 import           Data.Alphabet
 import           Data.BTree
@@ -33,13 +36,16 @@ import           Data.Validation
 import           Prelude               hiding (zip)
 
 
-type LeafInput = Map String (NonEmpty (NonEmpty Char)) 
+type LeafInput    = NonEmpty (NonEmpty Char)
+
+type LeafOutputs  = NonEmpty LeafInput
+
+type StringValues = Map String (LeafInput, LeafOutputs)
+
+type TreeInput    = BTree () ()
 
 
-type TreeInput = BTree () ()
-
-
-sampleDataSets :: [(String, LeafInput, TreeInput, TransitionCostMatrix)]
+sampleDataSets :: [(String, StringValues, TreeInput, TransitionCostMatrix)]
 sampleDataSets =
     [ ("Appended Deletions"                                         , dataSetA, topologyA, discreteMetricTCM)
     , ("Prepended Deletions"                                        , dataSetB, topologyB, discreteMetricTCM)
@@ -110,16 +116,28 @@ blank :: NodeDatum ()
 blank = NodeDatum "" ()
 
 
-toNonEmpties :: Foldable1 f => f Char -> NonEmpty (NonEmpty Char)
-toNonEmpties = foldMap1 (pure . pure) 
+toNonEmpties :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
+toNonEmpties = foldMap1 (pure . pure) . NE.fromList . toList
 
 
-dataSetA :: Map String (NonEmpty (NonEmpty Char))
-dataSetA = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"CGT"
-    , 'A':|"CG"
-    , 'A':|"C"
-    , 'A':|""
+toNonEmptyInputs :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
+toNonEmptyInputs = toNonEmpties
+
+
+toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpty (NonEmpty Char))
+toNonEmptyOutputs = fmap toNonEmpties . NE.fromList . toList
+
+
+convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
+convertToValues = fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (pure <$> ['A'..])
+
+
+dataSetA :: StringValues
+dataSetA = convertToValues
+    [ ('A':|"CGT", [ "ACGT" ])
+    , ('A':|"CG" , [ "ACG-" ])
+    , ('A':|"C"  , [ "AC--" ])
+    , ('A':|""   , [ "A---" ])
     ]
 
 
@@ -136,12 +154,12 @@ topologyA =
     )
 
 
-dataSetB :: Map String (NonEmpty (NonEmpty Char))
-dataSetB = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|""
-    , 'A':|"C"
-    , 'A':|"CG"
-    , 'A':|"CGT"
+dataSetB :: StringValues
+dataSetB = convertToValues
+    [ ('A':|""   , [ "A---" ])
+    , ('A':|"C"  , [ "AC--" ])
+    , ('A':|"CG" , [ "ACG-" ])
+    , ('A':|"CGT", [ "ACGT" ])
     ]
 
 
@@ -158,12 +176,12 @@ topologyB =
     )
 
 
-dataSetC :: Map String (NonEmpty (NonEmpty Char))
-dataSetC = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'T':|"GCA"
-    , 'G':|"CA"
-    , 'C':|"A"
-    , 'A':|""
+dataSetC :: StringValues
+dataSetC = convertToValues
+    [ ('T':|"GCA", [ "TGCA" ])
+    , ('G':|"CA" , [ "-GCA" ])
+    , ('C':|"A"  , [ "--CA" ])
+    , ('A':|""   , [ "---A" ])
     ]
 
 
@@ -180,12 +198,12 @@ topologyC =
     )
 
 
-dataSetD :: Map String (NonEmpty (NonEmpty Char))
-dataSetD = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|""
-    , 'C':|"A"
-    , 'G':|"CA"
-    , 'T':|"GCA"
+dataSetD :: StringValues
+dataSetD = convertToValues
+    [ ('A':|""   , [ "---A" ])
+    , ('C':|"A"  , [ "--CA" ])
+    , ('G':|"CA" , [ "-GCA" ])
+    , ('T':|"GCA", [ "TGCA" ])
     ]
 
 
@@ -202,16 +220,16 @@ topologyD =
     )
 
 
-dataSetE :: Map String (NonEmpty (NonEmpty Char))
-dataSetE = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CA"
-    , 'A':|"CA"
+dataSetE :: StringValues
+dataSetE = convertToValues
+    [ ('A':|"TA", [ "A-TA", "AT-A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"CA", [ "AC-A", "A-CA" ])
+    , ('A':|"CA", [ "AC-A", "A-CA" ])
     ]
 
 
@@ -240,17 +258,17 @@ topologyE =
     )
 
 
-dataSetF :: Map String (NonEmpty (NonEmpty Char))
-dataSetF = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"CTAA"
-    , 'A':|"CTAA"
+dataSetF :: StringValues
+dataSetF = convertToValues
+    [ ('A':|"TTA" , [ "AT-T-A", "A-TT-A", "AT-TA-", "A-TTA-" ])
+    , ('A':|"TTA" , [ "AT-T-A", "A-TT-A", "AT-TA-", "A-TTA-" ])
+    , ('A':|"TTA" , [ "AT-T-A", "A-TT-A", "AT-TA-", "A-TTA-" ])
+    , ('A':|"TTA" , [ "AT-T-A", "A-TT-A", "AT-TA-", "A-TTA-" ])
+    , ('A':|"TA"  , [ "A--T-A", "A--T-A", "A--TA-", "A--TA-" ])
+    , ('A':|"TA"  , [ "A--T-A", "A--T-A", "A--TA-", "A--TA-" ])
+    , ('A':|"TA"  , [ "A--T-A", "A--T-A", "A--TA-", "A--TA-" ])
+    , ('A':|"CTAA", [ "A-CTAA", "AC-TAA", "A-CTAA", "AC-TAA" ])
+    , ('A':|"CTAA", [ "A-CTAA", "AC-TAA", "A-CTAA", "AC-TAA" ])
     ]
 
 
@@ -282,20 +300,20 @@ topologyF =
     )
 
 
-dataSetG :: Map String (NonEmpty (NonEmpty Char))
-dataSetG = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AA"
-    , 'A':|"AA"
-    , 'A':|"CATA"
-    , 'A':|"CATA"
-    , 'A':|"CAA"
-    , 'A':|"CAA"
-    , 'A':|"AA"
-    , 'A':|"AA"
-    , 'A':|"CATA"
-    , 'A':|"CATA"
-    , 'A':|"ATA"
-    , 'A':|"ATA"
+dataSetG :: StringValues
+dataSetG = convertToValues
+    [ ('A':|"AA"  , [ "A--A--A", "A--A--A", "A--A--A", "A--A--A" ])
+    , ('A':|"AA"  , [ "A--A--A", "A--A--A", "A--A--A", "A--A--A" ])
+    , ('A':|"CATA", [ "AC-AT-A", "A-CAT-A", "AC-A-TA", "A-CA-TA" ])
+    , ('A':|"CATA", [ "AC-AT-A", "A-CAT-A", "AC-A-TA", "A-CA-TA" ])
+    , ('A':|"CAA" , [ "AC-A--A", "A-CA--A", "AC-A--A", "A-CA--A" ])
+    , ('A':|"CAA" , [ "AC-A--A", "A-CA--A", "AC-A--A", "A-CA--A" ])
+    , ('A':|"AA"  , [ "A--A--A", "A--A--A", "A--A--A", "A--A--A" ])
+    , ('A':|"AA"  , [ "A--A--A", "A--A--A", "A--A--A", "A--A--A" ])
+    , ('A':|"CATA", [ "A-CA-TA", "AC-A-TA", "A-CAT-A", "AC-AT-A" ])
+    , ('A':|"CATA", [ "A-CA-TA", "AC-A-TA", "A-CAT-A", "AC-AT-A" ])
+    , ('A':|"ATA" , [ "A--A-TA", "A--A-TA", "A--AT-A", "A--AT-A" ])
+    , ('A':|"ATA" , [ "A--A-TA", "A--A-TA", "A--AT-A", "A--AT-A" ])
     ]
 
 
@@ -336,16 +354,16 @@ topologyG =
     )
 
 
-dataSetH :: Map String (NonEmpty (NonEmpty Char))
-dataSetH = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CA"
-    , 'A':|"A"
-    , 'A':|"TA"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"GA"
+dataSetH :: StringValues
+dataSetH = convertToValues
+    [ ('A':|"A" , [ "A---A", "A---A", "A---A", "A---A", "A---A", "A---A" ])
+    , ('A':|"A" , [ "A---A", "A---A", "A---A", "A---A", "A---A", "A---A" ])
+    , ('A':|"CA", [ "AC--A", "AC--A", "A-C-A", "A-C-A", "A--CA", "A--CA" ])
+    , ('A':|"A" , [ "A---A", "A---A", "A---A", "A---A", "A---A", "A---A" ])
+    , ('A':|"TA", [ "A-T-A", "A--TA", "AT--A", "A--TA", "AT--A", "A-T-A" ])
+    , ('A':|"A" , [ "A---A", "A---A", "A---A", "A---A", "A---A", "A---A" ])
+    , ('A':|"A" , [ "A---A", "A---A", "A---A", "A---A", "A---A", "A---A" ])
+    , ('A':|"GA", [ "A--GA", "A-G-A", "A--GA", "AG--A", "A-G-A", "AG--A" ])
     ]
 
 
@@ -374,15 +392,15 @@ topologyH =
     )
 
 
-dataSetI :: Map String (NonEmpty (NonEmpty Char))
-dataSetI = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"TT"
-    , 'A':|"TT"
-    , 'A':|"T"
-    , 'A':|"T"
-    , 'A':|"T"
-    , 'A':|"TT"
-    , 'A':|"TT"
+dataSetI :: StringValues
+dataSetI = convertToValues
+    [ ('A':|"TT", [ "AT-T", "ATT-", "A-TT", "ATT-", "A-TT", "AT-T" ])
+    , ('A':|"TT", [ "AT-T", "ATT-", "A-TT", "ATT-", "A-TT", "AT-T" ])
+    , ('A':|"T" , [ "A--T", "A-T-", "A--T", "AT--", "A-T-", "AT--" ])
+    , ('A':|"T" , [ "A--T", "A-T-", "A--T", "AT--", "A-T-", "AT--" ])
+    , ('A':|"T" , [ "A--T", "A-T-", "A--T", "AT--", "A-T-", "AT--" ])
+    , ('A':|"TT", [ "A-TT", "A-TT", "AT-T", "AT-T", "ATT-", "ATT-" ])
+    , ('A':|"TT", [ "A-TT", "A-TT", "AT-T", "AT-T", "ATT-", "ATT-" ])
     ]
 
 
@@ -408,16 +426,16 @@ topologyI =
     )
 
 
-dataSetJ :: Map String (NonEmpty (NonEmpty Char))
-dataSetJ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
+dataSetJ :: StringValues
+dataSetJ = convertToValues
+    [ ('A':|"TTA", [ "A-TTA", "A-TTA", "AT-TA", "AT-TA", "ATT-A", "ATT-A" ])
+    , ('A':|"TTA", [ "A-TTA", "A-TTA", "AT-TA", "AT-TA", "ATT-A", "ATT-A" ])
+    , ('A':|"TTA", [ "A-TTA", "A-TTA", "AT-TA", "AT-TA", "ATT-A", "ATT-A" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TTA", [ "AT-TA", "ATT-A", "A-TTA", "ATT-A", "A-TTA", "AT-TA" ])
+    , ('A':|"TTA", [ "AT-TA", "ATT-A", "A-TTA", "ATT-A", "A-TTA", "AT-TA" ])
     ]
 
 
@@ -446,16 +464,16 @@ topologyJ =
     )
 
 
-dataSetK :: Map String (NonEmpty (NonEmpty Char))
-dataSetK = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"TA"
-    , 'A':|"TA"
+dataSetK :: StringValues
+dataSetK = convertToValues
+    [ ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"TA", [ "AT-A", "A-TA" ])
+    , ('A':|"TA", [ "AT-A", "A-TA" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
     ]
 
 
@@ -484,18 +502,18 @@ topologyK =
     )
 
 
-dataSetL :: Map String (NonEmpty (NonEmpty Char))
-dataSetL = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"TA"
-    , 'A':|"TA"
+dataSetL :: StringValues
+dataSetL = convertToValues
+    [ ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"TA", [ "AT-A", "A-TA" ])
+    , ('A':|"TA", [ "AT-A", "A-TA" ])
+    , ('A':|"TA", [ "AT-A", "A-TA" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"A" , [ "A--A", "A--A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
+    , ('A':|"TA", [ "A-TA", "AT-A" ])
     ]
 
 
@@ -530,16 +548,16 @@ topologyL =
     )
 
 
-dataSetM :: Map String (NonEmpty (NonEmpty Char))
-dataSetM = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
-    , 'A':|"TA"
-    , 'A':|"TA"
-    , 'A':|"TTA"
-    , 'A':|"TTA"
+dataSetM :: StringValues
+dataSetM = convertToValues
+    [ ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TTA", [ "AT-TA", "ATT-A", "A-TTA", "ATT-A", "A-TTA", "AT-TA" ])
+    , ('A':|"TTA", [ "AT-TA", "ATT-A", "A-TTA", "ATT-A", "A-TTA", "AT-TA" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TA" , [ "A--TA", "A-T-A", "A--TA", "AT--A", "A-T-A", "AT--A" ])
+    , ('A':|"TTA", [ "A-TTA", "A-TTA", "AT-TA", "AT-TA", "ATT-A", "ATT-A" ])
+    , ('A':|"TTA", [ "A-TTA", "A-TTA", "AT-TA", "AT-TA", "ATT-A", "ATT-A" ])
     ]
 
 
@@ -568,16 +586,16 @@ topologyM =
     )
 
 
-dataSetN :: Map String (NonEmpty (NonEmpty Char))
-dataSetN = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
+dataSetN :: StringValues
+dataSetN = convertToValues
+    [ ('A':|"ATT" , [ "AA-TT" ])
+    , ('A':|"ATT" , [ "AA-TT" ])
+    , ('A':|"ATT" , [ "AA-TT" ])
+    , ('A':|"ACTT", [ "AACTT" ])
+    , ('A':|"ACTT", [ "AACTT" ])
+    , ('A':|"ACTT", [ "AACTT" ])
+    , ('A':|"ATT" , [ "AA-TT" ])
+    , ('A':|"ATT" , [ "AA-TT" ])
     ]
 
 
@@ -606,16 +624,16 @@ topologyN =
     )
 
 
-dataSetO :: Map String (NonEmpty (NonEmpty Char))
-dataSetO = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
+dataSetO :: StringValues
+dataSetO = convertToValues
+    [ ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACCTT" , [ "AAC-CTT" ])
+    , ('A':|"ACCTT" , [ "AAC-CTT" ])
     ]
 
 
@@ -644,16 +662,16 @@ topologyO =
     )
 
 
-dataSetP :: Map String (NonEmpty (NonEmpty Char))
-dataSetP = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"AGCCTT"
-    , 'A':|"AGCCTT"
-    , 'A':|"AGCCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
+dataSetP :: StringValues
+dataSetP = convertToValues
+    [ ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"AGCCTT", [ "AAGCCTT" ])
+    , ('A':|"AGCCTT", [ "AAGCCTT" ])
+    , ('A':|"AGCCTT", [ "AAGCCTT" ])
+    , ('A':|"ACCTT" , [ "AA-CCTT" ])
+    , ('A':|"ACCTT" , [ "AA-CCTT" ])
     ]
 
 
@@ -682,16 +700,16 @@ topologyP =
     )
 
 
-dataSetQ :: Map String (NonEmpty (NonEmpty Char))
-dataSetQ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ACCGTT"
-    , 'A':|"ACCGTT"
-    , 'A':|"ACCGTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
+dataSetQ :: StringValues
+dataSetQ = convertToValues
+    [ ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ACCGTT", [ "AACCGTT" ])
+    , ('A':|"ACCGTT", [ "AACCGTT" ])
+    , ('A':|"ACCGTT", [ "AACCGTT" ])
+    , ('A':|"ACCTT" , [ "AACC-TT" ])
+    , ('A':|"ACCTT" , [ "AACC-TT" ])
     ]
 
 
@@ -720,19 +738,19 @@ topologyQ =
     )
 
 
-dataSetR :: Map String (NonEmpty (NonEmpty Char))
-dataSetR = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
+dataSetR :: StringValues
+dataSetR = convertToValues
+    [ ('A':|"ATT"  , [ "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT" ])
     ]
 
 
@@ -770,19 +788,19 @@ topologyR =
     )
 
 
-dataSetS :: Map String (NonEmpty (NonEmpty Char))
-dataSetS = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
+dataSetS :: StringValues
+dataSetS = convertToValues
+    [ ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
+    , ('A':|"ATT"   , [ "AA---TT" ])
     ]
 
 
@@ -820,22 +838,22 @@ topologyS =
     )
 
 
-dataSetT :: Map String (NonEmpty (NonEmpty Char))
-dataSetT = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACCTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ACTT"
-    , 'A':|"ATT"
-    , 'A':|"ATT"
+dataSetT :: StringValues
+dataSetT = convertToValues
+    [ ('A':|"ATT"  , [ "AA--TT", "AA--TT", "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT", "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT", "AA--TT", "AA--TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AA-CTT", "AAC-TT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AA-CTT", "AAC-TT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AA-CTT", "AAC-TT", "AAC-TT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT", "AACCTT", "AACCTT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT", "AACCTT", "AACCTT" ])
+    , ('A':|"ACCTT", [ "AACCTT", "AACCTT", "AACCTT", "AACCTT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT", "AA-CTT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT", "AA-CTT", "AAC-TT" ])
+    , ('A':|"ACTT" , [ "AA-CTT", "AAC-TT", "AA-CTT", "AAC-TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT", "AA--TT", "AA--TT" ])
+    , ('A':|"ATT"  , [ "AA--TT", "AA--TT", "AA--TT", "AA--TT" ])
     ]
 
 
@@ -882,22 +900,22 @@ topologyT =
     )
 
 
-dataSetU :: Map String (NonEmpty (NonEmpty Char))
-dataSetU = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"AGTT"
-    , 'A':|"AGTT"
+dataSetU :: StringValues
+dataSetU = convertToValues
+    [ ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
     ]
 
 
@@ -944,22 +962,22 @@ topologyU =
     )
 
 
-dataSetV :: Map String (NonEmpty (NonEmpty Char))
-dataSetV = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"AGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"ACGCTT"
-    , 'A':|"AGCTT"
-    , 'A':|"AGCTT"
-    , 'A':|"AGCTT"
-    , 'A':|"AGTT"
-    , 'A':|"AGTT"
+dataSetV :: StringValues
+dataSetV = convertToValues
+    [ ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGTT" , [ "AACG-TT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"ACGCTT", [ "AACGCTT" ])
+    , ('A':|"AGCTT" , [ "AA-GCTT" ])
+    , ('A':|"AGCTT" , [ "AA-GCTT" ])
+    , ('A':|"AGCTT" , [ "AA-GCTT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
+    , ('A':|"AGTT"  , [ "AA-G-TT" ])
     ]
 
 
@@ -1006,14 +1024,14 @@ topologyV =
     )
 
 
-dataSetW :: Map String (NonEmpty (NonEmpty Char))
-dataSetW = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"T"
-    , 'A':|"T"
-    , 'A':|"CT"
-    , 'A':|"CT"
-    , 'A':|"CCT"
-    , 'A':|"CCCT"
+dataSetW :: StringValues
+dataSetW = convertToValues
+    [ ('A':|"T"   , [ "A---T", "A---T" ])
+    , ('A':|"T"   , [ "A---T", "A---T" ])
+    , ('A':|"CT"  , [ "AC--T", "A--CT" ])
+    , ('A':|"CT"  , [ "AC--T", "A--CT" ])
+    , ('A':|"CCT" , [ "ACC-T", "A-CCT" ])
+    , ('A':|"CCCT", [ "ACCCT", "ACCCT" ])
     ]
 
 
@@ -1036,14 +1054,14 @@ topologyW =
     )
 
 
-dataSetX :: Map String (NonEmpty (NonEmpty Char))
-dataSetX = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'G':|"AA"
-    , 'G':|"AA"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CA"
+dataSetX :: StringValues
+dataSetX = convertToValues
+    [ ('G':|"AA", [ "GA-A" ])
+    , ('G':|"AA", [ "GA-A" ])
+    , ('A':|"A" , [ "-A-A" ])
+    , ('A':|"A" , [ "-A-A" ])
+    , ('A':|"A" , [ "-A-A" ])
+    , ('A':|"CA", [ "-ACA" ])
     ]
 
 
@@ -1066,14 +1084,14 @@ topologyX =
     )
 
 
-dataSetY :: Map String (NonEmpty (NonEmpty Char))
-dataSetY = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'G':|"AA"
-    , 'G':|"AA"
-    , 'G':|"ACA"
-    , 'G':|"ACA"
-    , 'G':|"ACA"
-    , 'A':|"CA"
+dataSetY :: StringValues
+dataSetY = convertToValues
+    [ ('G':|"AA" , [ "GA-A" ])
+    , ('G':|"AA" , [ "GA-A" ])
+    , ('G':|"ACA", [ "GACA" ])
+    , ('G':|"ACA", [ "GACA" ])
+    , ('G':|"ACA", [ "GACA" ])
+    , ('A':|"CA" , [ "-ACA" ])
     ]
 
 
@@ -1096,14 +1114,14 @@ topologyY =
     )
 
 
-dataSetZ :: Map String (NonEmpty (NonEmpty Char))
-dataSetZ = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AG"
-    , 'A':|"AG"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CA"
+dataSetZ :: StringValues
+dataSetZ = convertToValues
+    [ ('A':|"AG", [ "A-AG" ])
+    , ('A':|"AG", [ "A-AG" ])
+    , ('A':|"A" , [ "A-A-" ])
+    , ('A':|"A" , [ "A-A-" ])
+    , ('A':|"A" , [ "A-A-" ])
+    , ('A':|"CA", [ "ACA-" ])
     ]
 
 
@@ -1126,14 +1144,14 @@ topologyZ =
     )
 
 
-dataSet0 :: Map String (NonEmpty (NonEmpty Char))
-dataSet0 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AG"
-    , 'A':|"AG"
-    , 'A':|"CAG"
-    , 'A':|"CAG"
-    , 'A':|"CAG"
-    , 'A':|"CA"
+dataSet0 :: StringValues
+dataSet0 = convertToValues
+    [ ('A':|"AG" , [ "A-AG" ])
+    , ('A':|"AG" , [ "A-AG" ])
+    , ('A':|"CAG", [ "ACAG" ])
+    , ('A':|"CAG", [ "ACAG" ])
+    , ('A':|"CAG", [ "ACAG" ])
+    , ('A':|"CA" , [ "ACA-" ])
     ]
 
 
@@ -1156,14 +1174,14 @@ topology0 =
     )
 
 
-dataSet1 :: Map String (NonEmpty (NonEmpty Char))
-dataSet1 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CCA"
-    , 'A':|"CCA"
-    , 'A':|"CCA"
-    , 'A':|"CGCA"
+dataSet1 :: StringValues
+dataSet1 = convertToValues
+    [ ('A':|"A"   , [ "A---A" ])
+    , ('A':|"A"   , [ "A---A" ])
+    , ('A':|"CCA" , [ "AC-CA" ])
+    , ('A':|"CCA" , [ "AC-CA" ])
+    , ('A':|"CCA" , [ "AC-CA" ])
+    , ('A':|"CGCA", [ "ACGCA" ])
     ]
 
 
@@ -1186,17 +1204,17 @@ topology1 =
     )
 
 
-dataSet2 :: Map String (NonEmpty (NonEmpty Char))
-dataSet2 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"AA"
-    , 'A':|"AA"
-    , 'A':|"CACA"
-    , 'A':|"CACA"
-    , 'A':|"CACA"
-    , 'A':|"CAGCA"
-    , 'A':|"CACA"
-    , 'A':|"CACA"
-    , 'A':|"CGACA"
+dataSet2 :: StringValues
+dataSet2 = convertToValues
+    [ ('A':|"AA"   , [ "A--A--A" ])
+    , ('A':|"AA"   , [ "A--A--A" ])
+    , ('A':|"CACA" , [ "AC-A-CA" ])
+    , ('A':|"CACA" , [ "AC-A-CA" ])
+    , ('A':|"CACA" , [ "AC-A-CA" ])
+    , ('A':|"CAGCA", [ "AC-AGCA" ])
+    , ('A':|"CACA" , [ "AC-A-CA" ])
+    , ('A':|"CACA" , [ "AC-A-CA" ])
+    , ('A':|"CGACA", [ "ACGA-CA" ])
     ]
 
 
@@ -1228,14 +1246,14 @@ topology2 =
     )
 
 
-dataSet3 :: Map String (NonEmpty (NonEmpty Char))
-dataSet3 = fmap toNonEmpties . M.fromList $ zip (pure <$> ['A'..])
-    [ 'A':|"A"
-    , 'A':|"A"
-    , 'A':|"CA"
-    , 'A':|"CA"
-    , 'A':|"CA"
-    , 'A':|"GCTCA"
+dataSet3 :: StringValues
+dataSet3 = convertToValues
+    [ ('A':|"A"    , [ "A----A" ])
+    , ('A':|"A"    , [ "A----A" ])
+    , ('A':|"CA"   , [ "A---CA" ])
+    , ('A':|"CA"   , [ "A---CA" ])
+    , ('A':|"CA"   , [ "A---CA" ])
+    , ('A':|"GCTCA", [ "AGCTCA" ])
     ]
 
 

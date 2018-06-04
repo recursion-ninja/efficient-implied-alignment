@@ -17,6 +17,7 @@ import qualified Data.List.NonEmpty    as NE
 import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Map                     (Map)
 import qualified Data.Map              as M
+import           Data.Ord
 import           Data.Pointed
 import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
@@ -25,8 +26,11 @@ import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
 import           File.Input
+import           Prelude               hiding (zip)
 import           SampleData
 import           System.IO
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
 
 main :: IO ()
@@ -34,125 +38,46 @@ main = runTests
 
 
 runTests :: IO ()
-runTests = do
-    hSetBuffering stdout NoBuffering
-    let maxWidth = maximum $ (\(x,_,_,_) -> length x) <$> sampleDataSets
-    mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
---    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 7
+runTests = defaultMain . testGroup "Test Trees" $ runTest <$> sampleDataSets
 
 
-runAndReportDataSet :: Int -> Int -> (String, LeafInput, TreeInput, TransitionCostMatrix) -> IO ()
-runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
-    let dataSetNumber = "Data Set Number: " <> show num
-    let width'        = max width $ length dataSetNumber
-    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-" ]    
-    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=-" ]
-    putStrLn ""
-    case toEither $ unifyInput defaultAlphabet leafData treeData of
-      Left  errors -> mapM_ print $ toList errors
-      Right tree   ->  do
-          putStrLn ""
-          print defaultAlphabet
-          putStrLn ""
-          putStrLn "Input Strings:"
-          putStrLn ""
-          putStrLn $ renderPhylogeny inputRenderer tree
-          putStrLn ""
-          putStrLn "Output Alignment:"
-          putStrLn ""
-          let result = force . preorder' $ postorder' tree
-          putStrLn $ renderAlignment nodeRendererA leafRendererA result          
-          putStrLn ""
-{--}
-          putStrLn $ renderAlignment nodeRendererB leafRendererB result
-          putStrLn ""
-          putStrLn $ renderAlignment nodeRendererC leafRendererC result
-          putStrLn ""
-{--}
-  where
-    centerWithin width x = mconcat
-        [ replicate pad ' '
-        , x
-        , replicate pad ' '
-        , if extra == 1 then " " else ""
-        ]
-      where
-        (pad, extra) = (width - length x) `quotRem` 2
+runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
+    inputTree   <- case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
+                     Left  errors -> assertFailure . unlines $ show <$> toList errors
+                     Right tree   -> pure tree
+    outputTrees <- case toEither $ gatherOutputTrees leafData treeData of
+                     Left  errors -> assertFailure . unlines $ show <$> toList errors
+                     Right tree   -> pure tree
+    let result = force . preorder' $ postorder' inputTree
+        alignedString = renderPhylogeny leafRendererA result
+        inputString   = renderPhylogeny inputRenderer inputTree
+        outputStrings = renderPhylogeny inputRenderer <$> outputTrees
+        closestOutput = minimumBy (comparing (strDistance alignedString)) outputStrings
+        errorMsg      = unlines
+            [ "Input Tree:"
+            , inputString
+            , "Actual Aligned Tree:"
+            , alignedString
+            , "Expected Aligned Tree:"
+            , closestOutput
+            ]
+    assertBool errorMsg (any (== alignedString) outputStrings) 
     
+  where
     postorder' = postorder stringAligner
     preorder'  = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
 
-    medianStateFinalizer = preorderInternalLogic -- (buildThreeWayCompare defaultAlphabet op)
+    medianStateFinalizer = preorderInternalLogic
+
+    gatherOutputTrees x y = sequenceA $ (\i -> f $ ((! i) . snd) <$> x) <$> (0:|[1 .. count - 1])
+      where
+        count = length . head . toList $ snd <$> x
+        f z = unifyInput defaultAlphabet z y
     
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
+    leafRendererA x i = mconcat [ i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
+    nodeRendererA x _ = mconcat [ "?: "  , renderSingleton defaultAlphabet $ x ^. alignedString ]
+    inputRenderer x i = mconcat [ i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
 
-    inputRenderer x i = mconcat
-        [ i
-        , ": "
-        , renderSingleton defaultAlphabet $ x ^. preliminaryString
-        ]
-    
-    leafRendererA x i = mconcat
-        [ i
-        , ": "
---        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
---        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
-        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-    nodeRendererA x _ = mconcat
-        [ "?: "
---        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
---        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
-        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-    leafRendererB x i = mconcat
-        [ i
-        , ": "
---        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
-        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
---        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-    nodeRendererB x _ = mconcat
-        [ "?: "
---        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
-        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
---        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-    leafRendererC x i = mconcat
-        [ i
-        , ": "
-        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
---        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
---        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-    nodeRendererC x _ = mconcat
-        [ "?: "
-        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
---        , renderString       defaultAlphabet $ x ^.   finalizedString
---        , renderSymbolString defaultAlphabet $ x ^. alignedString
---        , renderAligns defaultAlphabet $ x ^. alignedString
---        , renderSingleton defaultAlphabet $ x ^. alignedString
-        ]
-
-
-pad :: Int -> String -> String
-pad i str = str <> replicate (i - length str) ' '
-
-
-renderAlphabet :: Alphabet Char -> String
-renderAlphabet = (\x -> "Alphabet: { "<>x<>" }") . fold1 . intersperse ", " . fmap pure . toNonEmpty
+    strDistance :: Eq a => [a] -> [a] -> Int
+    strDistance x y = length . filter (uncurry (/=)) $ zip x y
