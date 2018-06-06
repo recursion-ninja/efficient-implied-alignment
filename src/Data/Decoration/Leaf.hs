@@ -23,21 +23,21 @@ import GHC.Generics
 
 data InitialLeaf
    = InitialLeaf
-   { _IL_SubtreeCost       :: Word
-   , _IL_LocalCost         :: Word
-   , _IL_PreliminaryString :: SymbolString
-   , _IL_InputString       :: SymbolString
+   { _IL_SubtreeCost       :: {-# UNPACK #-} !Word
+   , _IL_LocalCost         :: {-# UNPACK #-} !Word
+   , _IL_PreliminaryString :: {-# UNPACK #-} !SymbolString
+   , _IL_InputString       :: {-# UNPACK #-} !SymbolString
    } deriving (Eq, Generic)
 
 
 data FinalizedLeaf
    = FinalizedLeaf
-   { _FL_SubtreeCost          :: Word
-   , _FL_LocalCost            :: Word
-   , _FL_PreliminaryString    :: SymbolString
-   , _FL_AlignedString        :: SymbolString
-   , _FL_InputString          :: SymbolString
-   , _FL_OutputString         :: SymbolString
+   { _FL_SubtreeCost       :: {-# UNPACK #-} !Word
+   , _FL_LocalCost         :: {-# UNPACK #-} !Word
+   , _FL_PreliminaryString :: {-# UNPACK #-} !SymbolString
+   , _FL_AlignedString     :: {-# UNPACK #-} !SymbolString
+   , _FL_InputString       :: {-# UNPACK #-} !SymbolString
+   , _FL_OutputString      :: {-# UNPACK #-} !SymbolString
    } deriving (Eq, Generic)
 
 

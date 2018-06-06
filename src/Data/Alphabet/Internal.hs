@@ -44,8 +44,8 @@ type AmbiguityGroup a = NonEmpty a
 -- A collection of symbols and optional corresponding state names.
 data Alphabet a =
      Alphabet
-     { symbolVector      :: Vector a
-     , stateNames        :: [a]
+     { symbolVector      :: {-# UNPACK #-} !(Vector a)
+     , stateNames        :: {-# UNPACK #-} ![a]
      } deriving (Generic)
 
 

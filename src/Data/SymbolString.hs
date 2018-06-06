@@ -44,9 +44,9 @@ type SymbolString = Vector SymbolContext
 
 
 data  SymbolContext
-    = Align  {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
-    | Delete {-# UNPACK #-} SymbolAmbiguityGroup {-# UNPACK #-} SymbolAmbiguityGroup
-    | Insert {-# UNPACK #-} SymbolAmbiguityGroup                                     {-# UNPACK #-} SymbolAmbiguityGroup
+    = Align  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Delete {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Insert {-# UNPACK #-} !SymbolAmbiguityGroup                                     {-# UNPACK #-} !SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 

@@ -180,31 +180,29 @@ needlemanWunschDefinition
   -> (Int, Int)
   -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
-  |  p == (0,0)              = (            0,  DiagArrow, gapGroup)
-  |   topElement == gapGroup
-  && leftElement == gapGroup
-  && row /= 0
-  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
---  && col /= 0                = (diagonalValue,  DiagArrow, gapGroup)
-  |   topElement == gapGroup
-  && col /= 0                = (leftwardValue,  LeftArrow, gapGroup)
-  |  leftElement == gapGroup
-  && row /= 0                = (  upwardValue,    UpArrow, gapGroup)
+  |  p == (0,0)                          = (            0, DiagArrow, gapGroup)
+--  |   topElement == gapGroup
+--  && leftElement == gapGroup
+--  && row /= 0
+--  && col /= 0                = (leftwardValue, LeftArrow, gapGroup)
+  |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
+  |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
   |  minDir == DiagArrow
   && minState == gapGroup
   && maybe False isInDel  topContext
-  && maybe False isInDel leftContext = (leftwardValue,  LeftArrow, gapGroup)
+--  && maybe False isInDel leftContext = (leftwardValue, LeftArrow, gapGroup)
+  && maybe False isInDel leftContext     = (minCost, LeftArrow, gapGroup)
   
 --      if      isGapDim leftContext then (  upwardValue,   UpArrow, gapGroup)
 --      else if isGapDim  topContext then (leftwardValue, LeftArrow, gapGroup)
 --      else                              (diagonalValue, DiagArrow, gapGroup)
 
---      else if leftwardState == gapGroup  then (leftwardValue,  LeftArrow, gapGroup)
---      else if   upwardState == gapGroup  then (  upwardValue,    UpArrow, gapGroup)
+--      else if leftwardState == gapGroup  then (leftwardValue, LeftArrow, gapGroup)
+--      else if   upwardState == gapGroup  then (  upwardValue,   UpArrow, gapGroup)
 {-
       else    error $ unlines [ "Cool corner case reached!"
                               , "Considering point: " <> show p
-                              , "Top context:     " <> show ((col - 1) `lookup` topChar)
+                              , "Top context:     " <> show ((col - 1) `lookup`  topChar)
                               , "Left context:    " <> show ((row - 1) `lookup` leftChar)
                               , "  Upward point:  " <> show (memo !? (row - 1, col    ))
                               , "Diagonal point:  " <> show (memo !? (row - 1, col - 1))
@@ -222,9 +220,9 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     isInDel Align {} = False
     isInDel _ = True
     
-    topContext                    = (col - 1) `lookup` topChar
+    topContext                    = (col - 1) `lookup`  topChar
     leftContext                   = (row - 1) `lookup` leftChar
-    topElement                    = maybe gapGroup symbolAlignmentMedian topContext
+    topElement                    = maybe gapGroup symbolAlignmentMedian  topContext
     leftElement                   = maybe gapGroup symbolAlignmentMedian leftContext
     (leftwardValue, leftwardArrow, leftWardState)         = memo !? (row    , col - 1)
     (  upwardValue,   upwardArrow,   upwardState)         = memo !? (row - 1, col    )

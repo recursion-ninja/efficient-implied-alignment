@@ -23,19 +23,19 @@ import GHC.Generics
 
 data InitialInternalNode
    = InitialInternalNode
-   { _IIN_SubtreeCost       :: Word
-   , _IIN_LocalCost         :: Word
-   , _IIN_PreliminaryString :: SymbolString
+   { _IIN_SubtreeCost       :: {-# UNPACK #-} !Word
+   , _IIN_LocalCost         :: {-# UNPACK #-} !Word
+   , _IIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
    } deriving (Eq, Generic)
 
 
 data FinalizedInternalNode
    = FinalizedInternalNode
-   { _FIN_SubtreeCost       :: Word
-   , _FIN_LocalCost         :: Word
-   , _FIN_PreliminaryString :: SymbolString
-   , _FIN_AlignedString     :: SymbolString
-   , _FIN_IsRoot            :: Bool
+   { _FIN_SubtreeCost       :: {-# UNPACK #-} !Word
+   , _FIN_LocalCost         :: {-# UNPACK #-} !Word
+   , _FIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
+   , _FIN_AlignedString     :: {-# UNPACK #-} !SymbolString
+   , _FIN_IsRoot            :: {-# UNPACK #-} !Bool
    } deriving (Eq, Generic)
 
 
