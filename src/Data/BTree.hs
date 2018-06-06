@@ -16,15 +16,15 @@ import Prelude            hiding (head)
 
 
 data BTree b a
-   = Internal {-# UNPACK #-} !(NodeDatum b) {-# UNPACK #-} !(BTree b a) {-# UNPACK #-} !(BTree b a)
-   | Leaf     {-# UNPACK #-} !(NodeDatum a)
+   = Internal !(NodeDatum b) !(BTree b a) !(BTree b a)
+   | Leaf     !(NodeDatum a)
    deriving (Eq, Functor)
 
 
 data NodeDatum a
    = NodeDatum
-   { identifier :: {-# UNPACK #-} !String
-   , nodeDatum  :: {-# UNPACK #-} !a
+   { identifier :: !String
+   , nodeDatum  :: !a
    } deriving (Eq, Functor)
 
 

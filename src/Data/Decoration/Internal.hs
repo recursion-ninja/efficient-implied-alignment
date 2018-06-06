@@ -35,7 +35,7 @@ data FinalizedInternalNode
    , _FIN_LocalCost         :: {-# UNPACK #-} !Word
    , _FIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
    , _FIN_AlignedString     :: {-# UNPACK #-} !SymbolString
-   , _FIN_IsRoot            :: {-# UNPACK #-} !Bool
+   , _FIN_IsRoot            :: !Bool
    } deriving (Eq, Generic)
 
 
