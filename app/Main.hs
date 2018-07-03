@@ -40,8 +40,8 @@ runInput = do
             maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
             inputRenderer  x i = unwords [ padR maxLabelLen (i<> ":"), renderSingleton alphabet $ x ^. preliminaryString ]
 --            prelimRenderer x _ = mconcat [ padR maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
-            leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, padL 5 . show $ x ^. subtreeCost {- , renderSingleton alphabet $ x ^. alignedString -} ]
-            nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, padL 5 . show $ x ^. subtreeCost {- , renderSingleton alphabet $ x ^. alignedString -} ]
+            leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+            nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
 
             postorder'    = postorder stringAligner
             preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic

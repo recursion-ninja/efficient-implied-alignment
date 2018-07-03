@@ -195,9 +195,9 @@ deriveAlignment pAlignment pContext cContext = alignment
               _         -> (del : acc, x:xs,  y:ys)
           Insert {} ->
               case y of
-                Delete {} -> (                  del : acc, x:xs, ys)
-                Insert {} -> (deleteionToInserion x : acc,   xs, ys)
-                Align  {} -> (                    x : acc,   xs, ys)
+                Delete {} -> (                 del : acc, x:xs, ys)
+                Insert {} -> (deletionToInserion x : acc,   xs, ys)
+                Align  {} -> (                   x : acc,   xs, ys)
           Align  {} ->
               case y of
                 Delete {} -> (del : acc, x:xs, ys)
@@ -213,12 +213,12 @@ countAlignInsert = sum . fmap g
 
 
 setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
-setInitialAlignment = fmap deleteionToInserion
+setInitialAlignment = fmap deletionToInserion
 
 
-deleteionToInserion :: SymbolContext -> SymbolContext
-deleteionToInserion e@Delete {} = reverseContext e
-deleteionToInserion e           = e
+deletionToInserion :: SymbolContext -> SymbolContext
+deletionToInserion e@Delete {} = reverseContext e
+deletionToInserion e           = e
 
 
 deriveLeafAlignment
