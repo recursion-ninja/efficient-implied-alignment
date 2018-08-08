@@ -14,15 +14,23 @@ import Data.BTree (BTree)
 type family NodeDec i
 type family LeafDec i
 
-type BTreeInit = BTree (NodeDec Init) (LeafDec Init)
-data Init
-type instance NodeDec Init = InitialInternalNode
+type BTree2 a = BTree (NodeDec a) (LeafDec a)
+
+data Init   -- ^ Read in from User
+data Prelim -- ^ Result of PostOrder
+data Final  -- ^ Result of PreOrder
+
+type instance NodeDec Init = ()
 type instance LeafDec Init = InitialLeaf
 
+type instance NodeDec Prelim = InitialInternalNode
+type instance LeafDec Prelim = InitialLeaf
 
-type BTreeFinal = BTree (NodeDec Final) (LeafDec Final)
-data Final
 type instance NodeDec Final = FinalizedInternalNode
 type instance LeafDec Final = FinalizedLeaf
 
-postOrderTraverse :: BtreeInit 
+postOrderTraverse :: TheMetricWeReadIn -> BTree2 Init -> BTree2 Prelim
+postOrderTraverse f = postorder f postorderLogic
+
+preOrderTraverse :: TheMetric -> Btree2 Prelim -> BTree2 Final
+preOrderTraverse f = preorder f preorderRootLogic preorderInternalLogic preorderLeafLogic
