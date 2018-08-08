@@ -9,12 +9,18 @@ import Data.Decoration
   , FinalizedLeaf(..)
   )
 import Data.BTree (BTree)
+import Alignment
+  (postorderLogic
+  , preorderInternalLogic
+  , preorderLeafLogic
+  , preorderRootLogic
+  , PairwiseAlignment)
 
 
 type family NodeDec i
 type family LeafDec i
+type BTreeF i = BTree (NodeDec i) (LeafDec i)
 
-type BTree2 a = BTree (NodeDec a) (LeafDec a)
 
 data Init   -- ^ Read in from User
 data Prelim -- ^ Result of PostOrder
@@ -29,8 +35,10 @@ type instance LeafDec Prelim = InitialLeaf
 type instance NodeDec Final = FinalizedInternalNode
 type instance LeafDec Final = FinalizedLeaf
 
-postOrderTraverse :: TheMetricWeReadIn -> BTree2 Init -> BTree2 Prelim
-postOrderTraverse f = postorder f postorderLogic
+type Metric = PairwiseAlignment Char
 
-preOrderTraverse :: TheMetric -> Btree2 Prelim -> BTree2 Final
-preOrderTraverse f = preorder f preorderRootLogic preorderInternalLogic preorderLeafLogic
+postOrderTraverse :: Metric -> BTreeF Init -> BTreeF Prelim
+postOrderTraverse f = undefined-- postorder f postorderLogic
+
+preOrderTraverse :: Metric -> BTreeF Prelim -> BTreeF Final
+preOrderTraverse f = undefined--preorder f preorderRootLogic preorderInternalLogic preorderLeafLogic
