@@ -134,6 +134,7 @@ library
       Data.Decoration.Class
       Data.Decoration.Internal
       Data.Decoration.Leaf
+      Data.DecTree
       Data.List.Utility
       File.Format.Fasta.Internal
       File.Format.Fasta.Parser
