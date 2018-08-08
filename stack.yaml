@@ -1,5 +1,5 @@
 packages:
   - .
-
+#compiler: ghc-8.4.3
 #resolver: lts-11.1
-resolver: nightly-2018-05-20
+resolver: lts-12.4
