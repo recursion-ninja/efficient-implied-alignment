@@ -17,6 +17,7 @@ module Alignment.Internal
   , preorderInternalLogic
   , preorderLeafLogic
   , preorderRootLogic
+  , PairwiseAlignment
   ) where
 
 import           Control.Lens

@@ -17,6 +17,7 @@ module Alignment
   , preorderInternalLogic
   , preorderLeafLogic
   , preorderRootLogic
+  , PairwiseAlignment
   , naiveDO
   , naiveDOMemo
   , ukkonenDO
@@ -25,4 +26,3 @@ module Alignment
 
 import Alignment.Internal
 import Alignment.Pairwise
-
