@@ -35,8 +35,8 @@ type instance LeafDec Final = FinalizedNode
 
 type Metric = PairwiseAlignment Char
 
-postOrderTraverse :: Metric -> BTreeF Init -> BTreeF Prelim
-postOrderTraverse m = postorder (postorderLogic m)
+postorderTraverse :: Metric -> BTreeF Init -> BTreeF Prelim
+postorderTraverse m = postorder (postorderLogic m)
 
-preOrderTraverse :: Metric -> BTreeF Prelim -> BTreeF Final
-preOrderTraverse m = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
+preorderTraverse :: BTreeF Prelim -> BTreeF Final
+preorderTraverse = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
