@@ -15,6 +15,8 @@ module Data.Decoration
   , InitialLeaf(InitialLeaf)
   , FinalizedInternalNode(FinalizedInternalNode)
   , FinalizedLeaf(FinalizedLeaf)
+  , PreliminaryNode(PreliminaryNode)
+  , FinalizedNode (FinalizedNode)
   , HasAlignedString(..)
   , finalizedString
   , inputString
@@ -28,3 +30,4 @@ module Data.Decoration
 import Data.Decoration.Class
 import Data.Decoration.Internal
 import Data.Decoration.Leaf
+import Data.Decoration.Node
