@@ -111,6 +111,7 @@ library
       Data.Alphabet.IUPAC
       Data.BTree            
       Data.Decoration
+      Data.DecTree
       Data.Matrix.ZeroIndexed
       Data.SymbolString
       Data.TCM
@@ -135,7 +136,6 @@ library
       Data.Decoration.Internal
       Data.Decoration.Leaf
       Data.Decoration.Node
-      Data.DecTree
       Data.List.Utility
       File.Format.Fasta.Internal
       File.Format.Fasta.Parser
