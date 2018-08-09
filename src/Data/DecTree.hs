@@ -3,12 +3,10 @@
 module Data.DecTree where
 
 import Data.Decoration
-  (InitialInternalNode
-  , FinalizedInternalNode
-  , InitialLeaf(..)
-  , FinalizedLeaf(..)
+  ( PreliminaryNode(..)
+  , FinalizedNode(..)
   )
-import Data.BTree (BTree)
+import Data.BTree (BTree, preorder, postorder)
 import Alignment
   (postorderLogic
   , preorderInternalLogic
@@ -27,18 +25,18 @@ data Prelim -- ^ Result of PostOrder
 data Final  -- ^ Result of PreOrder
 
 type instance NodeDec Init = ()
-type instance LeafDec Init = InitialLeaf
+type instance LeafDec Init = PreliminaryNode
 
-type instance NodeDec Prelim = InitialInternalNode
-type instance LeafDec Prelim = InitialLeaf
+type instance NodeDec Prelim = PreliminaryNode
+type instance LeafDec Prelim = PreliminaryNode
 
-type instance NodeDec Final = FinalizedInternalNode
-type instance LeafDec Final = FinalizedLeaf
+type instance NodeDec Final = FinalizedNode
+type instance LeafDec Final = FinalizedNode
 
 type Metric = PairwiseAlignment Char
 
 postOrderTraverse :: Metric -> BTreeF Init -> BTreeF Prelim
-postOrderTraverse f = undefined-- postorder f postorderLogic
+postOrderTraverse m = postorder (postorderLogic m)
 
 preOrderTraverse :: Metric -> BTreeF Prelim -> BTreeF Final
-preOrderTraverse f = undefined--preorder f preorderRootLogic preorderInternalLogic preorderLeafLogic
+preOrderTraverse m = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic

@@ -46,11 +46,11 @@ type PairwiseAlignment s =  Vector SymbolContext
 -- atomic alignments depending on the character's metadata.
 postorderLogic
   :: PairwiseAlignment Char
-  -> InitialInternalNode
-  -> InitialInternalNode
-  -> InitialInternalNode
+  -> PreliminaryNode
+  -> PreliminaryNode
+  -> PreliminaryNode
 postorderLogic pairwiseAlignment lhs rhs =
-    InitialInternalNode totalSubtreeCost alignmentCost alignmentContext
+    PreliminaryNode totalSubtreeCost alignmentCost alignmentContext
   where
     totalSubtreeCost = alignmentCost + lhs ^. subtreeCost + rhs ^. subtreeCost
     (alignmentCost, alignmentContext) = pairwiseAlignment
@@ -61,10 +61,10 @@ postorderLogic pairwiseAlignment lhs rhs =
 -- |
 -- The pre-order scoring logic for root node.
 preorderRootLogic
-  :: InitialInternalNode
-  -> FinalizedInternalNode
+  :: PreliminaryNode
+  -> FinalizedNode
 preorderRootLogic =
-    FinalizedInternalNode
+    FinalizedNode
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
@@ -75,11 +75,11 @@ preorderRootLogic =
 -- |
 -- The pre-order scoring logic for intenral nodes.
 preorderLeafLogic
-  :: FinalizedInternalNode                          -- ^ Parent decoration
-  -> Either InitialInternalNode InitialInternalNode -- ^ Current decoration, whether it is Left or Right child of parent.
-  -> FinalizedInternalNode                          -- ^ Updated decoration
+  :: FinalizedNode                          -- ^ Parent decoration
+  -> Either PreliminaryNode PreliminaryNode  -- ^ Current decoration, whether it is Left or Right child of parent.
+  -> FinalizedNode                          -- ^ Updated decoration
 preorderLeafLogic parent current =
-    ( FinalizedInternalNode
+    ( FinalizedNode
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
@@ -100,11 +100,11 @@ preorderLeafLogic parent current =
 -- |
 -- The pre-order scoring logic for intenral nodes.
 preorderInternalLogic
-  :: FinalizedInternalNode                          -- ^ Parent decoration
-  -> Either InitialInternalNode InitialInternalNode -- ^ Current decoration, whether it is Left or Right child of parent.
-  -> FinalizedInternalNode                          -- ^ Updated decoration
+  :: FinalizedNode                          -- ^ Parent decoration
+  -> Either PreliminaryNode PreliminaryNode -- ^ Current decoration, whether it is Left or Right child of parent.
+  -> FinalizedNode                          -- ^ Updated decoration
 preorderInternalLogic parent current =
-    ( FinalizedInternalNode
+    ( FinalizedNode
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
@@ -113,7 +113,7 @@ preorderInternalLogic parent current =
     ) $ either id id current
   where
     derivedStringAlignment = deriveAlignment (parent ^. alignedString) p c
-      
+
     (c, p) = case current of
                Left  x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
@@ -121,7 +121,7 @@ preorderInternalLogic parent current =
 
 -- TODO: Make this Delete gap gap, don't assum alphabet of size 5
 del :: SymbolContext
-del = let x = bit 4 in Delete x x 
+del = let x = bit 4 in Delete x x
 
 
 deriveAlignment
@@ -150,11 +150,11 @@ deriveAlignment pAlignment pContext cContext = alignment
         , "Parent Alignment: " <> show pAlignment
         , "Parent Context:   " <> show pContext
         , "Child  Context:   " <> show cContext
-        , "Parent Context Renamining: " 
+        , "Parent Context Renamining: "
         , show z
-        , "Child Context Renamining: " 
+        , "Child Context Renamining: "
         , show y
-        , "Result Alignment: " 
+        , "Result Alignment: "
         , show $ reverse x
         ]
 
@@ -248,11 +248,11 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
         , "Parent Alignment: " <> show pAlignment
         , "Parent Context:   " <> show pContext
         , "Child  Context:   " <> show cContext
-        , "Parent Context Renamining: " 
+        , "Parent Context Renamining: "
         , show z
-        , "Child Context Renamining: " 
+        , "Child Context Renamining: "
         , show y
-        , "Result Alignment: " 
+        , "Result Alignment: "
         , show $ reverse x
         ]
 

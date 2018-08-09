@@ -45,7 +45,7 @@ data  FileInput
     = FileInput
     { inputAlphabet  :: Alphabet Char
     , inputTCM       :: TransitionCostMatrix
-    , inputTree      :: BTree () InitialInternalNode
+    , inputTree      :: BTree () PreliminaryNode
     , parseTime      :: CPUTime
     , unifyTime      :: CPUTime
     , precomputeTime :: CPUTime
@@ -97,28 +97,28 @@ runUnification
   :: MonadIO m
   => AlphabetType
   -> (FastaParseResult, BTree b a, TCM)
-  -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b InitialInternalNode))
+  -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b PreliminaryNode))
 runUnification alphaType (dataVal, treeVal, tcmVal) = timeOp $ do
     let TCM symbolList matrix = tcmVal
         alphabet    = fromSymbols symbolList
         alphaChange = case alphaType of
                         Standard -> id
-                        DNA      -> decodeIUPAC iupacToDna 
+                        DNA      -> decodeIUPAC iupacToDna
                         RNA      -> decodeIUPAC iupacToRna
         leafDataMap = alphaChange <$> fastaToMap dataVal
         badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
         badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
     pure $ (\x -> (alphabet, matrix, x)) <$> (badLinking <* badSymbols)
-  
+
 
 precomputeTCM :: Alphabet a -> Matrix Word -> IO (CPUTime, TransitionCostMatrix)
 precomputeTCM alphabet matrix = timeOp $ do
     let scm  = force $ buildSymbolChangeMatrix matrix
-    pure . force $ buildTransitionCostMatrix alphabet scm 
+    pure . force $ buildTransitionCostMatrix alphabet scm
 
 
 fastaToMap :: FastaParseResult -> Map String CharacterSequence
-fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols) 
+fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols)
 
 
 validateSymbolsAndAlphabet :: TCM -> Map Identifier CharacterSequence -> Validation (NonEmpty String) ()
@@ -162,7 +162,7 @@ unifyInput
   => Alphabet Char
   -> c (f (t Char))
   -> BTree b a
-  -> Validation (NonEmpty UnificationError) (BTree b InitialInternalNode)
+  -> Validation (NonEmpty UnificationError) (BTree b PreliminaryNode)
 unifyInput alphabet dataCollection genericTree = validatedDataSet *> initializedTree
   where
     dataSetKeys   = mapWithKey const dataCollection
@@ -179,12 +179,12 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
 
     initializedTree = traverse f leafTaggedTree
       where
-        f :: String -> Validation (NonEmpty UnificationError) InitialInternalNode
+        f :: String -> Validation (NonEmpty UnificationError) PreliminaryNode
         f k = validationNel $
             case k `lookup` dataCollection of
               Nothing -> Left $ LeafLabelMissingInDataSet k
               Just xs -> let !ss = buildSymbolString xs
-                         in  Right $ InitialInternalNode 0 0 ss
+                         in  Right $ PreliminaryNode 0 0 ss
           where
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =
@@ -196,4 +196,3 @@ data  UnificationError
     = LeafLabelMissingInDataSet String
     | DataLabelMissingInLeafSet String
     deriving (Eq, Show)
-    

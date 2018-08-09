@@ -11,10 +11,10 @@ import Control.DeepSeq
 
 data  UserInput
     = UserInput
-    { dataFile     :: String
-    , treeFile     :: String
-    , tcmFile      :: String
-    , outputFile   :: String
+    { dataFile     :: FilePath
+    , treeFile     :: FilePath
+    , tcmFile      :: FilePath
+    , outputFile   :: FilePath
     , verbose      :: Bool
     , alphabetType :: AlphabetType
 --    , commandHelp :: ExampleFileRequest

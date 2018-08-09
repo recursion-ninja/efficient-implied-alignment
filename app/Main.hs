@@ -32,7 +32,7 @@ runInput = do
     vals <- parseFileInput opts
     case vals of
       Left  errs -> putStrLn errs
-      Right fileInput -> 
+      Right fileInput ->
         let alphabet = inputAlphabet fileInput
             tcm      = inputTCM      fileInput
             tree     = inputTree     fileInput
