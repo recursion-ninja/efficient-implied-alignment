@@ -9,6 +9,7 @@ import Control.Monad
 import Data.Alphabet
 import Data.BTree
 import Data.Decoration
+import Data.DecTree
 import Data.Key
 import Data.List.NonEmpty      (intersperse)
 import Data.Semigroup          ((<>))
@@ -43,10 +44,10 @@ runInput = do
             leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
             nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
 
-            postorder'    = postorder stringAligner
-            preorder'     = preorder preorderRootLogic preorderInternalLogic preorderLeafLogic
+            postorder'    = postorderTraverse stringAligner
+            preorder'     = preorderTraverse
 --            stringAligner = postorderLogic (naiveDOMemo alphabet tcm)
-            stringAligner = postorderLogic (ukkonenDO alphabet tcm)
+            stringAligner = ukkonenDO alphabet tcm
         in  do
           when (verbose opts) $ mapM_ putStrLn
               [ ""
