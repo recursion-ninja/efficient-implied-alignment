@@ -68,23 +68,6 @@ both parsimony and likelihood analyses.  This observation has been repeated mult
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure,
 benefit greatly from improvements in the time-complexity of the algorithm.  He we describe a novel algorithm with this desirable feature.
 
-The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of assocaitivity of the binary string alignment function $\oplus$ described below.
-
-If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the hueristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestoral state of any internal node defined by the hueristic function $\oplus$ can be calculated by applying $\oplus$ recusively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the hueristic function $\oplus$ in the final result. Since the hueristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the huerisitc function $\oplus$ is commutative, transposing any child nodes bewteen the left and right positions of thier parent will result in a tree that yeilds the same interal values. For example consider such a transposed tree $\mathcal{T'}$:
-
-\begin{align*}
-  eval(\mathcal{T'}) &= eval((D,C),(B,A))
-\\  &= ((D \oplus C) \oplus (B \oplus A))
-\\  &= ((C \oplus D) \oplus (B \oplus A))
-\\  &= ((C \oplus D) \oplus (A \oplus B))
-\\  &= ((A \oplus B) \oplus (C \oplus D))
-\\  &= eval((A,B),(C,D))
-\\  &= eval(\mathcal{T})
-\end{align*}
-
-This commutative property and lack of an associaitve property is why the alignment is implied by the tree on the leaf-set under the hueristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the hueristic function $\oplus$. Proof that a hueristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
-
-
 Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a denoveau alignment method, and as a static aproximation heuristic component.
 
 \section{Definition of the hueristic function}
@@ -104,7 +87,26 @@ Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\S
 Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our huerisitc function returning an alignment cost and alignment context. It is often convient to ignore the cost returned from the hueristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be comutative. The function $\oplus$ need not be associative.
 
 \section{Mathematical definition of example hueristic function}
-Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here.
+We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here. We note that is in
+
+
+\section{Why the algorithm is named Implied Alignment}
+The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of assocaitivity of the hueristic function $\oplus$.
+
+If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the hueristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestoral state of any internal node defined by the hueristic function $\oplus$ can be calculated by applying $\oplus$ recusively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the hueristic function $\oplus$ in the final result. Since the hueristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the huerisitc function $\oplus$ is commutative, transposing any child nodes bewteen the left and right positions of thier parent will result in a tree that yeilds the same interal values. For example consider such a transposed tree $\mathcal{T'}$:
+
+\begin{align*}
+  eval(\mathcal{T'}) &= eval((D,C),(B,A))
+\\  &= ((D \oplus C) \oplus (B \oplus A))
+\\  &= ((C \oplus D) \oplus (B \oplus A))
+\\  &= ((C \oplus D) \oplus (A \oplus B))
+\\  &= ((A \oplus B) \oplus (C \oplus D))
+\\  &= eval((A,B),(C,D))
+\\  &= eval(\mathcal{T})
+\end{align*}
+
+This commutative property and lack of an associaitve property is why the alignment is implied by the tree on the leaf-set under the hueristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the hueristic function $\oplus$. Proof that a hueristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
+
 
 \section{Description of post-order traversal}
 Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associaitve ordering of a binary operation. We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. I will note the similarity and difference to direct optimization post-order. The key different is the additional stored information.
