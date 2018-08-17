@@ -86,7 +86,7 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
 Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our huerisitc function returning an alignment cost and alignment context. It is often convient to ignore the cost returned from the hueristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be comutative. The function $\oplus$ need not be associative.
 
-\section{Mathematical definition of example hueristic function}
+\section{Definition of an example hueristic function}
 We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here. We note that is in
 
 
@@ -279,4 +279,5 @@ This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic
 \bibliography{big-refs-3}
 
 \end{document}
+\grid
 \grid
