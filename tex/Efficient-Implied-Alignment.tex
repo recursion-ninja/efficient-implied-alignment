@@ -1,0 +1,280 @@
+\documentclass[11pt]{article}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{lscape}
+\usepackage{flafter}  % Don't place floats before their definition
+\usepackage{bm}  % Define \bm{} to use bold math fonts
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{MnSymbol}
+\usepackage{url}
+\usepackage{natbib}
+%\usepackage{fullpage}
+\bibliographystyle{cbe}
+\citestyle{aa}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+%\usepackage[vlined,algochapter,ruled]{algorithm2e}
+%\usepackage[vlined,ruled]{algorithm2e}
+%\SetKwComment{Comment}{$\triangleright\ $}{}
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+\algnewcommand\algorithmicswitch{\textbf{switch}}
+\algnewcommand\algorithmiccase{\textbf{case}}
+\algnewcommand\algorithmicdefault{\textbf{default}}
+\algdef{SE}[SWITCH]{Switch}{EndSwitch}[1]{\algorithmicswitch\ #1\ \algorithmicdo}{\algorithmicend\ \algorithmicswitch}%
+\algdef{SE}[CASE]{Case}{EndCase}[1]{\algorithmiccase\ #1}{\algorithmicend\ \algorithmiccase}%
+\algdef{SE}[DEFAULT]{Default}{EndDefault}[1]{\algorithmicdefault\ #1}{\algorithmicend\ \algorithmicdefault}%
+\algtext*{EndSwitch}%
+\algtext*{EndCase}%
+\algtext*{EndDefault}%
+
+\DeclarePairedDelimiter\setsize{\lvert}{\rvert}%
+
+\title{ \textbf{Efficient Implied Alignment}}
+\author{Alex J. Washburn and Ward C. Wheeler\\
+		Division of  Invertebrate Zoology\\
+		American Museum of Natural History\\
+		200 Central Park West\\
+		New York, NY 10024-5192\\
+		USA\\
+		academia@recursion.ninja\\
+		wheeler@amnh.org\\
+		212-769-5754}
+	%\date{}
+\begin{document}
+
+\maketitle
+\begin{abstract}
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by infering from the internal node decorations on which edges all insertion and deletion events occured during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propogation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in $\mathcal{O}(n * k)$ time by exploiting the monoid structure of a dynamic homology. This reducution in the time complexity of the procedure dramatically improves the utility of the procedure in generating mulitple sequence alignments and their heuristic utility.
+\end{abstract}
+\newpage
+\tableofcontents
+\newpage
+
+%\doublespacing
+\section{Background}
+Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.  IA has been a component of POY
+\citep{Wheeleretal2015, POY5} since its inception.  More formal description of the algorithm was presented in \cite{Wheeleretal2006}.  Although originally designed for dynamic homology \citep{Wheeler2001}
+analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by
+\cite{WhitingAetal2006} in their analysis of skink relationships.  Furthermore, A. Whiting et al.
+found that IA was superior (in terms of tree optimality score) to other MSA methods in
+both parsimony and likelihood analyses.  This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counter examples.    
+
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure,
+benefit greatly from improvements in the time-complexity of the algorithm.  He we describe a novel algorithm with this desirable feature.
+
+The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of assocaitivity of the binary string alignment function $\oplus$ described below.
+
+If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the hueristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestoral state of any internal node defined by the hueristic function $\oplus$ can be calculated by applying $\oplus$ recusively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the hueristic function $\oplus$ in the final result. Since the hueristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the huerisitc function $\oplus$ is commutative, transposing any child nodes bewteen the left and right positions of thier parent will result in a tree that yeilds the same interal values. For example consider such a transposed tree $\mathcal{T'}$:
+
+\begin{align*}
+  eval(\mathcal{T'}) &= eval((D,C),(B,A))
+\\  &= ((D \oplus C) \oplus (B \oplus A))
+\\  &= ((C \oplus D) \oplus (B \oplus A))
+\\  &= ((C \oplus D) \oplus (A \oplus B))
+\\  &= ((A \oplus B) \oplus (C \oplus D))
+\\  &= eval((A,B),(C,D))
+\\  &= eval(\mathcal{T})
+\end{align*}
+
+This commutative property and lack of an associaitve property is why the alignment is implied by the tree on the leaf-set under the hueristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the hueristic function $\oplus$. Proof that a hueristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
+
+
+Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a denoveau alignment method, and as a static aproximation heuristic component.
+
+\section{Definition of the hueristic function}
+In order for a logically consistent implied alignment to be infered, there are constraints on the hueristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
+Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
+Let (--) be a gap symbol which will have a special meaning in the context of an alignment and (--) $\in \Sigma$.
+Let $\mathcal{P}(x)$ be the powerset of x minus $\emptyset$.
+Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
+
+\begin{align*}
+  \Sigma_{\Gamma} &      = \textbf{ALIGN}  \;\;\;\;\;\,  \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
+\\                & \;\, | \;\; \textbf{DELETE} \;\;     \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
+\\                & \;\, | \;\; \textbf{INSERT} \;\;\;\, \mathcal{P} (\Sigma) \;\; \quad\quad\;         \;\; \mathcal{P} (\Sigma)
+\end{align*}
+
+Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
+Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our huerisitc function returning an alignment cost and alignment context. It is often convient to ignore the cost returned from the hueristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be comutative. The function $\oplus$ need not be associative.
+
+\section{Mathematical definition of example hueristic function}
+Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here.
+
+\section{Description of post-order traversal}
+Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associaitve ordering of a binary operation. We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. I will note the similarity and difference to direct optimization post-order. The key different is the additional stored information.
+
+\section{Psuedocode of post-order traversal}
+
+\begin{algorithm}
+  \caption{Post-order Traversal}\label{postOrder}
+  \begin{algorithmic}[1]
+    \Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
+    \Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
+    %    \Procedure{postOrder(n)}{}
+    \Function{postOrder}{$\textit{node}$}
+      \If   {isLeaf ( $\textit{node}$ )}
+        \State $\textit{node.cost} \gets 0$
+      \Else
+        \State $\textit{lhs}  \gets \Call{postOrder}{\textit{node.children.first}}$
+        \State $\textit{rhs}  \gets \Call{postOrder}{\textit{node.children.second}}$
+        \State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
+        \State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
+        \State $\textit{node.prelimString} \gets \textit{alignContext}$
+      \EndIf
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+
+\section{Description of pre-order traversal for final alignments}
+Here I will describe the pre-order traversal for deriving the final alignment states. We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. I will note the similarity and difference to direct optimization pre-order. The major difference is the additional stored information allows us to decorate the final assignments  without performing another string alignment on each edge. This allows the pre-order assingments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time. Note that this can be performed simultaneously with an implied alignmnet pass described in the next section.
+
+\section{Description of pre-order traversal for implied alignments}
+Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associaitve ordering of a binary operation. We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. I will note the similarity and difference to implied alignmnet derivation mentioned by Ward's previous works. The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
+
+Here we describe in the most general mathematical detail the nature of dynamic homologies and how the monoid structure can be used to reconstruct the intermediate alignments on internal edges.
+
+
+\section{Pseudocode of pre-order traversal}
+Here I describe in excuciating detail the imperative style psuedocide for performing the pre-order traversal.
+
+\begin{algorithm}
+  \caption{Pre-order Traversal}\label{preOrder}
+  \begin{algorithmic}[1]
+    \Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
+    \Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
+    \Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
+    \Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
+    \Function{preOrder}{$\textit{node}$}
+      \If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
+        \State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
+      \ElsIf {isLeaf ( $\textit{node}$ )} \Comment{Finalize the leaf node}
+%        \State $\textit{node.cost} \gets 0$
+      \Else \Comment{Update the internal node}
+        \State $\textit{parentPrelim} \gets \textit{node.parent.prelimString}$
+        \If {isLeft($\textit{node}$)}
+          \ForEach {$\textit{context} \in \textit{parentPrelim}$}
+            \State \Call{reverseContext}{$\textit{context}$}
+          \EndFor
+        \EndIf
+        \State $\textit{v} \gets$ \Call{alignInternal}{$\textit{node.parent.finalString}, \textit{parentPrelim}, \textit{node.prelimString}$}
+        \State $\textit{node.finalString} \gets \textit{v}$
+      \EndIf
+    \EndFunction
+      
+    \Function{alignInternal}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
+      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
+      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
+      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
+      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
+      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
+      \For{$\textit{i} < \textit{len}$}
+        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
+          \State $\textit{result}_i \gets \textit{del}$
+        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
+          \Switch{$\textit{pAlignment}_i$}
+            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+              \State $\textit{result}_i \gets \textit{del}$
+            \EndCase
+            \Default{}
+              \State $\textit{result}_i \gets \textit{del}$
+              \State $\textit{j} \gets \textit{j} + 1$
+            \EndDefault
+          \EndSwitch
+        \Else
+          \Switch{$\textit{pAlignment}_i$}
+            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+              \State $\textit{result}_i \gets \textit{del}$
+            \EndCase
+            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+              \Switch{$\textit{pContext}_j$}
+                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+                  \State $\textit{result}_i \gets \textit{del}$
+                \EndCase
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+                  \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
+                  \State $\textit{k} \gets \textit{k} + 1$
+                \EndCase
+                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+                  \State $\textit{result}_i \gets \textit{cContext}_k$
+                  \State $\textit{k} \gets \textit{k} + 1$
+                \EndCase
+              \EndSwitch
+              \State $\textit{j} \gets \textit{j} + 1$
+            \EndCase
+            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+              \Switch{$\textit{pContext}_j$}
+                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+                  \State $\textit{result}_i \gets \textit{del}$
+                \EndCase
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+                  \State $\textit{result}_i \gets \textit{cContext}_k$
+                  \State $\textit{k} \gets \textit{k} + 1$
+                \EndCase
+                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+                  \State $\textit{result}_i \gets \textit{pContext}_j$
+                  \State $\textit{k} \gets \textit{k} + 1$
+                \EndCase
+              \EndSwitch
+              \State $\textit{j} \gets \textit{j} + 1$
+            \EndCase
+          \EndSwitch
+        \EndIf  
+        \State $\textit{i} \gets \textit{i} + 1$
+      \EndFor
+    \EndFunction
+      
+    \Function{initializeRootString}{$\textit{rootString}$}
+      \ForEach {$\textit{context} \in \textit{rootString}$}
+        \Call{deletionToInsertion}{$\textit{context}$}
+      \EndFor
+    \EndFunction
+      
+    \Function{deletionToInsertion}{$\textit{context}$}
+      \Switch{$\textit{context}$}
+        \Case{$\textbf{DELETE} \;\; \textit{m} \;\; \textit{x} \;\;$}
+          \Return $\textbf{INSERT} \;\; \textit{m} \;\; \textit{x} \;\;$
+        \EndCase
+        \Case{$\textit{v} \;\;$}
+          \Return $\textit{v}$
+        \EndCase
+      \EndSwitch
+    \EndFunction
+
+    \Function{reverseContext}{$\textit{context}$}
+      \Switch{$\textit{context}$}
+        \Case{    $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+          \Return $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{y} \;\; \textit{x} \;\;$
+        \EndCase
+        \Case{    $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+          \Return $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{x} \;\;$
+        \EndCase
+        \Case{    $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+          \Return $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{y} \;\;$
+        \EndCase
+      \EndSwitch
+    \EndFunction
+
+  \end{algorithmic}
+\end{algorithm}
+
+
+\section{Conclusion and Empyrical Examples}
+I hope that we can provide data set examples describing how the algorithm runs faster.
+
+\section{Future work}
+If a huerisitc function $\otimes$ that was both commutative and associaitive and with suffciciently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. Even an increabibly expensive, poly-time hueristic function $\otimes$ would have it's cost amoretized over the tree-space search because the hueristic would only need to be applied once to a dynamic homology and then an implied alginment generated which would be the same for all trees in the tree space. The itterative approximation would cease needing to be itterative and rather be an \emph{invairiant} approximation.
+
+\section{Acknowledgements}
+This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''. 
+\newpage
+\bibliography{big-refs-3}
+
+\end{document}
+\grid
