@@ -50,7 +50,7 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by infering from the internal node decorations on which edges all insertion and deletion events occured during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propogation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in $\mathcal{O}(n * k)$ time by exploiting the monoid structure of a dynamic homology. This reducution in the time complexity of the procedure dramatically improves the utility of the procedure in generating mulitple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in $\mathcal{O}(n * k)$ time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -68,10 +68,10 @@ both parsimony and likelihood analyses.  This observation has been repeated mult
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure,
 benefit greatly from improvements in the time-complexity of the algorithm.  He we describe a novel algorithm with this desirable feature.
 
-Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a denoveau alignment method, and as a static aproximation heuristic component.
+Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component.
 
 \section{Definition of the hueristic function}
-In order for a logically consistent implied alignment to be infered, there are constraints on the hueristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
+In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let (--) be a gap symbol which will have a special meaning in the context of an alignment and (--) $\in \Sigma$.
 Let $\mathcal{P}(x)$ be the powerset of x minus $\emptyset$.
@@ -84,16 +84,16 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our huerisitc function returning an alignment cost and alignment context. It is often convient to ignore the cost returned from the hueristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be comutative. The function $\oplus$ need not be associative.
+Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context. It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. The function $\oplus$ need not be associative.
 
-\section{Definition of an example hueristic function}
+\section{Definition of an example heuristic function}
 We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here. We note that is in
 
 
 \section{Why the algorithm is named Implied Alignment}
-The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of assocaitivity of the hueristic function $\oplus$.
+The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of associativity of the heuristic function $\oplus$.
 
-If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the hueristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestoral state of any internal node defined by the hueristic function $\oplus$ can be calculated by applying $\oplus$ recusively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the hueristic function $\oplus$ in the final result. Since the hueristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the huerisitc function $\oplus$ is commutative, transposing any child nodes bewteen the left and right positions of thier parent will result in a tree that yeilds the same interal values. For example consider such a transposed tree $\mathcal{T'}$:
+If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result. Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. For example consider such a transposed tree $\mathcal{T'}$:
 
 \begin{align*}
   eval(\mathcal{T'}) &= eval((D,C),(B,A))
@@ -105,11 +105,11 @@ If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves 
 \\  &= eval(\mathcal{T})
 \end{align*}
 
-This commutative property and lack of an associaitve property is why the alignment is implied by the tree on the leaf-set under the hueristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the hueristic function $\oplus$. Proof that a hueristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
+This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$. Proof that a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
 
 
 \section{Description of post-order traversal}
-Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associaitve ordering of a binary operation. We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. I will note the similarity and difference to direct optimization post-order. The key different is the additional stored information.
+Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associative ordering of a binary operation. We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. I will note the similarity and difference to direct optimization post-order. The key different is the additional stored information.
 
 \section{Psuedocode of post-order traversal}
 
@@ -135,16 +135,16 @@ Here I will describe in plain terms the intent of the post order traversal. I wi
 
 
 \section{Description of pre-order traversal for final alignments}
-Here I will describe the pre-order traversal for deriving the final alignment states. We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. I will note the similarity and difference to direct optimization pre-order. The major difference is the additional stored information allows us to decorate the final assignments  without performing another string alignment on each edge. This allows the pre-order assingments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time. Note that this can be performed simultaneously with an implied alignmnet pass described in the next section.
+Here I will describe the pre-order traversal for deriving the final alignment states. We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. I will note the similarity and difference to direct optimization pre-order. The major difference is the additional stored information allows us to decorate the final assignments  without performing another string alignment on each edge. This allows the pre-order assignments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time. Note that this can be performed simultaneously with an implied alignment pass described in the next section.
 
 \section{Description of pre-order traversal for implied alignments}
-Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associaitve ordering of a binary operation. We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. I will note the similarity and difference to implied alignmnet derivation mentioned by Ward's previous works. The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
+Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associative ordering of a binary operation. We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works. The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
 
 Here we describe in the most general mathematical detail the nature of dynamic homologies and how the monoid structure can be used to reconstruct the intermediate alignments on internal edges.
 
 
 \section{Pseudocode of pre-order traversal}
-Here I describe in excuciating detail the imperative style psuedocide for performing the pre-order traversal.
+Here I describe in excruciating detail the imperative style psuedocode for performing the pre-order traversal.
 
 \begin{algorithm}
   \caption{Pre-order Traversal}\label{preOrder}
@@ -267,11 +267,11 @@ Here I describe in excuciating detail the imperative style psuedocide for perfor
 \end{algorithm}
 
 
-\section{Conclusion and Empyrical Examples}
+\section{Conclusion and Empirical Examples}
 I hope that we can provide data set examples describing how the algorithm runs faster.
 
 \section{Future work}
-If a huerisitc function $\otimes$ that was both commutative and associaitive and with suffciciently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. Even an increabibly expensive, poly-time hueristic function $\otimes$ would have it's cost amoretized over the tree-space search because the hueristic would only need to be applied once to a dynamic homology and then an implied alginment generated which would be the same for all trees in the tree space. The itterative approximation would cease needing to be itterative and rather be an \emph{invairiant} approximation.
+If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
 This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''. 
