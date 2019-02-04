@@ -56,12 +56,14 @@ fails = failure Nothing . S.fromList . fmap Label . catMaybes . fmap nonEmpty
 -- |
 -- Consumes a whitespace character that is not a newline character.
 inlineSpaceChar :: (Enum (Token s), MonadParsec e s m) => m (Token s)
-inlineSpaceChar = token captureToken Nothing
+inlineSpaceChar = token captureToken errItems
   where
     captureToken x
-      | isInlineSpace x = Right x
-      | otherwise       = Left (Just (Tokens (x:|[])), mempty)
-        
+      | isInlineSpace x = Just x
+      | otherwise       = Nothing
+
+    errItems = S.singleton (Label ('I':|"line space character"))
+    
     isInlineSpace x = and $
         [ isSpace . enumCoerce
         , (newLineChar  /=)
@@ -87,8 +89,4 @@ enumCoerce = toEnum . fromEnum
 -- |
 -- Matches a single token.
 tokenMatch :: (MonadParsec e s m) => Token s -> m (Token s)
-tokenMatch tok = token testToken Nothing
-  where
-    testToken x
-      | tok == x  = Right x
-      | otherwise = Left (Just (Tokens (x:|[])), mempty)
+tokenMatch tok = satisfy (== tok)

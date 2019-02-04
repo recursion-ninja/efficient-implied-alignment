@@ -90,7 +90,7 @@ runFileParsers input = timeOp $ do
       -> IO (Validation (NonEmpty String) a)
     readAndParse parser filePath = do
         stream <- readFile filePath
-        pure . first (pure . parseErrorPretty' stream). fromEither $ parse parser filePath stream
+        pure . first (pure . errorBundlePretty). fromEither $ parse parser filePath stream
 
 
 runUnification
