@@ -50,23 +50,25 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in $\mathcal{O}(n * k)$ time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n * k^{2-c})$} time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
 \newpage
 
 %\doublespacing
-\section{Background}
-Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.  IA has been a component of POY
-\citep{Wheeleretal2015, POY5} since its inception.  More formal description of the algorithm was presented in \cite{Wheeleretal2006}.  Although originally designed for dynamic homology \citep{Wheeler2001}
-analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by
-\cite{WhitingAetal2006} in their analysis of skink relationships.  Furthermore, A. Whiting et al.
-found that IA was superior (in terms of tree optimality score) to other MSA methods in
-both parsimony and likelihood analyses.  This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counter examples.    
+\section{Introduction}
+Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.
+IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
+More formal description of the algorithm was presented in \cite{Wheeleretal2006}.
+Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink relationships.  Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.  
+This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counterexamples.    
 
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure,
-benefit greatly from improvements in the time-complexity of the algorithm.  He we describe a novel algorithm with this desirable feature.
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure, benefit greatly from improvements in the time-complexity of the algorithm.
+The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings. 
+The more similar the strings, the better the algorithm performs. 
+While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
+We will provide an example of the IA algorithm's performance on biological data.
 
 Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component.
 
@@ -84,16 +86,170 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context. It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \mathbb{N} \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the first parameter. The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. The function $\oplus$ need not be associative.
+Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
+It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the first parameter. 
+The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. 
+The function $\oplus$ need not be associative.
 
 \section{Definition of an example heuristic function}
-We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. Here I describe a slight modification to the Needleman-Wunsch algorithm for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. We will layout the dynamic programming description. We will also note that Ukkonen's time \& space saving technique is applicable here. We note that is in
+We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. 
+One candidate function fitting the description of $\oplus$ can be defined by making a slight modification to the Needleman-Wunsch \cite{Needleman1970} algorithm for pairwise string alignment.
+ This algorithm is very similar to DO.
+
+First we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows). 
+We assign the input string based on the data they contain, ensuring commutivity. If this step is not taken, arbitrary biases choosen in the implementation details of the alignment matrix back-trace can cause the following $oplus$ definition to violate commutivity. 
+The longer string is tied to the top of the alignment matrix, the shorter string to the left side. If the string are the same length, we take the larger string under the lexical ordering of thier elements and tie it to the top row, the lesser string is tied to the left side of the aligment matrix. 
+In the case that the strings are equal, the alignment is trivial.
+
+Next we apply the modified Needleman-Wunsch algorithm to generate the alignment matrix of the two strings. The "longer" string is tied to the top of the matrix and the "shorter" string is tied to the left column.
+
+We perform a ``traceback'' through the generated alignment matrix in a manner similar to the  Needleman-Wunsch. 
+However, this trac back differs in one substantial detail. When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the directional arrow to tag the element as either and insertion, deletion, or alignment event. 
+By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
+This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
+
+The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification on a simple, well-understood pairwise string alignment for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alighment algorithms. By using Ukkonen's method, this algorithms runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time and space. It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
+
+\begin{algorithm}
+  \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
+  \begin{algorithmic}[1]
+    \Require{$lhs, rhs \in \Sigma_{\Gamma}^{*}$ }
+    \Function{$\otimes$}{$\textit{lhs}, \textit{rhs}$}
+      \newline
+      \Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
+      \If    {$\textit{lhs} = \textit{rhs}$}
+        \State \Return $\textit{lhs}$
+      \ElsIf {$\textit{lhs} < \textit{rhs}$}
+        \State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
+      \Else
+        \State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
+      \EndIf
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+  \caption{Generate the alignment matrix of $\otimes$}\label{matrixDefinition}
+  \begin{algorithmic}[1]
+    \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
+    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \to \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$i \, \in \left[0, \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{N}$}
+    \Require{$j    \in \left[0, \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{N}$}
+    \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
+      \If   {$i = 0 \land j = 0$}
+        \State \Return $\left( 0, \nwarrow, \textbf{--} \right)$
+      \ElsIf{$i = 0 \land j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$}
+        \State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+        \State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$ 
+      \ElsIf{$i \neq 0 \land j = 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$}
+        \State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+        \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
+      \Else
+        \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
+        \State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
+        \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
+        \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
+        \If {$\textit{minDir} = \nwarrow \land \; \textit{minElem} = \textbf{--}$\\ 
+             \hspace{1.2cm} $\land\; \Call{isInsDel}{\textit{longer}_{j-1}}$\\
+             \hspace{1.2cm} $\land\; \Call{isInsDel}{\textit{lesser}_{i-1}}$}
+          \State \Return $\left( mCost, \leftarrow, \textbf{--} \right)$
+        \Else 
+          \State \Return $\left( minCost, minDir, minElem \right)$
+        \EndIf
+      \EndIf
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+  \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{matrixTraceback}
+  \begin{algorithmic}[1]
+    \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
+    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \to \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+
+    \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
+      \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
+      \State \Return $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+      \State $alignedStr \gets \left[ \,\right]$
+      \While{$\left( i, j \right) < \left( 0, 0 \right)$}
+        \State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+        \Switch{$\textit{dirArrow}$}
+          \Case{$\leftarrow$}
+            \State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
+            \State $nextElement \gets \textbf{DELETE} \;\;   elem \;\; \textit{longer}_{j-1}$
+          \EndCase
+          \Case{$\uparrow$}
+            \State $\left( i, j\right) \gets \left( i - 1      , j \quad\;\; \right)$
+            \State $nextElement \gets \textbf{INSERT} \;\;\; elem \hspace{1.9cm} \textit{lesser}_{i-1}$
+          \EndCase
+          \Case{$\nwarrow$}
+            \State $\left( i, j\right) \gets \left( i - 1      , j - 1       \right)$
+            \State $nextElement \gets \textbf{ALIGN} \quad\; elem \;\; \textit{longer}_{j-1} \;\; \textit{lesser}_{i-1}$
+          \EndCase
+        \EndSwitch
+        \State $alignedStr \gets nextElement + alignedStr$
+      \EndWhile
+      \State \Return $\left(alignedCost, alignedStr \right)$
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+  \caption{Determine if an element of $\Sigma_{\Gamma}$ is an $\textbf{INSERT}$ or $\textbf{DELETE}$ event}\label{isInsDel}
+  \begin{algorithmic}[1]
+    \Require{$element \in \Sigma_{\Gamma}$}
+    \Function{isInsDel}{$\textit{element}$}
+      \Switch{$\textit{element}$}
+        \Case{$\textbf{ALIGN} \quad\; \_ \;\;      \_ \;\; \_ \;\;$}
+          \State \Return False
+        \EndCase
+        \Case{$\textbf{INSERT} \;\;\; \_ \;\;\quad \_ \;\;$}
+          \State \Return True
+        \EndCase
+        \Case{$\textbf{DELETE} \;\;   \_ \;\;      \_ \;\;\quad$}
+          \State \Return True
+        \EndCase
+      \EndSwitch
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+  \caption{Get the minimal directional matrix context from the $3$ inputs}\label{getMinimal}
+  \begin{algorithmic}[1]
+    \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}         
+    \Require{$\left(    downCost,    downElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
+    \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
+                          $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
+                          $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
+      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \to \textbf{comparing}\; c \; \textbf{then} \; d)\right)$\newline\hspace*{3.85cm}
+      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\,   ,      \nwarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(\, rightCost,    rightElem \cup \textbf{--}, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(    downCost,     downElem \cup \textbf{--}, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
+      $]$
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+
+Here I describe a slight modification to the \textsc{Needleman-Wunsch algorithm} for string alignment to return an alignment cost and alignment context from $\Sigma^{*}_{\Gamma}$. 
+We will layout the dynamic programming description. 
+We will also note that Ukkonen's time \& space saving technique is applicable here. 
+We also note that more involved affine and logrithmic-affine implementations would also apply, though specifying them is beyond the scope of this paper.
 
 
 \section{Why the algorithm is named Implied Alignment}
-The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. In short, it is the lack of associativity of the heuristic function $\oplus$.
+The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. 
+However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. 
+In short, it is the lack of associativity of the heuristic function $\oplus$.
 
-If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node. The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result. Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. For example consider such a transposed tree $\mathcal{T'}$:
+If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestoral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
+In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node. 
+The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result. Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. 
+However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. 
+For example consider such a transposed tree $\mathcal{T'}$:
 
 \begin{align*}
   eval(\mathcal{T'}) &= eval((D,C),(B,A))
@@ -105,13 +261,17 @@ If we were given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves 
 \\  &= eval(\mathcal{T})
 \end{align*}
 
-This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$. Proof that a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
+This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$. 
+Proof that a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
 
 See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequece aligment algorithm.
 
 
 \section{Description of post-order traversal}
-Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associative ordering of a binary operation. We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. I will note the similarity and difference to direct optimization post-order. The key different is the additional stored information.
+Here I will describe in plain terms the intent of the post order traversal. I will note the isomorphism between binary trees and the associative ordering of a binary operation. 
+We will use a binary operator for string alignment that  matches the constraints of the previous section to assign preliminary alignment contexts. 
+I will note the similarity and difference to direct optimization post-order. 
+The key different is the additional stored information.
 
 \section{Psuedocode of post-order traversal}
 
@@ -137,10 +297,18 @@ Here I will describe in plain terms the intent of the post order traversal. I wi
 
 
 \section{Description of pre-order traversal for final alignments}
-Here I will describe the pre-order traversal for deriving the final alignment states. We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. I will note the similarity and difference to direct optimization pre-order. The major difference is the additional stored information allows us to decorate the final assignments  without performing another string alignment on each edge. This allows the pre-order assignments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time. Note that this can be performed simultaneously with an implied alignment pass described in the next section.
+Here I will describe the pre-order traversal for deriving the final alignment states. 
+We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. 
+I will note the similarity and difference to direct optimization pre-order. 
+The major difference is the additional stored information allows us to decorate the final assignments without performing another string alignment on each edge.
+This allows the pre-order assignments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time.
+Note that this can be performed simultaneously with an implied alignment pass described in the next section.
 
 \section{Description of pre-order traversal for implied alignments}
-Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associative ordering of a binary operation. We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works. The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
+Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associative ordering of a binary operation. 
+We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. 
+I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works. 
+The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
 
 Here we describe in the most general mathematical detail the nature of dynamic homologies and how the monoid structure can be used to reconstruct the intermediate alignments on internal edges.
 
@@ -273,7 +441,9 @@ Here I describe in excruciating detail the imperative style psuedocode for perfo
 I hope that we can provide data set examples describing how the algorithm runs faster.
 
 \section{Future work}
-If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
+If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. 
+Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
+The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
 This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''. 
