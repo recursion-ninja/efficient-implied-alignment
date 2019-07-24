@@ -23,6 +23,7 @@ module Alignment.Pairwise.Ukkonen.Ribbon
 import           Data.Foldable
 import           Data.Key
 import           Data.Maybe               (fromMaybe)
+import           Data.SymbolString        (SymbolContext)
 import           Data.Vector              (Vector)
 import qualified Data.Vector       as V
 import           Data.Vector.Instances    ()
@@ -47,6 +48,8 @@ type instance Key Ribbon = (Int, Int)
 
 instance Indexable Ribbon where
 
+    {-# INLINE index #-}
+
     index r k = fromMaybe (error msg) $ k `lookup` r
       where
        msg = mconcat
@@ -61,6 +64,8 @@ instance Indexable Ribbon where
 
 
 instance Lookup Ribbon where
+
+    {-# INLINE lookup #-}
 
     lookup = ribbonLookup
 
@@ -93,6 +98,8 @@ instance Show (Ribbon a) where
 -- of columns.
 --
 -- If the rows > cols of the matrix, then the ribbon is transposed.
+{-# INLINEABLE generate #-}
+{-# SPECIALIZE generate :: Word -> Word -> ((Int, Int) -> SymbolContext) -> Word -> Ribbon SymbolContext #-}
 generate
   :: Word              -- ^ Rows of the matrix
   -> Word              -- ^ Columns of the matrix
@@ -129,6 +136,8 @@ generate x y f alpha = result
 
 -- |
 -- Attempts to index the 'Ribbon' at a point within its defined region.
+{-# INLINE     ribbonLookup #-}
+{-# SPECIALIZE ribbonLookup :: (Int, Int) -> Ribbon SymbolContext -> Maybe SymbolContext #-}
 ribbonLookup :: (Int, Int) -> Ribbon a -> Maybe a
 ribbonLookup (i,j) r
   | outsideBounds = Nothing
@@ -149,10 +158,13 @@ ribbonLookup (i,j) r
         , y > lowerBarrier
         ]
 
+
 -- |
 -- Convert a 2D point to its linear position in the vector.
 --
 -- Will produce undefined behavior when transforming a point outside the 'Ribbon'.
+{-# INLINEABLE transformation #-}
+{-# SPECIALIZE transformation :: Ribbon SymbolContext -> (Int, Int) -> Int #-}
 transformation :: Ribbon a -> (Int, Int) -> Int
 transformation r (i,j) = indexValue
   where
@@ -184,6 +196,7 @@ transformation r (i,j) = indexValue
     -- difference between the 2D space j value and the number of missing cells
     -- in the ith row.
     colIndex = j - max 0 (i - a)
+
 
 -- |
 -- Calculate the nth Triangle Number.

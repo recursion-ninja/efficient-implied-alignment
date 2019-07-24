@@ -24,6 +24,7 @@ module Alignment.Pairwise.Ukkonen.Internal
 
 import           Alignment.Pairwise.Internal
 import           Alignment.Pairwise.NeedlemanWunsch          (naiveDOMemo)
+import           Alignment.Pairwise.Ukkonen.Matrix
 import           Alignment.Pairwise.Ukkonen.Ribbon           (Ribbon)
 import qualified Alignment.Pairwise.Ukkonen.Ribbon as Ribbon
 import           Data.Alphabet
@@ -40,38 +41,13 @@ import           Prelude           hiding (lookup)
 
 
 -- |
--- Time & space saving data structure for computing only a central "ribbon" of
--- a two-dimensional matrix.
---
--- Allocates a "ribbon" down the diagonal plus an offset of the matrix rather
--- than the entire matrix. The computed ribbon of the matrix is expanded until
--- optimality of the the result can be guaranteed. The ribbon is expanded at most
--- a logrithmic number of times in terms of the matrix dimensions.
---
--- Use the 'createUkkonenMethodMatrix' function to create this effcient structure.
-newtype UkkonenMethodMatrix a = U (Ribbon a)
-    deriving (Eq, Foldable, Functor)
-
-
-type instance Key UkkonenMethodMatrix = (Int, Int)
-
-
-instance Indexable UkkonenMethodMatrix where
-
-    index (U r) k = r ! k
-
-
-instance Lookup UkkonenMethodMatrix where
-
-    k `lookup` (U x) = k `lookup` x
-
-
--- |
 -- /O( (n - m + 1 ) * log(n - m + 1) )/, /n/ >= /m/
 --
 -- Compute the alignment of two dynamic characters and the median states by
 -- using Ukkonen's string edit distance algorthim to improve space and time
 -- complexity.
+{-# INLINEABLE ukkonenDO #-}
+{-# SPECIALIZE ukkonenDO :: Alphabet SymbolAmbiguityGroup -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word)) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 ukkonenDO
   :: ( Foldable f
      , Indexable f
@@ -147,6 +123,8 @@ ukkonenDO alphabet overlapFunction lhs rhs
 -- paper. This is to handle input elements that contain a gap. In Ukkonen's
 -- original description of the algorithm, there was a subtle assumption that
 -- input did not contain any gap symbols.
+{-# INLINEABLE createUkkonenMethodMatrix #-}
+{-# SPECIALIZE createUkkonenMethodMatrix :: Word -> Alphabet SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) #-}
 createUkkonenMethodMatrix
   :: ( Foldable f
      , Indexable f
@@ -203,7 +181,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
 
         generatingFunction = needlemanWunschDefinition gapGroup overlapFunction longerTop lesserLeft ukkonenMatrix
         
-        (cost, _, _)       = ukkonenMatrix ! (lesserLen, longerLen)
+        ~(cost, _, _)      = ukkonenMatrix ! (lesserLen, longerLen)
         alignmentCost      = unsafeToFinite cost
         computedValue      = coefficient * (quasiDiagonalWidth + offset - gapsPresentInInputs)
         threshhold         = toEnum $ max 0 computedValue -- The threshhold value must be non-negative

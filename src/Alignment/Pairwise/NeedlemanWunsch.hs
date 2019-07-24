@@ -38,6 +38,8 @@ import Data.Vector.NonEmpty
 -- character with gaps included, the aligned version of the first input character,
 -- and the aligned version of the second input character. The process for this
 -- algorithm is to generate a traversal matrix, then perform a traceback.
+{-# INLINEABLE naiveDO #-}
+{-# SPECIALIZE naiveDO :: Alphabet SymbolAmbiguityGroup -> (Int -> Int -> Word) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 naiveDO
   :: ( Foldable f
      , Indexable f
@@ -75,6 +77,8 @@ naiveDOConst _ = directOptimization overlapConst createNeedlemanWunchMatrix
 -- |
 -- The same as 'naiveDO' except that the "cost structure" parameter is assumed to
 -- be a memoized overlap function.
+{-# INLINEABLE naiveDOMemo #-}
+{-# SPECIALIZE naiveDOMemo :: Alphabet SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 naiveDOMemo
   :: ( Eq s
      , Foldable f
@@ -100,6 +104,8 @@ naiveDOMemo alphabet tcm = directOptimization tcm (renderCostMatrix gap) $ creat
 -- Takes in two 'EncodableDynamicCharacter's and a 'CostStructure'. The first
 -- character must be the longer of the two and is the top labeling of the matrix.
 -- Returns a 'NeedlemanWunchMatrix'.
+{-# INLINEABLE createNeedlemanWunchMatrix #-}
+{-# SPECIALIZE createNeedlemanWunchMatrix :: SymbolAmbiguityGroup -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word)) ->  Vector SymbolContext -> Vector SymbolContext -> NeedlemanWunchMatrix SymbolAmbiguityGroup #-}
 createNeedlemanWunchMatrix
   :: ( Foldable f
      , Indexable f

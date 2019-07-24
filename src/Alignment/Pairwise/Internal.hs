@@ -30,6 +30,7 @@ module Alignment.Pairwise.Internal
   ) where
 
 
+import           Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
 import           Data.Foldable
 import           Data.Key
 import           Data.Matrix.ZeroIndexed  (Matrix)
@@ -110,6 +111,9 @@ type MatrixFunction m f
 -- parameterized by an 'TransitionCostMatrix'.
 --
 -- Reused internally by different implementations.
+{-# INLINEABLE directOptimization #-}
+{-# SPECIALIZE directOptimization :: TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction Matrix              Vector -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+{-# SPECIALIZE directOptimization :: TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction UkkonenMethodMatrix Vector -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 directOptimization
   :: ( Foldable f
      , Indexable f
@@ -152,6 +156,8 @@ directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {
 -- string as longer.
 --
 -- Handles equality of inputs by /not/ swapping.
+{-# INLINEABLE measureCharacters #-}
+{-# SPECIALISE measureCharacters :: Vector SymbolContext -> Vector SymbolContext -> (Bool, Vector SymbolContext, Vector SymbolContext) #-}
 measureCharacters :: (Foldable f, Ord s) => f s -> f s -> (Bool, f s, f s)
 measureCharacters lhs rhs
   | lhsOrdering == LT = ( True, rhs, lhs)
@@ -166,6 +172,9 @@ measureCharacters lhs rhs
 -- |
 -- Internal generator function for the matrices based on the Needleman-Wunsch
 -- definition described in their paper.
+{-# INLINEABLE needlemanWunschDefinition #-}
+{-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
+{-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
 needlemanWunschDefinition
   :: ( Lookup f
      , Indexable m
@@ -244,8 +253,11 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
 -- and column labelings.
 --
 -- Useful for debugging purposes.
+{-# INLINEABLE renderCostMatrix #-}
+{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
+{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 renderCostMatrix
-  :: ( Foldable  f
+  :: ( Foldable f
      , Foldable m
      , Functor m
      , Indexable m
@@ -327,6 +339,9 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
 -- from the bottom right corner, accumulating the alignment context string as it
 -- goes. The alignment *should* be biased toward insertions into the shorter of
 -- the two strings.
+{-# INLINEABLE traceback #-}
+{-# SPECIALISE traceback :: Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+{-# SPECIALISE traceback :: UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 traceback
   :: ( Foldable f
      , Indexable f

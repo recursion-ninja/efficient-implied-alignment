@@ -130,6 +130,7 @@ library
       Alignment.Pairwise.NeedlemanWunsch
       Alignment.Pairwise.Ukkonen
       Alignment.Pairwise.Ukkonen.Internal
+      Alignment.Pairwise.Ukkonen.Matrix
       Alignment.Pairwise.Ukkonen.Ribbon
       Data.Alphabet.Internal
       Data.Decoration.Class

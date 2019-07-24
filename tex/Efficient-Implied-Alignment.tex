@@ -87,17 +87,17 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
 Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
-It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the first parameter. 
+It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
 The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. 
 The function $\oplus$ need not be associative.
 
 \section{Definition of an example heuristic function}
-We will provide one definition of $\oplus$ sufficient for the Implied Alignment algorithm, though there potentially are other sufficient definitions of $\oplus$. 
-One candidate function fitting the description of $\oplus$ can be defined by making a slight modification to the Needleman-Wunsch \cite{Needleman1970} algorithm for pairwise string alignment.
- This algorithm is very similar to DO.
+We will provide one definition of $\otimes$ sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$. 
+One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \cite{Needleman1970} algorithm for pairwise string alignment.
+This algorithm is very similar to DO.
 
 First we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows). 
-We assign the input string based on the data they contain, ensuring commutivity. If this step is not taken, arbitrary biases choosen in the implementation details of the alignment matrix back-trace can cause the following $oplus$ definition to violate commutivity. 
+We assign the input string based on the data they contain, ensuring commutivity. If this step is not taken, arbitrary biases choosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity. 
 The longer string is tied to the top of the alignment matrix, the shorter string to the left side. If the string are the same length, we take the larger string under the lexical ordering of thier elements and tie it to the top row, the lesser string is tied to the left side of the aligment matrix. 
 In the case that the strings are equal, the alignment is trivial.
 
@@ -108,7 +108,7 @@ However, this trac back differs in one substantial detail. When using the direct
 By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
-The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification on a simple, well-understood pairwise string alignment for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alighment algorithms. By using Ukkonen's method, this algorithms runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time and space. It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
+The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification on a simple, well-understood pairwise string alignment for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alignment algorithms. By using Ukkonen's method, this algorithms runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time and space. It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
 
 \begin{algorithm}
   \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
@@ -132,7 +132,7 @@ The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$
   \caption{Generate the alignment matrix of $\otimes$}\label{matrixDefinition}
   \begin{algorithmic}[1]
     \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \to \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{$i \, \in \left[0, \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{N}$}
     \Require{$j    \in \left[0, \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{N}$}
     \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
@@ -165,7 +165,7 @@ The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$
   \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{matrixTraceback}
   \begin{algorithmic}[1]
     \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \to \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
 
     \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
       \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
@@ -224,7 +224,7 @@ The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$
     \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \to \textbf{comparing}\; c \; \textbf{then} \; d)\right)$\newline\hspace*{3.85cm}
+      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d)\right)$\newline\hspace*{3.85cm}
       $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\,   ,      \nwarrow    \right)$\newline\hspace*{3.85cm}
       $,\, \left(\, rightCost,    rightElem \cup \textbf{--}, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
       $,\, \left(    downCost,     downElem \cup \textbf{--}, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}

@@ -44,6 +44,7 @@ type PairwiseAlignment s =  Vector SymbolContext
 --
 -- Parameterized over a 'PairwiseAlignment' function to allow for different
 -- atomic alignments depending on the character's metadata.
+{-# INLINEABLE postorderLogic #-}
 postorderLogic
   :: PairwiseAlignment Char
   -> PreliminaryNode
@@ -60,6 +61,7 @@ postorderLogic pairwiseAlignment lhs rhs =
 
 -- |
 -- The pre-order scoring logic for root node.
+{-# INLINEABLE preorderRootLogic #-}
 preorderRootLogic
   :: PreliminaryNode
   -> FinalizedNode
@@ -74,6 +76,7 @@ preorderRootLogic =
 
 -- |
 -- The pre-order scoring logic for intenral nodes.
+{-# INLINEABLE preorderLeafLogic #-}
 preorderLeafLogic
   :: FinalizedNode                          -- ^ Parent decoration
   -> Either PreliminaryNode PreliminaryNode  -- ^ Current decoration, whether it is Left or Right child of parent.
@@ -99,6 +102,7 @@ preorderLeafLogic parent current =
 
 -- |
 -- The pre-order scoring logic for intenral nodes.
+{-# INLINEABLE preorderInternalLogic #-}
 preorderInternalLogic
   :: FinalizedNode                          -- ^ Parent decoration
   -> Either PreliminaryNode PreliminaryNode -- ^ Current decoration, whether it is Left or Right child of parent.
@@ -120,10 +124,12 @@ preorderInternalLogic parent current =
 
 
 -- TODO: Make this Delete gap gap, don't assum alphabet of size 5
+{-# INLINEABLE del #-}
 del :: SymbolContext
 del = let x = bit 4 in Delete x x
 
 
+{-# INLINEABLE deriveAlignment #-}
 deriveAlignment
   :: SymbolString -- ^ Parent Alignment
   -> SymbolString -- ^ Parent Context
@@ -206,22 +212,28 @@ deriveAlignment pAlignment pContext cContext = alignment
                 Align  {} -> (  y : acc,   xs, ys)
 
 
+{-# INLINEABLE countAlignInsert #-}
+{-# SPECIALIZE countAlignInsert :: Vector SymbolContext -> Int #-}
 countAlignInsert :: (Functor f, Foldable f) => f SymbolContext -> Int
 countAlignInsert = sum . fmap g
   where
     g Delete {} = 0
-    g _           = 1
+    g _         = 1
 
 
+{-# INLINEABLE setInitialAlignment #-}
+{-# SPECIALIZE setInitialAlignment :: Vector SymbolContext -> Vector SymbolContext #-}
 setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
 setInitialAlignment = fmap deletionToInserion
 
 
+{-# INLINEABLE deletionToInserion #-}
 deletionToInserion :: SymbolContext -> SymbolContext
 deletionToInserion e@Delete {} = reverseContext e
 deletionToInserion e           = e
 
 
+{-# INLINEABLE deriveLeafAlignment #-}
 deriveLeafAlignment
   :: SymbolString -- ^ Parent Alignment
   -> SymbolString -- ^ Parent Context

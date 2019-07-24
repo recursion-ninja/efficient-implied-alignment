@@ -71,6 +71,8 @@ renderTCM alphabet tcm = unlines . (headerRow:) $ fmap (foldMap render) listOfRo
 -- /O(1)/
 --
 -- Build a 'TransitionCostMatrix' from an 'Alphabet' and a 'SymbolChangeMatrix'.
+{-# INLINEABLE buildTransitionCostMatrix #-}
+{-# SPECIALIZE buildTransitionCostMatrix :: Alphabet SymbolAmbiguityGroup -> SymbolChangeMatrix Int -> TransitionCostMatrix #-}
 buildTransitionCostMatrix
   :: Alphabet k
   -> SymbolChangeMatrix Int
@@ -94,6 +96,8 @@ buildTransitionCostMatrix alphabet scm =
 -- possible least-costly combinations, so for instance, if @ char1 == A,T @ and
 -- @ char2 == G,C @, and the two (non-overlapping) least cost pairs are @ A,C @
 -- and @ T,G @, then the return value is @ A,C,G,T @sy.
+{-# INLINEABLE overlap #-}
+{-# SPECIALIZE overlap :: Alphabet SymbolAmbiguityGroup -> SymbolChangeMatrix Int -> SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word) #-}
 overlap
   :: Foldable1 f
   => f a
@@ -113,6 +117,9 @@ overlap allSymbols costStruct lhs rhs
 -- Given a structure of unambiguous symbols and costs, calculates the least 
 -- costly intersection of unambiguous character elements and the cost of that
 -- intersection.
+{-# INLINE     minimalChoice #-}
+{-# SPECIALIZE minimalChoice :: Foldable1 f => f (SymbolAmbiguityGroup, Word) -> (SymbolAmbiguityGroup, Word) #-}
+{-# SPECIALIZE minimalChoice ::         NonEmpty (SymbolAmbiguityGroup, Word) -> (SymbolAmbiguityGroup, Word) #-}
 minimalChoice :: (Semigroup a, Foldable1 t, Ord c) => t (a, c) -> (a, c)
 minimalChoice = foldl1 f
   where
