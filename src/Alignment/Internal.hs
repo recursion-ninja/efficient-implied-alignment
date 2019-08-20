@@ -212,27 +212,6 @@ deriveAlignment pAlignment pContext cContext = alignment
                 Align  {} -> (  y : acc,   xs, ys)
 
 
-{-# INLINEABLE countAlignInsert #-}
-{-# SPECIALIZE countAlignInsert :: Vector SymbolContext -> Int #-}
-countAlignInsert :: (Functor f, Foldable f) => f SymbolContext -> Int
-countAlignInsert = sum . fmap g
-  where
-    g Delete {} = 0
-    g _         = 1
-
-
-{-# INLINEABLE setInitialAlignment #-}
-{-# SPECIALIZE setInitialAlignment :: Vector SymbolContext -> Vector SymbolContext #-}
-setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
-setInitialAlignment = fmap deletionToInserion
-
-
-{-# INLINEABLE deletionToInserion #-}
-deletionToInserion :: SymbolContext -> SymbolContext
-deletionToInserion e@Delete {} = reverseContext e
-deletionToInserion e           = e
-
-
 {-# INLINEABLE deriveLeafAlignment #-}
 deriveLeafAlignment
   :: SymbolString -- ^ Parent Alignment
@@ -309,3 +288,26 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
                 Delete {} -> (del : acc, x:xs, ys)
                 Insert {} -> (  x : acc,   xs, ys)
                 Align  {} -> (  x : acc,   xs, ys)
+
+
+{-# INLINEABLE countAlignInsert #-}
+{-# SPECIALIZE countAlignInsert :: Vector SymbolContext -> Int #-}
+countAlignInsert :: (Functor f, Foldable f) => f SymbolContext -> Int
+countAlignInsert = sum . fmap g
+  where
+    g Delete {} = 0
+    g _         = 1
+
+
+{-# INLINEABLE setInitialAlignment #-}
+{-# SPECIALIZE setInitialAlignment :: Vector SymbolContext -> Vector SymbolContext #-}
+setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
+setInitialAlignment = fmap deletionToInserion
+
+
+{-# INLINEABLE deletionToInserion #-}
+deletionToInserion :: SymbolContext -> SymbolContext
+deletionToInserion e@Delete {} = reverseContext e
+deletionToInserion e           = e
+
+

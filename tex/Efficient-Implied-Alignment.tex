@@ -255,7 +255,7 @@ After performing the postorder traversal, each internal node contains the alignm
 Consequently, the root node now contains the entire alignment context information of the leaf set of strings.
 In the next step, we will consume this preliminary alignment context information on each node to efficiently perform an alignment on the strings.
 
-Because the postorder traversal can be performed using any valid hueristic alignment function $\otimes$, the complexity of the postorder traversal is dependant on the complexity of the hueristic alignment function used. Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$. Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$. If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}(n * k * log (k))$ average case time and space.
+Because the postorder traversal can be performed using any valid hueristic alignment function $\otimes$, the complexity of the postorder traversal is dependant on the complexity of the hueristic alignment function used. Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$. Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$. If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log \left( k \right) \right)$ average case time and space.
 
 \section{Psuedocode of post-order traversal}
 
@@ -277,9 +277,9 @@ Because the postorder traversal can be performed using any valid hueristic align
     \Function{postOrder}{$\textit{node}$}
       \If   {isLeaf ( $\textit{node}$ )}
         \State $\textit{node.cost} \gets 0$
-        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
-          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
-        \EndIf
+%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
+%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
+%sy        \EndIf
       \Else
         \State $\textit{lhs}  \gets \Call{postOrder}{\textit{node.children.first}}$
         \State $\textit{rhs}  \gets \Call{postOrder}{\textit{node.children.second}}$
@@ -293,10 +293,67 @@ Because the postorder traversal can be performed using any valid hueristic align
 
 
 \section{Description of pre-order traversal for final alignments}
-\textbf{TODO.}
-Here I will describe the pre-order traversal for deriving the final alignment states. 
-We will use the preliminary alignment contexts from the post order traversal to assign a final alignment context to each node. 
-I will note the similarity and difference to direct optimization pre-order. 
+The preorder traversal of the binary tree $\mathcal{T}$ is a consumes the preliminary alignment context decorations added in the postorder traversal in order to assign final alignment context decorations to each node.
+First the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context with all deletion events replaced with substitution events.
+This is required because at the root node, deletion events originated from  alignments of the left subtree and insertion events originated from alignments of the right sub tree, however the origin of these events are indistinguishable at the root node.
+By initializing the root node in this manner, we treat the root node the same as we would any other parental node when deriving the internal node alignments.
+
+We first check if the current node is the left or right child of it's parent.
+If it is the left child, then each deletion event of the parent node's final alignment context is changed to an insertion event and each insertion event is changed to a deletion event.
+This is required because deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however we must consider the converse for the resulting alignment to be consistent when assigning the final alignment context to a node which is the left child of it's parent.
+
+Once the parental final alignment context has been correctly initialized based on where the current node is the right or left child of it's parent, we proceed to assign the final alignment context of the current node.
+The parental final alignment context will nescessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context.
+The resulting value assigned to the current node's final alignmnet context will have the same length as the parental final alignment context.
+Since this invariant is maintained from the root node to the leaf node's final alignment context asssignments, all alignments will have the same length.
+This constitutes a simple inductive proof that all node's final alignment assignments will be of equal length and costitute a genuine string alignment.
+
+The final alignment context for the current node is derived by performing a ``sliding zip'' over the parental final alignment assignment, the parental preliminary alignment context, and the current node's perliminary alignment context.
+The parental final alignment context is used as the basis of the zip.
+At each step of the ``sliding zip'' one element of the parental final alignment context will be consumed and one element of the current node's final alignment context will be defined.
+Additionally, one element of either the parental preliminary alignment context, the current node's preliminary alignment context, or both elements will also be consumed in each step of the ``sliding zip.''
+The process is called a ``sliding zip'' because the elements of the parental and curent node's prelimary alignment contexts do not have a fixed index to which they correspond to the parental final alignment context being used as the basis of the zip.
+Rather the elements of the parental and curent node's prelimary alignment contexts ``slide'' through the zipping process, and their corrsponding index with the basis is deduced dynamically.
+Deletion events in the parental final alignment context are propogated to the current node's final alingment context without consuming elements of the parental or curent node's perliminary alignment contexts.
+For each non-deletion element in the parental final alignment context, one element from either the parental preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment context depending on the deletion, insertion, or alignment event of the next parental preliminary alignment context element.
+However, the final alignment context assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
+
+If the current node is a leaf node, we use the following proceedure:
+
+\begin{itemize}
+
+\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event, then we must inspect the median value of the next element of the current node's preliminary alignment context. If the median value is the same as the inserted value from the parental preliminary alignment context, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context. If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+
+\end{itemize}
+
+
+If the current node is not a leaf node, we use the following proceedure:
+
+\begin{itemize}
+
+\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements as and add a deletion event to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
+
+\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+
+\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
+
+\end{itemize}
+
+\textbf{TODO} add analysis and summary here.
 The major difference is the additional stored information allows us to decorate the final assignments without performing another string alignment on each edge.
 This allows the pre-order assignments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time.
 Note that this can be performed simultaneously with an implied alignment pass described in the next section.
@@ -552,7 +609,7 @@ Proof that a heuristic function $\oplus$ that is both commutative \emph{and} ass
 
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
-A more modern method of dynamic homology has been decribed by \citep{Wheeler2001}, in which string are not pre-aligned, but rather the strings are aligned on the current tree under consideration in the phylogentic search via implied alignment.
+A more modern method of dynamic homology has been decribed by \citep{Wheeler1996}, in which string are not pre-aligned, but rather the strings are aligned on the current tree under consideration in the phylogentic search via implied alignment.
 How the a string alignment is used in a phylogenetic search leads to an important distiction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the inital alignment.
 When using implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
