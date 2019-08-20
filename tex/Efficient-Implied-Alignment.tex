@@ -550,8 +550,12 @@ For example consider such a transposed tree $\mathcal{T'}$:
 This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$. 
 Proof that a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set is left as an exercise to the reader.
 
-\textbf{TODO}
-Aligning strings then searching, the resulting topology of the search is implied by the inital alignment. When using DO or implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
+String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
+Traditionally strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
+A more modern method of dynamic homology has been decribed by \citep{Wheeler2001}, in which string are not pre-aligned, but rather the strings are aligned on the current tree under consideration in the phylogentic search via implied alignment.
+How the a string alignment is used in a phylogenetic search leads to an important distiction in interpreting the meaning of the resulting string alignment.
+When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the inital alignment.
+When using implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
 
 See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequece aligment algorithm.
 
