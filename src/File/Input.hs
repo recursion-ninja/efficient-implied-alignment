@@ -173,9 +173,13 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
     validatedDataSet = traverse f dataSetKeys
       where
         f :: String -> Validation (NonEmpty UnificationError) ()
-        f k = validate err (`elem` leafTagSet) k $> ()
+        f k = validate err isInLeafSet k $> ()
           where
             err = pure $ DataLabelMissingInLeafSet k
+
+            isInLeafSet x
+              | x `elem` leafTagSet = Just x
+              | otherwise = Nothing
 
     initializedTree = traverse f leafTaggedTree
       where

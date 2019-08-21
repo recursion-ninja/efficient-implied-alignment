@@ -11,7 +11,7 @@ module Text.Megaparsec.Custom
 import           Data.Char                         (isSpace)
 import           Data.Functor                      (($>))
 import           Data.List.NonEmpty                (NonEmpty(..), nonEmpty)
-import           Data.Maybe                        (catMaybes)
+import           Data.Maybe                        (mapMaybe)
 import qualified Data.Set                   as S
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
@@ -50,7 +50,7 @@ endOfLine = choice (try <$> [ nl, cr *> nl, cr ]) $> newLineChar
 -- |
 -- Accepts zero or more Failure messages.
 fails :: MonadParsec e s m => [String] -> m a
-fails = failure Nothing . S.fromList . fmap Label . catMaybes . fmap nonEmpty
+fails = failure Nothing . S.fromList . fmap Label . mapMaybe nonEmpty
 
 
 -- |

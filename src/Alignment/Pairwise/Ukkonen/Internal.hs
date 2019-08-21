@@ -15,17 +15,15 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ConstraintKinds, DeriveFoldable, DeriveFunctor, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds, FlexibleContexts, TypeFamilies #-}
 
 module Alignment.Pairwise.Ukkonen.Internal
   ( ukkonenDO
   ) where
 
-
 import           Alignment.Pairwise.Internal
 import           Alignment.Pairwise.NeedlemanWunsch          (naiveDOMemo)
 import           Alignment.Pairwise.Ukkonen.Matrix
-import           Alignment.Pairwise.Ukkonen.Ribbon           (Ribbon)
 import qualified Alignment.Pairwise.Ukkonen.Ribbon as Ribbon
 import           Data.Alphabet
 import           Data.Foldable

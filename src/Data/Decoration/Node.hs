@@ -10,7 +10,7 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric, MultiParamTypeClasses, FlexibleInstances #-}
 
 module Data.Decoration.Node where
 

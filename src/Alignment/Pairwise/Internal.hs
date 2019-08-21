@@ -201,14 +201,14 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
   && maybe False isInDel  topContext
 --  && maybe False isInDel leftContext = (leftwardValue, LeftArrow, gapGroup)
   && maybe False isInDel leftContext     = (minCost, LeftArrow, gapGroup)
-  
---      if      isGapDim leftContext then (  upwardValue,   UpArrow, gapGroup)
---      else if isGapDim  topContext then (leftwardValue, LeftArrow, gapGroup)
---      else                              (diagonalValue, DiagArrow, gapGroup)
-
---      else if leftwardState == gapGroup  then (leftwardValue, LeftArrow, gapGroup)
---      else if   upwardState == gapGroup  then (  upwardValue,   UpArrow, gapGroup)
 {-
+      if      isGapDim leftContext then (  upwardValue,   UpArrow, gapGroup)
+      else if isGapDim  topContext then (leftwardValue, LeftArrow, gapGroup)
+      else                              (diagonalValue, DiagArrow, gapGroup)
+
+      else if leftwardState == gapGroup  then (leftwardValue, LeftArrow, gapGroup)
+      else if   upwardState == gapGroup  then (  upwardValue,   UpArrow, gapGroup)
+
       else    error $ unlines [ "Cool corner case reached!"
                               , "Considering point: " <> show p
                               , "Top context:     " <> show ((col - 1) `lookup`  topChar)
@@ -224,7 +224,7 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    isGapDim = maybe False (\x -> gapGroup == symbolAlignmentMedian x && isInDel x)
+--    isGapDim = maybe False (\x -> gapGroup == symbolAlignmentMedian x && isInDel x)
 
     isInDel Align {} = False
     isInDel _ = True
@@ -233,8 +233,8 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     leftContext                   = (row - 1) `lookup` leftChar
     topElement                    = maybe gapGroup symbolAlignmentMedian  topContext
     leftElement                   = maybe gapGroup symbolAlignmentMedian leftContext
-    (leftwardValue, leftwardArrow, leftWardState)         = memo !? (row    , col - 1)
-    (  upwardValue,   upwardArrow,   upwardState)         = memo !? (row - 1, col    )
+    (leftwardValue, _leftwardArrow, _leftWardState)         = memo !? (row    , col - 1)
+    (  upwardValue,   _upwardArrow,   _upwardState)         = memo !? (row - 1, col    )
     (diagonalValue, _, _)         = memo !? (row - 1, col - 1)
     (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
     ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
