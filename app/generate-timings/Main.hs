@@ -6,7 +6,7 @@
 module Main where
 
 import Control.Applicative
-import Control.Arrow ((***))
+import Control.Arrow ((&&&), (***))
 import Control.DeepSeq
 import Control.Monad
 import Data.Bifunctor (first)
@@ -15,10 +15,11 @@ import Data.Either
 import Data.Foldable
 import Data.IORef
 import Data.Key
-import Data.List               (intercalate, nub, sort)
+import Data.List               (elemIndex, intercalate, nub, sort)
 import Data.List.NonEmpty      (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
 import Data.Map                (Map, insertWith)
+import Data.Maybe (fromJust)
 import Data.Ord
 import Data.Semigroup          ((<>))
 import Data.Semigroup.Foldable
@@ -70,11 +71,11 @@ main = do
     let alignedFile = dataFile      opts
         newick      = treeFile      opts
 
-    coefficient  <- toEnum . length . head . tail       . lines <$> readFile alignedFile
+    coefficient  <- toEnum . length . head . tail       . lines <$> readFile alignedFile :: IO Word
     numFoundTaxa <- toEnum . length . filter isTaxaLine . lines <$> readFile alignedFile
 
-    let strLens     = sort $ stringLengths opts
-        taxaSizes   = nub . sort $ min numFoundTaxa <$> leafSetSizes opts
+    let strLens     = NE.fromList . sort $ (truncate . (toRational coefficient *) &&& id) <$> stringLengths opts
+        taxaSizes   = NE.fromList . nub . sort $ min numFoundTaxa <$> leafSetSizes opts
         taxaNumPad  = let n = length $ show numFoundTaxa
                       in  \x -> let s = show x in replicate (n - length s) ' ' <> s
         strLenPad   = let n = length $ show coefficient
@@ -88,12 +89,12 @@ main = do
 
     -- Check if we need we told not to generate files
     filePoints <- if noGenerate opts
-                  then getFilePoints alignedFile taxaSizes strLens coefficient
+                  then getFilePoints alignedFile taxaSizes strLens
                   else do
-      let reduceFastaFile = generateTruncatedDataFile taxaNumPad strLenPad alignedFile coefficient counter
+      let reduceFastaFile = generateTruncatedDataFile taxaNumPad strLenPad alignedFile counter
       putStrLn "Creating reduced FASTA files with the following taxa counts and string lengths:"
       receipts <- sequenceA $ reduceFastaFile <$> taxaSizes <*> strLens
-      let receiptMap = gatherReceiptsByTaxaCount $ NE.fromList receipts
+      let receiptMap = gatherReceiptsByTaxaCount receipts
 
       writeIORef counter (0, toEnum $ length taxaSizes)
       let reduceNewickFile = generateTruncatedTreeFile taxaNumPad newick counter
@@ -105,7 +106,8 @@ main = do
     putStrLn "Timing alignment postorder & preorder with the following taxa counts and string lengths:"
     pointTimes <- traverse timeFile filePoints
 
-    let (postorder, preorder) = (pointsToCSV *** pointsToCSV) $ colatePoints pointTimes
+    let colatedPoints = colatePoints taxaSizes (fst <$> strLens) pointTimes
+        (postorder, preorder) = (pointsToCSV *** pointsToCSV) colatedPoints
         prefix = getFileName alignedFile
     writeFile (prefix <> "-postorder-timing.csv")  postorder
     writeFile (prefix <>  "-preorder-timing.csv")   preorder
@@ -125,8 +127,8 @@ gatherReceiptsByTaxaCount = foldr f mempty
     f e = insertWith (<>) (receiptOfTaxaCount e, receiptOfDeletedTaxa e) $ pure e
 
 
-getFilePoints :: FilePath -> [Word] -> [Rational] -> Word -> IO (NonEmpty FilePoint)
-getFilePoints filePath taxaCounts strFractions coefficient = do
+getFilePoints :: FilePath -> NonEmpty Word -> NonEmpty (Word, Rational) -> IO (NonEmpty FilePoint)
+getFilePoints filePath taxaCounts strFractions = do
     fps <- foundFilePoints
     either reportMissingFiles pure $ collectErrors fps
   where
@@ -134,8 +136,8 @@ getFilePoints filePath taxaCounts strFractions coefficient = do
 
     foundFilePoints :: IO (NonEmpty (Either (NonEmpty FilePath) FilePoint))
     foundFilePoints = sequenceA $ do
-        taxaNum <- NE.fromList taxaCounts
-        strLen  <- NE.fromList $ truncate . (toRational coefficient *) <$> strFractions
+        taxaNum <- taxaCounts
+        strLen  <- fst <$> strFractions
         pure $ getFilePoint taxaNum strLen
         
     collectErrors
@@ -181,18 +183,27 @@ deleteFileIfExists p = do
     when fileExists $ removeFile p
 
 
-pointsToCSV :: Foldable f => f (Word, Word, Word) -> String
+pointsToCSV :: Foldable f => f (Word, Word, Word, Word, Word) -> String
 pointsToCSV points = unlines $ intercalate "," <$> dataRows
   where
 --    headerRow = ["Leaf Count", "Sequence Length", "Runtime"]
     dataRows  = toRow <$> toList points
-    toRow (x,y,z) = [show x, show y, show z]
+    toRow (x',y', x,y,z) = [show x', show y', show x, show y, show z]
 
 
-colatePoints :: NonEmpty (Word, Word, CPUTime, CPUTime) -> (NonEmpty (Word, Word, Word), NonEmpty (Word, Word, Word))
-colatePoints = foldMap1 f
+colatePoints
+  :: NonEmpty Word
+  -> NonEmpty Word
+  -> NonEmpty (Word, Word, CPUTime, CPUTime)
+  -> (NonEmpty (Word, Word, Word, Word, Word), NonEmpty (Word, Word, Word, Word, Word))
+colatePoints xs ys = foldMap1 f
   where
-    f (x,y,z1,z2) = (pure (x,y, timeToWord z1), pure (x,y, timeToWord z2))
+    f (x, y, z1, z2) =
+      let x' = x `indexIn` xs
+          y' = y `indexIn` ys
+      in  (pure (x', y', x, y, timeToWord z1), pure (x', y', x, y, timeToWord z2))
+
+    indexIn e es = toEnum . fromJust . elemIndex e $ toList es
 
     timeToWord = naturalToWord . toMicroseconds
 
@@ -263,16 +274,14 @@ generateTruncatedDataFile
   :: (Word -> String)
   -> (Word -> String)
   -> FilePath
-  -> Word
   -> IORef (Word, Word)
   -> Word
-  -> Rational
+  -> (Word, Rational)
   -> IO DataFileReceipt
-generateTruncatedDataFile taxaNumPadder strLenPadder filePath coefficient counter taxaSize fraction = do
+generateTruncatedDataFile taxaNumPadder strLenPadder filePath counter taxaSize (strLength, fraction) = do
     prefix <- makeAbsolute "."
     binDir <- makeAbsolute binaryDirectory
-    let strLength    = truncate $ toRational coefficient * fraction
-        onlyFileName = getFileName filePath
+    let onlyFileName = getFileName filePath
         binFilePath  = binDir </> "reduce-fasta"
         dataFilePath = prefix </> filePath
         taxaFilePath = prefix </> replicationTaxaDirectory </> onlyFileName <.> show taxaSize

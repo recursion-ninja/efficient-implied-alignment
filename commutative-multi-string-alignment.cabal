@@ -157,7 +157,7 @@ executable tree-align
   main-is: Main.hs
 
   hs-source-dirs:
-      app
+      app/tree-align
 
   ghc-options: -g
 --               -threaded -rtsopts -with-rtsopts=-N -g
