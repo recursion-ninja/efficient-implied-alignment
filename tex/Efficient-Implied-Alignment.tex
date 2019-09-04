@@ -363,13 +363,12 @@ Note that this can be performed simultaneously with an implied alignment pass de
 Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associative ordering of a binary operation. 
 We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. 
 I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works. 
-The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n^2*k^2)$ time.
+The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k^{2-c})$ instead of $\mathcal{O}(n*k^2)$ time.
 
 Here we describe in the most general mathematical detail the nature of dynamic homologies and how the monoid structure can be used to reconstruct the intermediate alignments on internal edges.
 
 
 \section{Pseudocode of pre-order traversal}
-Here I describe in excruciating detail the imperative style psuedocode for performing the pre-order traversal.
 
 \begin{algorithm}
   \caption{Pre-order Traversal}\label{preOrder}

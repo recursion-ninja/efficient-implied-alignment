@@ -16,6 +16,7 @@ data  UserInput
     , tcmFile      :: FilePath
     , outputFile   :: FilePath
     , verbose      :: Bool
+    , timing       :: Bool
     , alphabetType :: AlphabetType
 --    , commandHelp :: ExampleFileRequest
     } deriving (Show)
@@ -53,5 +54,5 @@ instance NFData ExampleFileRequest where
 
 instance NFData UserInput where
 
-    rnf (UserInput a b c d e f) = rnf a `seq` rnf b `seq` rnf c `seq`
-                                  rnf d `seq` rnf e `seq` rnf f
+    rnf (UserInput a b c d e f g) = rnf a `seq` rnf b `seq` rnf c `seq`
+                                    rnf d `seq` rnf e `seq` rnf f `seq` rnf g

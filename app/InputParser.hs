@@ -22,6 +22,7 @@ parseUserInput = customExecParser preferences $ info (helper <*> userInput) desc
           <*> argSpec 'm' "tcm"    "Transition Cost Matrix file with symbol alphabet"
           <*> argSpec 'o' "output" "Output file for alignments"
           <*> switch  (mconcat [short 'v', long "verbose", help "Display alignment & timing informaion"])
+          <*> switch  (mconcat [           long "timing" , help "Display timing informaion"])
           <*> ( flag'          DNA (mconcat [long "dna", help "Use DNA IUPAC codes for file input & output"]) <|>
                 flag  Standard RNA (mconcat [long "rna", help "Use RNA IUPAC codes for file input & output"])
               )

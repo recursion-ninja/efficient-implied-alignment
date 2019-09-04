@@ -97,6 +97,31 @@ runInput = do
                 , "  Postorder:   " <> padL dPad shownPostorder
                 , "  Preorder:    " <> padL dPad shownPreorder
                 ]
+
+          when (timing opts && not (verbose opts)) $ do
+              let shownParseTime  = show $ parseTime      fileInput
+                  shownUnifyTime  = show $ unifyTime      fileInput
+                  shownPreCompute = show $ precomputeTime fileInput
+                  shownPostorder  = show postorderTime
+                  shownPreorder   = show preorderTime
+                  dPad = maximum $ length <$>
+                      [ shownParseTime
+                      , shownUnifyTime
+                      , shownPreCompute
+                      , shownPostorder
+                      , shownPreorder
+                      ]
+
+              putStrLn $ unlines
+                [ "Diagnostics:"
+                , "  Parse Files: " <> padL dPad shownParseTime
+                , "  Unify Input: " <> padL dPad shownUnifyTime
+                , "  Setup TCM:   " <> padL dPad shownPreCompute
+                , "  Postorder:   " <> padL dPad shownPostorder
+                , "  Preorder:    " <> padL dPad shownPreorder
+                ]
+            
+          
           writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts 
 
 

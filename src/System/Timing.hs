@@ -2,12 +2,19 @@
 
 module System.Timing
   ( CPUTime()
+  , fromPicoseconds
+  , fromMilliseconds
+  , fromMicroseconds
+  , toPicoseconds
+  , toMicroseconds
+  , toMilliseconds
   , timeOp
   ) where
 
 
 import Control.DeepSeq
 import Control.Monad.IO.Class
+import Numeric.Natural
 import System.CPUTime
 
 
@@ -42,7 +49,7 @@ instance Show CPUTime where
 
 
 zeroPad :: Int -> Integer -> String
-zeroPad k i = shown <> replicate (k - length shown) '0'
+zeroPad k i = replicate (k - length shown) '0' <> shown
   where
     shown = show i
 
@@ -54,3 +61,27 @@ timeOp ioa = do
     t2 <- liftIO getCPUTime
     let t = CPUTime (t2 - t1)
     pure (t, a)
+
+
+fromPicoseconds :: Natural -> CPUTime
+fromPicoseconds = CPUTime . toInteger
+
+
+fromMicroseconds :: Natural -> CPUTime
+fromMicroseconds = CPUTime . (*1000000000) .  toInteger
+
+
+fromMilliseconds :: Natural -> CPUTime
+fromMilliseconds = CPUTime . (*1000000) .  toInteger
+
+
+toPicoseconds :: CPUTime -> Natural
+toPicoseconds (CPUTime x) = fromInteger x
+
+
+toMicroseconds :: CPUTime -> Natural
+toMicroseconds (CPUTime x) = fromInteger $ x `div` 1000000
+
+
+toMilliseconds :: CPUTime -> Natural
+toMilliseconds (CPUTime x) = fromInteger $ x `div` 1000000000
