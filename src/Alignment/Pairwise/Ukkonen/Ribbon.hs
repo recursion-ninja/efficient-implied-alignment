@@ -23,7 +23,6 @@ module Alignment.Pairwise.Ukkonen.Ribbon
 import           Data.Foldable
 import           Data.Key
 import           Data.Maybe               (fromMaybe)
-import           Data.SymbolString        (SymbolContext)
 import           Data.Vector              (Vector)
 import qualified Data.Vector       as V
 import           Data.Vector.Instances    ()
@@ -99,7 +98,6 @@ instance Show (Ribbon a) where
 --
 -- If the rows > cols of the matrix, then the ribbon is transposed.
 {-# INLINEABLE generate #-}
-{-# SPECIALIZE generate :: Word -> Word -> ((Int, Int) -> SymbolContext) -> Word -> Ribbon SymbolContext #-}
 generate
   :: Word              -- ^ Rows of the matrix
   -> Word              -- ^ Columns of the matrix
@@ -137,7 +135,6 @@ generate x y f alpha = result
 -- |
 -- Attempts to index the 'Ribbon' at a point within its defined region.
 {-# INLINE     ribbonLookup #-}
-{-# SPECIALIZE ribbonLookup :: (Int, Int) -> Ribbon SymbolContext -> Maybe SymbolContext #-}
 ribbonLookup :: (Int, Int) -> Ribbon a -> Maybe a
 ribbonLookup (i,j) r
   | outsideBounds = Nothing
@@ -164,7 +161,6 @@ ribbonLookup (i,j) r
 --
 -- Will produce undefined behavior when transforming a point outside the 'Ribbon'.
 {-# INLINEABLE transformation #-}
-{-# SPECIALIZE transformation :: Ribbon SymbolContext -> (Int, Int) -> Int #-}
 transformation :: Ribbon a -> (Int, Int) -> Int
 transformation r (i,j) = indexValue
   where

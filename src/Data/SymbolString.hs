@@ -53,7 +53,7 @@ data  SymbolContext
 -- |
 -- A non-empty set of characters.
 newtype SymbolAmbiguityGroup = SAG Word16
-    deriving (Bits, Eq, Enum, Generic, Ord)
+    deriving (Bits, Eq, FiniteBits, Enum, Generic, Ord)
 
 
 encodeAmbiguityGroup :: (Eq a, Foldable1 f) => Alphabet a -> f a -> SymbolAmbiguityGroup

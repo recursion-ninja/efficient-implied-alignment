@@ -148,6 +148,12 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
     -- isn't trivially small.
     startOffset = 2
 
+    -- If we are filling up 3/4 of the matrix, quit Ukkonen method and just do standard Neeleman-Wunsch.
+    stopOffset  = ((3 * lesserLen - 1) `div` 4)
+
+    -- The largest value the offset can be, logically.
+    maximumOffset = lesserLen
+
     -- /O(1)/
     --
     -- Necessary to compute the width of a row in the barrier-constrained matrix.
@@ -171,10 +177,14 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
 
     gapGroup = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :|[]
 
-    ukkonenUntilOptimal offset
+    ukkonenUntilOptimal inOffset
+      | inOffset   >= stopOffset    = ukkonenMatrix
       | threshhold <= alignmentCost = ukkonenUntilOptimal $ 2 * offset
       | otherwise                   = ukkonenMatrix
       where
+        offset | quasiDiagonalWidth + inOffset >= lesserLen = maximumOffset
+               | otherwise = inOffset
+               
         ukkonenMatrix      = Ribbon.generate rows cols generatingFunction $ toEnum offset
 
         generatingFunction = needlemanWunschDefinition gapGroup overlapFunction longerTop lesserLeft ukkonenMatrix

@@ -43,8 +43,6 @@ import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
 import           Prelude            hiding (lookup, reverse, zipWith)
 
---import Debug.Trace
-
 
 -- |
 -- Which direction to align the character at a given matrix point.
@@ -66,7 +64,7 @@ import           Prelude            hiding (lookup, reverse, zipWith)
 -- Using this 'Ord' instance, we can resolve ambiguous transformations in a
 -- deterministic way. Without loss of generality in determining the ordering,
 -- we choose the same biasing as the C code called from the FFI for consistency.
-data Direction = DiagArrow | LeftArrow | UpArrow
+data Direction = LeftArrow | UpArrow | DiagArrow
   deriving (Eq, Ord)
 
 
@@ -106,6 +104,7 @@ type MatrixFunction m f
     -> f SymbolContext
     -> m (Cost, Direction, SymbolAmbiguityGroup)
 
+
 -- |
 -- Wraps the primative operations in this module to a cohesive operation that is
 -- parameterized by an 'TransitionCostMatrix'.
@@ -127,7 +126,7 @@ directOptimization
   -> f SymbolContext
   -> f SymbolContext
   -> (Word, Vector SymbolContext)
-directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {- trace (renderingFunction lhs rhs traversalMatrix) -} (alignmentCost, alignmentContext)
+directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {-- trace (_renderingFunction lhs rhs traversalMatrix) --} (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
@@ -233,8 +232,8 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     leftContext                   = (row - 1) `lookup` leftChar
     topElement                    = maybe gapGroup symbolAlignmentMedian  topContext
     leftElement                   = maybe gapGroup symbolAlignmentMedian leftContext
-    (leftwardValue, _leftwardArrow, _leftWardState)         = memo !? (row    , col - 1)
-    (  upwardValue,   _upwardArrow,   _upwardState)         = memo !? (row - 1, col    )
+    (leftwardValue, _leftwardArrow, _leftWardState) = memo !? (row    , col - 1)
+    (  upwardValue,   _upwardArrow,   _upwardState) = memo !? (row - 1, col    )
     (diagonalValue, _, _)         = memo !? (row - 1, col - 1)
     (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
     ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
@@ -244,7 +243,7 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     downCost                      =  downOverlapCost +   upwardValue
     (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
                                       ( diagCost,  diagChar)
-                                      (rightCost, rightChar)
+                                      (rightCost, rightChar) 
                                       ( downCost,  downChar)
 
 

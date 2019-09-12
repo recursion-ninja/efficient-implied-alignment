@@ -8,6 +8,7 @@ module Data.TCM
   , buildTransitionCostMatrix
   -- * Querries
   , overlap
+  , overlap'
   , renderTCM
   ) where
 
@@ -15,10 +16,11 @@ import           Control.DeepSeq
 import           Data.Alphabet
 import           Data.Bits
 import           Data.Key
-import           Data.List.NonEmpty            (NonEmpty)
+import           Data.List.NonEmpty            (NonEmpty(..))
 import qualified Data.List.NonEmpty      as NE
 import           Data.Matrix.ZeroIndexed       (Matrix, unsafeGet)
 import qualified Data.Matrix.ZeroIndexed as M
+import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
 
@@ -54,6 +56,7 @@ buildSymbolChangeMatrix
   -> SymbolChangeMatrix Int
 buildSymbolChangeMatrix matrix = let m = force matrix
                                  in  (\x y -> unsafeGet x y m)
+--                                 in  (\x y -> getElem x y m)
 
 
 renderTCM :: Alphabet Char -> TransitionCostMatrix -> String
@@ -72,16 +75,17 @@ renderTCM alphabet tcm = unlines . (headerRow:) $ fmap (foldMap render) listOfRo
 --
 -- Build a 'TransitionCostMatrix' from an 'Alphabet' and a 'SymbolChangeMatrix'.
 {-# INLINEABLE buildTransitionCostMatrix #-}
-{-# SPECIALIZE buildTransitionCostMatrix :: Alphabet SymbolAmbiguityGroup -> SymbolChangeMatrix Int -> TransitionCostMatrix #-}
 buildTransitionCostMatrix
   :: Alphabet k
   -> SymbolChangeMatrix Int
   -> TransitionCostMatrix
-buildTransitionCostMatrix alphabet scm = 
+buildTransitionCostMatrix alphabet scm =
     let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
+--    let g (i,j) = overlap' (length alphabet) (\x y -> scm (fromEnum x) (fromEnum y)) $ toEnum i :| [toEnum j]
         len     = 1 `shiftL` length alphabet
         m       = M.matrix len len g
     in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
+--    in  \i j -> getElem (fromEnum i) (fromEnum j) m
 
 
 -- |
@@ -157,3 +161,52 @@ symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol all
 
     getDistance :: Int -> SymbolAmbiguityGroup -> Word
     getDistance i e = minimum $ costStruct i <$> NE.filter (e `testBit`) allKeys
+
+
+-- |
+-- Takes one or more elements of 'FiniteBits' and a symbol change cost function
+-- and returns a tuple of a new character, along with the cost of obtaining that
+-- character. The return character may be (or is even likely to be) ambiguous.
+-- Will attempt to intersect the two characters, but will union them if that is
+-- not possible, based on the symbol change cost function.
+--
+-- To clarify, the return character is an intersection of all possible least-cost
+-- combinations, so for instance, if @ char1 == A,T @ and @ char2 == G,C @, and
+-- the two (non-overlapping) least cost pairs are A,C and T,G, then the return
+-- value is A,C,G,T.
+{-# INLINE overlap' #-}
+{-# SPECIALISE overlap' :: FiniteBits e => Int -> (Word -> Word -> Word) -> NonEmpty e -> (e, Word) #-}
+{-# SPECIALISE overlap' :: Int -> (Word -> Word -> Word) -> NonEmpty SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word) #-}
+overlap'
+  :: ( FiniteBits e
+     , Foldable1 f
+     , Functor f
+     )
+  => Int                   -- ^ Alphabet size
+  -> (Word -> Word -> Word) -- ^ Symbol change matrix (SCM) to determin cost
+  -> f e                    -- ^ List of elements for of which to find the k-median and cost
+  -> (e, Word)              -- ^ K-median and cost
+overlap' size sigma xs = go size maxBound zero
+  where
+    zero = let wlog = getFirst $ foldMap1 First xs
+           in  wlog `xor` wlog
+
+--    go :: Int -> Word -> e -> (e, Word)
+    go 0 theCost bits = (bits, theCost)
+    go i oldCost bits =
+        let i' = i - 1
+            newCost = sum $ getDistance (toEnum i') <$> xs
+            (minCost, bits') = case oldCost `compare` newCost of
+                                 EQ -> (oldCost, bits `setBit` i')
+                                 LT -> (oldCost, bits            )
+                                 GT -> (newCost, zero `setBit` i')
+        in go i' minCost bits'
+
+    getDistance i b = go' size (maxBound :: Word)
+      where
+        go' :: Int -> Word -> Word
+        go' 0 a = a
+        go' j a =
+          let j' = j - 1
+              a' = if b `testBit` j' then min a $ sigma i (toEnum j') else a
+          in  go' j' a'
