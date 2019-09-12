@@ -87,6 +87,8 @@ main = do
 
     counter <- newIORef (0, toEnum $ length strLens * length taxaSizes)
 
+    putStrLn $ fold ["Generating results for the '", getFileName alignedFile, "' data-set"]
+
     -- Check if we need we told not to generate files
     filePoints <- if noGenerate opts
                   then getFilePoints alignedFile taxaSizes strLens
@@ -108,9 +110,9 @@ main = do
 
     let colatedPoints = colatePoints taxaSizes (fst <$> strLens) pointTimes
         (postorder, preorder) = (pointsToCSV *** pointsToCSV) colatedPoints
-        prefix = getFileName alignedFile
-    writeFile (prefix <> "-postorder-timing.csv")  postorder
-    writeFile (prefix <>  "-preorder-timing.csv")   preorder
+        outPath x = replicationDirectory </> outputPrefix opts <.> x <.> "csv"
+    writeFile (outPath "postorder")  postorder
+    writeFile (outPath  "preorder")   preorder
 
 
 isTaxaLine :: String -> Bool

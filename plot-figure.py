@@ -34,12 +34,19 @@ my_yticks = list(map(str, map(int, sorted(set(ysl.tolist())))))
 my_xticks.insert(0,0)
 
 ax.set_yticks(ys)
+ax.set_zticks(range(2,15,2))
 ax.set_xticklabels(my_xticks)
 ax.set_yticklabels(my_yticks)
+ax.set_zticklabels(['2²','2⁴','2⁶','2⁸','2¹⁰','2¹²','2¹⁴'])
 ax.set_xlabel('|Leafset|')
 ax.set_ylabel('|Sequence|')
-ax.set_zlabel('log₂ Milliseconds')
+ax.set_zlabel('Milliseconds')
 
 ax.bar3d(xs, ys, bottom, width, depth, zs, shade=True)
-ax.view_init(30, 225)
-plt.show()
+ax.view_init(40, 225)
+
+# Show or save the image
+if len(sys.argv) < 3:
+  plt.show()
+else:
+  plt.savefig(sys.argv[2])

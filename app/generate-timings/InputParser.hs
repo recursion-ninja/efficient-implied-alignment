@@ -8,7 +8,6 @@ module InputParser
 import Data.Char
 import Data.Foldable
 import Data.Semigroup               ((<>))
-import Data.UserInput
 import Options.Applicative
 import Text.PrettyPrint.ANSI.Leijen (string)
 import TimingParameters
@@ -22,6 +21,7 @@ parseTimingParameters = customExecParser preferences $ info (helper <*> timingPa
           <$> fileSpec 'd' "data"        "FASTA data file"
           <*> fileSpec 't' "tree"        "Newick tree file"
           <*> fileSpec 'm' "tcm"         "Transition Cost Matrix file with symbol alphabet"
+          <*> fileSpec 'o' "output"      "File path prefix of CSV prorder and postorder timings"
           <*>  argSpec 'n' "leaves"      "Leaf set lengths"
           <*>  argSpec 'k' "lengths"     "String lengths in range [0, 1]"
           <*> switch  (fold [long "no-generate", help "Do NOT generate files, assume they exist"])

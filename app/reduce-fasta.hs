@@ -53,15 +53,16 @@ symbols = "ACGTUBHRNDQEHILKMFPSTWYVX?"
 -- | getSequence extracts sequence data till empty line or '>'
 getSequence :: String -> [String] -> (String, [String])
 getSequence sequenceSoFar inLines =
-    if null inLines then (sequenceSoFar, inLines)
-    else 
-        let firstLine = head inLines
-        in
-        if head firstLine == '>' then  (sequenceSoFar, inLines) -- new taxon
-        else 
-            getSequence (sequenceSoFar ++ firstLine) (tail inLines)
-
-
+    case inLines of
+      []   -> (sequenceSoFar, inLines)
+      x:xs ->
+        let firstLine = x
+        in  case firstLine of
+              []  -> getSequence sequenceSoFar xs
+              y:_ ->
+                if y == '>'
+                then (sequenceSoFar, inLines)
+                else getSequence (sequenceSoFar <> x) xs
 
 -- | getNameSequencePairs takes input file and returns list of name sequence pairs
 getNameSequencePairs :: [String] -> [(String, String)]

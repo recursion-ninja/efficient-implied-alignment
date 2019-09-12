@@ -49,6 +49,7 @@ runInput = do
 --            stringAligner = postorderLogic (naiveDOMemo alphabet tcm)
             stringAligner = ukkonenDO alphabet tcm
         in  do
+--          putStrLn $ renderTCM alphabet tcm
           when (verbose opts) $ mapM_ putStrLn
               [ ""
               , renderAlphabet alphabet
@@ -85,7 +86,7 @@ runInput = do
               mapM_ putStrLn
                 [ "Output Alignment:"
                 , ""
---                , renderPhylogeny inputRenderer postResult
+--                , renderPhylogeny inputRenderer postorderResult
                 , renderAlignment nodeRenderer leafRenderer preorderResult
                 , ""
                 , "Alignment Cost: " <> show alignmentCost

@@ -15,6 +15,7 @@ data  TimingParameters
     { dataFile      :: FilePath
     , treeFile      :: FilePath
     , tcmFile       :: FilePath
+    , outputPrefix  :: FilePath
     , leafSetSizes  :: [Word]
     , stringLengths :: [Rational]
     , noGenerate    :: Bool
@@ -23,8 +24,8 @@ data  TimingParameters
 
 instance NFData TimingParameters where
 
-    rnf (TimingParameters a b c d e f) =
-      rnf a `seq` rnf b `seq` rnf c `seq` rnf d `seq` rnf e `seq` rnf f
+    rnf (TimingParameters a b c d e f g) =
+      rnf a `seq` rnf b `seq` rnf c `seq` rnf d `seq` rnf e `seq` rnf f `seq` rnf g
 
 
 validateTimingParameters :: TimingParameters -> IO TimingParameters
