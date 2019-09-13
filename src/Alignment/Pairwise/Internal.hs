@@ -189,45 +189,17 @@ needlemanWunschDefinition
   -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
   |  p == (0,0)                          = (            0, DiagArrow, gapGroup)
---  |   topElement == gapGroup
---  && leftElement == gapGroup
---  && row /= 0
---  && col /= 0                = (leftwardValue, LeftArrow, gapGroup)
   |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
   |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
-  |  minDir == DiagArrow
-  && minState == gapGroup
-  && maybe False isInDel  topContext
---  && maybe False isInDel leftContext = (leftwardValue, LeftArrow, gapGroup)
-  && maybe False isInDel leftContext     = (minCost, LeftArrow, gapGroup)
-{-
-      if      isGapDim leftContext then (  upwardValue,   UpArrow, gapGroup)
-      else if isGapDim  topContext then (leftwardValue, LeftArrow, gapGroup)
-      else                              (diagonalValue, DiagArrow, gapGroup)
-
-      else if leftwardState == gapGroup  then (leftwardValue, LeftArrow, gapGroup)
-      else if   upwardState == gapGroup  then (  upwardValue,   UpArrow, gapGroup)
-
-      else    error $ unlines [ "Cool corner case reached!"
-                              , "Considering point: " <> show p
-                              , "Top context:     " <> show ((col - 1) `lookup`  topChar)
-                              , "Left context:    " <> show ((row - 1) `lookup` leftChar)
-                              , "  Upward point:  " <> show (memo !? (row - 1, col    ))
-                              , "Diagonal point:  " <> show (memo !? (row - 1, col - 1))
-                              , "Leftward point:  " <> show (memo !? (row    , col - 1))
-                              ]
--}
-  |  otherwise               = (      minCost,     minDir, minState)
+  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
+  |  otherwise                           = (      minCost,    minDir, minState)
   where
     -- | Lookup with a default value of infinite cost.
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
---    isGapDim = maybe False (\x -> gapGroup == symbolAlignmentMedian x && isInDel x)
+    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
 
-    isInDel Align {} = False
-    isInDel _ = True
-    
     topContext                    = (col - 1) `lookup`  topChar
     leftContext                   = (row - 1) `lookup` leftChar
     topElement                    = maybe gapGroup symbolAlignmentMedian  topContext
@@ -366,7 +338,7 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
         where
           (_, directionArrow, medianElement) = alignMatrix ! currentCell
 
-          (nextCell, contextElement) =
+          (nextCell, contextElement) = 
               case directionArrow of
                 LeftArrow -> ((i    , j - 1), Delete medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
                 UpArrow   -> ((i - 1, j    ), Insert medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
@@ -381,7 +353,9 @@ getMinimalCostDirection
   -> (c, SymbolAmbiguityGroup)
   -> (c, SymbolAmbiguityGroup, Direction)
 getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar) =
-    minimumBy (comparing (\(c,_,d) -> (c,d)))
+    minimumBy (comparing (\(c,_,d) -> (c,d))) xs
+  where
+    xs =
       [ (diagCost ,  diagChar       , DiagArrow)
       , (rightCost, rightChar <> gap, LeftArrow)
       , (downCost ,  downChar <> gap, UpArrow  )
