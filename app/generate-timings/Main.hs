@@ -84,7 +84,9 @@ main = do
     createDirectoryIfMissing True replicationDataDirectory
     createDirectoryIfMissing True replicationTaxaDirectory
     createDirectoryIfMissing True replicationTreeDirectory
-
+    createDirectoryIfMissing True replicationOutputDirectory
+    createDirectoryIfMissing True replicationImageDirectory
+    
     counter <- newIORef (0, toEnum $ length strLens * length taxaSizes)
 
     putStrLn $ fold ["Generating results for the '", getFileName alignedFile, "' data-set"]
@@ -110,9 +112,13 @@ main = do
 
     let colatedPoints = colatePoints taxaSizes (fst <$> strLens) pointTimes
         (postorder, preorder) = (pointsToCSV *** pointsToCSV) colatedPoints
-        outPath x = replicationDirectory </> outputPrefix opts <.> x <.> "csv"
-    writeFile (outPath "postorder")  postorder
-    writeFile (outPath  "preorder")   preorder
+        outPath x = replicationOutputDirectory </> outputPrefix opts <.> x <.> "csv"
+        postorderPath = outPath "postorder"
+        preorderPath  = outPath  "preorder"
+    writeFile postorderPath postorder
+    putStrLn $ "Wrote out postorder timing data to: " <> postorderPath
+    writeFile  preorderPath  preorder
+    putStrLn $ "Wrote out  preorder timing data to: " <>  preorderPath
 
 
 isTaxaLine :: String -> Bool
@@ -248,24 +254,14 @@ parseCPUTime = fmap fromPicoseconds . choice $ try <$> [days, hours, mins, secs,
     day     = 24   *  hour
 
 
-binaryDirectory :: FilePath
-binaryDirectory = "./bin/"
-
-
-replicationDirectory :: FilePath
-replicationDirectory = "./replicate-results"
-
-
-replicationDataDirectory :: FilePath
-replicationDataDirectory = replicationDirectory </> "data"
-
-
-replicationTaxaDirectory :: FilePath
-replicationTaxaDirectory = replicationDirectory </> "taxa"
-
-
-replicationTreeDirectory :: FilePath
-replicationTreeDirectory = replicationDirectory </> "tree"
+binaryDirectory, replicationDirectory, replicationDataDirectory, replicationTaxaDirectory, replicationTreeDirectory, replicationOutputDirectory, replicationImageDirectory :: FilePath
+binaryDirectory            = "./bin/"
+replicationDirectory       = "./replicate-results"
+replicationDataDirectory   = replicationDirectory </> "data"
+replicationTaxaDirectory   = replicationDirectory </> "taxa"
+replicationTreeDirectory   = replicationDirectory </> "tree"
+replicationOutputDirectory = replicationDirectory </> "csv"
+replicationImageDirectory  = replicationDirectory </> "png"
 
 
 getFileName :: FilePath -> FilePath

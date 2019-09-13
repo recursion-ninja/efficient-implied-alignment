@@ -64,7 +64,7 @@ import           Prelude            hiding (lookup, reverse, zipWith)
 -- Using this 'Ord' instance, we can resolve ambiguous transformations in a
 -- deterministic way. Without loss of generality in determining the ordering,
 -- we choose the same biasing as the C code called from the FFI for consistency.
-data Direction = LeftArrow | UpArrow | DiagArrow
+data Direction = DiagArrow | LeftArrow | UpArrow
   deriving (Eq, Ord)
 
 
