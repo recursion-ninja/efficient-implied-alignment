@@ -134,27 +134,27 @@ The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$
   \caption{Generate the alignment matrix of $\otimes$}\label{matrixDefinition}
   \begin{algorithmic}[1]
     \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
-    \Require{$i \, \in \left[0, \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{N}$}
-    \Require{$j    \in \left[0, \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{N}$}
+    \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
+    \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
     \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
-      \If   {$i = 0 \land j = 0$}
+      \If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
+        \State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
+      \ElsIf{$i = 0 \land j = 0$} \Comment{Handle the origin}
         \State \Return $\left( 0, \nwarrow, \textbf{--} \right)$
-      \ElsIf{$i = 0 \land j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$}
+      \ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
         \State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
         \State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$ 
-      \ElsIf{$i \neq 0 \land j = 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$}
+      \ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
         \State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
         \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
-      \Else
+      \Else \Comment{General recursive case}
         \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
         \State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
         \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
         \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
-        \If {$\textit{minDir} = \nwarrow \land \; \textit{minElem} = \textbf{--}$\\ 
-             \hspace{1.2cm} $\land\; \Call{isInsDel}{\textit{longer}_{j-1}}$\\
-             \hspace{1.2cm} $\land\; \Call{isInsDel}{\textit{lesser}_{i-1}}$}
-          \State \Return $\left( mCost, \leftarrow, \textbf{--} \right)$
+        \If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
+          \State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
         \Else 
           \State \Return $\left( minCost, minDir, minElem \right)$
         \EndIf
@@ -192,26 +192,6 @@ The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$
         \State $alignedStr \gets nextElement + alignedStr$
       \EndWhile
       \State \Return $\left(alignedCost, alignedStr \right)$
-    \EndFunction  
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-  \caption{Determine if an element of $\Sigma_{\Gamma}$ is an $\textbf{INSERT}$ or $\textbf{DELETE}$ event}\label{isInsDel}
-  \begin{algorithmic}[1]
-    \Require{$element \in \Sigma_{\Gamma}$}
-    \Function{isInsDel}{$\textit{element}$}
-      \Switch{$\textit{element}$}
-        \Case{$\textbf{ALIGN} \quad\; \_ \;\;      \_ \;\; \_ \;\;$}
-          \State \Return False
-        \EndCase
-        \Case{$\textbf{INSERT} \;\;\; \_ \;\;\quad \_ \;\;$}
-          \State \Return True
-        \EndCase
-        \Case{$\textbf{DELETE} \;\;   \_ \;\;      \_ \;\;\quad$}
-          \State \Return True
-        \EndCase
-      \EndSwitch
     \EndFunction  
   \end{algorithmic}
 \end{algorithm}
