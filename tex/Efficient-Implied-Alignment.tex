@@ -100,17 +100,19 @@ This algorithm is very similar to DO.
 
 First we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows). 
 We assign the input string based on the data they contain, ensuring commutivity. If this step is not taken, arbitrary biases choosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity. 
-The longer string is tied to the top of the alignment matrix, the shorter string to the left side. If the string are the same length, we take the larger string under the lexical ordering of thier elements and tie it to the top row, the lesser string is tied to the left side of the aligment matrix. 
+The longer string is tied to the top of the alignment matrix, the shorter string to the left side. If the strings are the same length, we take the larger string under the lexical ordering of thier elements and tie it to the top row, the lesser string is tied to the left side of the aligment matrix. 
 In the case that the strings are equal, the alignment is trivial.
 
 Next we apply the modified Needleman-Wunsch algorithm to generate the alignment matrix of the two strings. The "longer" string is tied to the top of the matrix and the "shorter" string is tied to the left column.
 
-We perform a ``traceback'' through the generated alignment matrix in a manner similar to the  Needleman-Wunsch. 
+We perform a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch. 
 However, this traceback differs in one substantial detail. When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either and insertion, deletion, or alignment event, respectively. 
 By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
-The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification on a simple, well-understood pairwise string alignment for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alignment algorithms. By using Ukkonen's method, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time and space in general, and near linear time on sequences of high similarity. It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
+The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification as an adaptation of the simple, well-understood Needleman-Wunsch algorithm for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alignment algorithms. By using Ukkonen's method \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity. By using Hirschberg's method \cite{Hirschberg1975}, this algorithm can be further improved to use linear space.
+
+It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
 
 \begin{algorithm}
   \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
