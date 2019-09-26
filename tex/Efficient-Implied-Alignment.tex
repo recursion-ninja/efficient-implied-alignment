@@ -1,6 +1,7 @@
 \documentclass[11pt]{article}
 \usepackage{setspace}
 \usepackage{graphicx}
+\usepackage{geometry}
 \usepackage{subfigure}
 \usepackage{lscape}
 \usepackage{flafter}  % Don't place floats before their definition
@@ -110,9 +111,9 @@ However, this traceback differs in one substantial detail. When using the direct
 By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
-The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification as an adaptation of the simple, well-understood Needleman-Wunsch algorithm for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alignment algorithms. By using Ukkonen's method \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity. By using Hirschberg's method \cite{Hirschberg1975}, this algorithm can be further improved to use linear space.
+The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification as an adaptation of the simple, well-understood Needleman-Wunsch algorithm for clairity. However, this tagging approach can be incorperated into more sophisticated pairwise string alignment algorithms. By using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity. By using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
 
-It is worth nothing that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
+It is worth noting that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logrithmic affine gap costs.
 
 \begin{algorithm}
   \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
@@ -152,7 +153,7 @@ It is worth nothing that $\sigma$ presented in the pseudocode below can represen
         \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
       \Else \Comment{General recursive case}
         \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
-        \State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
+        \State $y \gets \sigma \left(           \textit{•}it{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
         \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
         \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
         \If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
@@ -175,7 +176,7 @@ It is worth nothing that $\sigma$ presented in the pseudocode below can represen
       \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
       \State \Return $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
       \State $alignedStr \gets \left[ \,\right]$
-      \While{$\left( i, j \right) < \left( 0, 0 \right)$}
+      \While{$\left( i, j \right) > \left( 0, 0 \right)$}
         \State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
         \Switch{$\textit{dirArrow}$}
           \Case{$\leftarrow$}
@@ -300,38 +301,23 @@ Deletion events in the parental final alignment context are propogated to the cu
 For each non-deletion element in the parental final alignment context, one element from either the parental preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment context depending on the deletion, insertion, or alignment event of the next parental preliminary alignment context element.
 However, the final alignment context assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
 
-If the current node is a leaf node, we use the following proceedure:
-
 \begin{itemize}
 
 \item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
 
 \item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment context.
 
-\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event, then we must inspect the median value of the next element of the current node's preliminary alignment context. If the median value is the same as the inserted value from the parental preliminary alignment context, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context. If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-
-\end{itemize}
-
-
-If the current node is not a leaf node, we use the following proceedure:
-
-\begin{itemize}
-
-\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements as and add a deletion event to the current node's final alignment context.
-
 \item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
 
-\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
+\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary alignment context.
+If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context. 
+If the median value is the same as the inserted value from the parental preliminary alignment context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
 
 \item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
 
-\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
+\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, we must check if we are deriving the alignment for a leaf node.
+If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+If we are \textit{not} deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
 
 \end{itemize}
 
@@ -363,17 +349,15 @@ Here we describe in the most general mathematical detail the nature of dynamic h
       \If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
         \State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
       \Else
-        \State $\textit{parentPrelim} \gets \textit{node.parent.prelimString}$
+        \State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
+        \State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
+        \State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
         \If {isLeftChildOfParent($\textit{node}$)}
           \ForEach {$\textit{context} \in \textit{parentPrelim}$}
             \State \Call{reverseContext}{$\textit{context}$}
           \EndFor
         \EndIf
-        \If {isLeaf ( $\textit{node}$ )} \Comment{Finalize the leaf node}
-          \State $\textit{v} \gets$ \Call{alignLeaf}{$\textit{node.parent.finalString}, \textit{parentPrelim}, \textit{node.prelimString}$}
-        \Else \Comment{Finalize the internal node}
-          \State $\textit{v} \gets$ \Call{alignInternal}{$\textit{node.parent.finalString}, \textit{parentPrelim}, \textit{node.prelimString}$}
-        \EndIf
+        \State $\textit{v} \gets$ \Call{deriveAlignment}{$isLeaf ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
         \State $\textit{node.finalString} \gets \textit{v}$
       \EndIf
     \EndFunction
@@ -412,105 +396,175 @@ Here we describe in the most general mathematical detail the nature of dynamic h
 \end{algorithm}
 
 
-\begin{algorithm}
-  \caption{Internal Node Alignment}\label{alignInternal}
-  \begin{algorithmic}[1]      
-    \Function{alignInternal}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-      \For{$\textit{i} < \textit{len}$}
-        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
-          \State $\textit{result}_i \gets \textit{del}$
-        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Default{}
-              \State $\textit{result}_i \gets \textit{del}$
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndDefault
-          \EndSwitch
-        \Else
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-                  \State $\textit{result}_i \gets \textit{del}$
-                \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-                  \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-                  \State $\textit{result}_i \gets \textit{cContext}_k$
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-              \EndSwitch
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndCase
-            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-                  \State $\textit{result}_i \gets \textit{del}$
-                \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-                  \State $\textit{result}_i \gets \textit{cContext}_k$
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-                  \State $\textit{result}_i \gets \textit{pContext}_j$
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-              \EndSwitch
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndCase
-          \EndSwitch
-        \EndIf  
-        \State $\textit{i} \gets \textit{i} + 1$
-      \EndFor
-      \Return $\textit{result}$
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
+%\begin{algorithm}
+%  \caption{Internal Node Alignment}\label{alignInternal}
+%  \begin{algorithmic}[1]      
+%    \Function{alignInternal}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
+%      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
+%      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
+%      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
+%      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
+%      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
+%      \For{$\textit{i} < \textit{len}$}
+%        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
+%          \State $\textit{result}_i \gets \textit{del}$
+%        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
+%          \Switch{$\textit{pAlignment}_i$}
+%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%            \Default{}
+%              \State $\textit{result}_i \gets \textit{del}$
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndDefault
+%          \EndSwitch
+%        \Else
+%          \Switch{$\textit{pAlignment}_i$}
+%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%                  \State $\textit{result}_i \gets \textit{del}$
+%                \EndCase
+%                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+%                  \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+%                  \State $\textit{result}_i \gets \textit{cContext}_k$
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%              \EndSwitch
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndCase
+%            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%                  \State $\textit{result}_i \gets \textit{del}$
+%                \EndCase
+%                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+%                  \State $\textit{result}_i \gets \textit{cContext}_k$
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+%                  \State $\textit{result}_i \gets \textit{pContext}_j$
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%              \EndSwitch
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndCase
+%          \EndSwitch
+%        \EndIf  
+%        \State $\textit{i} \gets \textit{i} + 1$
+%      \EndFor
+%      \Return $\textit{result}$
+%    \EndFunction
+%  \end{algorithmic}
+%\end{algorithm}
 
-
-\begin{algorithm}
-  \caption{Leaf Node Alignment}\label{alignLeaf}
-  \begin{algorithmic}[1]
-    \Function{alignLeaf}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-      \For{$\textit{i} < \textit{len}$}
-        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;     \textit{m} \;\;      \textit{x} \;\;\quad$}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Case{$\textbf{INSERT} \;\;\;\, \textit{m} \;\;      \textit{x} \;\;\quad$}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-          \EndSwitch
-        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Default{}
-              \State $\textit{result}_i \gets \textit{del}$
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndDefault
-          \EndSwitch
+%\begin{algorithm}
+%  \caption{Leaf Node Alignment}\label{alignLeaf}
+%  \begin{algorithmic}[1]
+%    \Function{alignLeaf}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
+%      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
+%      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
+%      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
+%      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
+%      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
+%      \For{$\textit{i} < \textit{len}$}
+%        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
+%          \Switch{$\textit{pAlignment}_i$}
+%            \Case{$\textbf{DELETE} \;\;     \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%            \Case{$\textbf{INSERT} \;\;\;\, \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%          \EndSwitch
+%        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
+%          \Switch{$\textit{pAlignment}_i$}
+%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%            \Default{}
+%              \State $\textit{result}_i \gets \textit{del}$
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndDefault
+%          \EndSwitch
           
+%        \Else
+%          \Switch{$\textit{pAlignment}_i$}
+%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%              \State $\textit{result}_i \gets \textit{del}$
+%            \EndCase
+%            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%                  \State $\textit{result}_i \gets \textit{del}$
+%                \EndCase
+%                \Case{$\textbf{INSER1T} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+%                  \If {y = \Call{getMedian}{$\textit{cContext}_k$}}
+%                    \State $\textit{result}_i \gets \textit{cContext}_k$
+%                    \State $\textit{k} \gets \textit{k} + 1$
+%                  \Else
+%                    \State $\textit{result}_i \gets \textit{del}$
+                  
+%                  \EndIf
+%                \EndCase
+%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+%                  \State $\textit{result}_i \gets \textit{cContext}_k$
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%              \EndSwitch
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndCase
+%            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+%                  \State $\textit{result}_i \gets \textit{del}$
+%                \EndCase
+%                \Default{}
+%                  \State $\textit{result}_i \gets \textit{cContext}_k$
+%                  \State $\textit{k} \gets \textit{k} + 1$
+%                \EndDefault                
+%              \EndSwitch
+%              \State $\textit{j} \gets \textit{j} + 1$
+%            \EndCase
+%          \EndSwitch
+%        \EndIf  
+%        \State $\textit{i} \gets \textit{i} + 1$
+%      \EndFor
+%      \Return $\textit{result}$
+%    \EndFunction
+%  \end{algorithmic}
+%\end{algorithm}
+
+\newgeometry{top=1mm, bottom=1mm}
+
+\begin{algorithm}
+  \caption{Internal Node Alignment}\label{deriveAlignment}
+  \begin{algorithmic}[1]      
+    \Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
+      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
+      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
+      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
+      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
+      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
+      \For{$\textit{i} < \textit{len}$}
+        \If    {$\textit{j} \geq \textit{pcLen} \land \textit{k} \geq \textit{ccLen}$}
+          \State $\textit{result}_i \gets \textit{del}$
+        \ElsIf {$\textit{k} \geq \textit{ccLen}$}
+          \Switch{$\textit{pAlignment}_i$}
+            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+              \State $\textit{result}_i \gets \textit{del}$
+            \EndCase
+            \Default{}
+              \State $\textit{result}_i \gets \textit{del}$
+              \State $\textit{j} \gets \textit{j} + 1$
+            \EndDefault
+          \EndSwitch
         \Else
           \Switch{$\textit{pAlignment}_i$}
             \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
@@ -521,13 +575,12 @@ Here we describe in the most general mathematical detail the nature of dynamic h
                 \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
                   \State $\textit{result}_i \gets \textit{del}$
                 \EndCase
-                \Case{$\textbf{INSER1T} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-                  \If {y = \Call{getMedian}{$\textit{cContext}_k$}}
-                    \State $\textit{result}_i \gets \textit{cContext}_k$
-                    \State $\textit{k} \gets \textit{k} + 1$
-                  \Else
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+                  \If {$\textit{isLeaf} \land y \neq \;$\Call{getMedian}{$\textit{cContext}_k$}}
                     \State $\textit{result}_i \gets \textit{del}$
-                  
+                  \Else
+                    \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
+                    \State $\textit{k} \gets \textit{k} + 1$
                   \EndIf
                 \EndCase
                 \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
@@ -542,10 +595,18 @@ Here we describe in the most general mathematical detail the nature of dynamic h
                 \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
                   \State $\textit{result}_i \gets \textit{del}$
                 \EndCase
-                \Default{}
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
                   \State $\textit{result}_i \gets \textit{cContext}_k$
                   \State $\textit{k} \gets \textit{k} + 1$
-                \EndDefault                
+                \EndCase
+                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+                  \If {$\textit{isLeaf}$}
+                    \State $\textit{result}_i \gets \textit{pContext}_k$
+                  \Else
+                    \State $\textit{result}_i \gets \textit{pContext}_j$
+                  \EndIf
+                    \State $\textit{k} \gets \textit{k} + 1$
+                \EndCase
               \EndSwitch
               \State $\textit{j} \gets \textit{j} + 1$
             \EndCase
@@ -558,10 +619,55 @@ Here we describe in the most general mathematical detail the nature of dynamic h
   \end{algorithmic}
 \end{algorithm}
 
+\restoregeometry
 
 \section{Conclusion and Empirical Examples}
 \textbf{TODO}
 I hope that we can provide data set examples describing how the algorithm runs faster.
+
+We ran the implied alignment algorithm described in this paper on fungi and metazoa biological data sets to show the runtime performance of the preorder traversal. 
+Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment.
+The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
+The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
+The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
+
+Additionally, a pathological data-set was constructed to exemplify the worst case performance of the implied alignment algorithm.
+The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
+This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different character.
+The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
+The runtime scaling of this data set was run under two different metrics $\sigma_1$ \& $\sigma_2$.
+The former would prefer substitution events over insertion or deletion events and would scale well.
+The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
+
+\begin{table}[!hbt]
+\begin{center}
+\begin{tabular}{c|ccccc}
+$\sigma_1$ & A & C & G & T & -- \\ \hline 
+        A  & 0 & 1 & 1 & 1 & 2  \\
+        C  & 1 & 0 & 1 & 1 & 2  \\
+        G  & 1 & 1 & 0 & 1 & 2  \\
+        T  & 1 & 1 & 1 & 0 & 2  \\
+        -- & 2 & 2 & 2 & 2 & 0
+\end{tabular}
+\caption{Metric costs $\sigma_1$, prefer Align}
+\label{tab1}
+\end{center}
+\end{table}
+
+\begin{table}[!hbt]
+\begin{center}
+\begin{tabular}{c|ccccc}
+$\sigma_2$ & A & C & G & T & -- \\ \hline 
+        A  & 0 & 3 & 3 & 3 & 1  \\
+        C  & 3 & 0 & 3 & 3 & 1  \\
+        G  & 3 & 3 & 0 & 3 & 1  \\
+        T  & 3 & 3 & 3 & 0 & 1  \\
+        -- & 1 & 1 & 1 & 1 & 0
+\end{tabular}
+\caption{Metric costs $\sigma_2$, prefer Insert/Delete}
+\label{tab1}
+\end{center}
+\end{table}
 
 
 \section{Why the algorithm is named Implied Alignment}
