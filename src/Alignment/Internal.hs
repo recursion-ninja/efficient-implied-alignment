@@ -29,7 +29,7 @@ import qualified Data.List.NonEmpty   as NE
 import           Data.SymbolString
 import           Data.Vector.NonEmpty hiding (reverse)
 
---import Debug.Trace
+import Debug.Trace
 
 
 -- |
@@ -79,7 +79,7 @@ preorderRootLogic =
 {-# INLINEABLE preorderLeafLogic #-}
 preorderLeafLogic
   :: FinalizedNode                          -- ^ Parent decoration
-  -> Either PreliminaryNode PreliminaryNode  -- ^ Current decoration, whether it is Left or Right child of parent.
+  -> Either PreliminaryNode PreliminaryNode -- ^ Current decoration, whether it is Left or Right child of parent.
   -> FinalizedNode                          -- ^ Updated decoration
 preorderLeafLogic parent current =
     ( FinalizedNode
@@ -98,6 +98,7 @@ preorderLeafLogic parent current =
     r = reverseContext
 
     derivedStringAlignment = deriveLeafAlignment a p c
+--    derivedStringAlignment = deriveAlignment a p c
 
 
 -- |
@@ -117,13 +118,14 @@ preorderInternalLogic parent current =
     ) $ either id id current
   where
     derivedStringAlignment = deriveAlignment (parent ^. alignedString) p c
+--    derivedStringAlignment = deriveLeafAlignment (parent ^. alignedString) p c
 
     (c, p) = case current of
                Left  x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
 
 
--- TODO: Make this Delete gap gap, don't assum alphabet of size 5
+-- TODO: Make this Delete gap gap, don't assume alphabet of size 5
 {-# INLINEABLE del #-}
 del :: SymbolContext
 del = let x = bit 4 in Delete x x
@@ -176,6 +178,7 @@ deriveAlignment pAlignment pContext cContext = alignment
                            , "Parent Context:   " <> show pContext
                            , "Child  Context:   " <> show cContext
                            ]
+
     f z@(acc, [], y:ys) k e =
         case e of
           Delete {} -> (del : acc, [], y:ys)
@@ -192,24 +195,22 @@ deriveAlignment pAlignment pContext cContext = alignment
                                 , renderResult z
                                 ]
 
-    f (_, _:_, []) _ _ = error "MAD!"
+    f z@(_, _:_, []) _ _ = error $ "MAD!\n" <> renderResult z
 
     f (acc, x:xs, y:ys) _ e =
         case e of
-          Delete {}  ->
-            case y of
-              Delete {} -> (del : acc, x:xs,  y:ys)
-              _         -> (del : acc, x:xs,  y:ys)
+          Delete {} -> (del : acc, x:xs, y:ys)
           Insert {} ->
               case y of
-                Delete {} -> (                 del : acc, x:xs, ys)
-                Insert {} -> (deletionToInserion x : acc,   xs, ys)
-                Align  {} -> (                   x : acc,   xs, ys)
+                Delete {} -> (del : acc, x:xs, ys)
+                Insert {} -> (deletionToInserion x : acc,   xs, ys) --
+                Align  {} -> (  x : acc,   xs, ys)
           Align  {} ->
               case y of
                 Delete {} -> (del : acc, x:xs, ys)
                 Insert {} -> (  x : acc,   xs, ys)
-                Align  {} -> (  y : acc,   xs, ys)
+--                Align  {} -> (  x : acc,   xs, ys) --
+                Align  {} -> (  y : acc,   xs, ys) --
 
 
 {-# INLINEABLE deriveLeafAlignment #-}
@@ -266,8 +267,8 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
           Insert {} -> (del : acc, [],   ys)
           Align  {} ->
               case y of
-                Insert {} -> (del : acc, [], ys)
                 Delete {} -> (del : acc, [], ys)
+                Insert {} -> (del : acc, [], ys)
                 _         -> error $ "SAD!\n" <> renderResult z
 
     f z@(_, _:_, []) _ _ = error $ "MAD!\n" <> renderResult z
@@ -277,17 +278,14 @@ deriveLeafAlignment pAlignment pContext cContext = alignment
           Delete {} -> (del : acc, x:xs, y:ys)
           Insert {} ->
               case y of
-                Delete {} -> (del : acc,  x:xs, ys)
-                Insert _ v  ->
-                  if v == symbolAlignmentMedian x
-                  then (  x : acc,    xs, ys)
-                  else (del : acc,  x:xs, ys)
-                Align  {} -> (x : acc,    xs, ys)
+                Delete {} -> (del : acc, x:xs, ys)
+                Insert {} -> (  x : acc,   xs, ys) --
+                Align  {} -> (  x : acc,   xs, ys)
           Align {} ->
               case y of
                 Delete {} -> (del : acc, x:xs, ys)
                 Insert {} -> (  x : acc,   xs, ys)
-                Align  {} -> (  x : acc,   xs, ys)
+                Align  {} -> (  x : acc,   xs, ys) --
 
 
 {-# INLINEABLE countAlignInsert #-}
@@ -309,5 +307,4 @@ setInitialAlignment = fmap deletionToInserion
 deletionToInserion :: SymbolContext -> SymbolContext
 deletionToInserion e@Delete {} = reverseContext e
 deletionToInserion e           = e
-
 

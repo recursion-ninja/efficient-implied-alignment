@@ -19,6 +19,7 @@ module Data.SymbolString
   , (/\)
   , encodeAmbiguityGroup
   , decodeAmbiguityGroup
+  , filterGaps
   , reverseContext
   , symbolAlignmentMedian
   , renderAligns
@@ -38,6 +39,7 @@ import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
 import           Data.Word
 import           GHC.Generics
+import           Prelude hiding (filter)
 
 
 type SymbolString = Vector SymbolContext
@@ -46,7 +48,7 @@ type SymbolString = Vector SymbolContext
 data  SymbolContext
     = Align  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
     | Delete {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
-    | Insert {-# UNPACK #-} !SymbolAmbiguityGroup                                     {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Insert {-# UNPACK #-} !SymbolAmbiguityGroup                                      {-# UNPACK #-} !SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 
@@ -159,6 +161,14 @@ reverseContext :: SymbolContext -> SymbolContext
 reverseContext (Align  med x y) = Align  med y x
 reverseContext (Delete med x  ) = Insert med   x
 reverseContext (Insert med   y) = Delete med y
+
+
+filterGaps :: SymbolString -> SymbolString
+filterGaps = filter f 
+  where
+    f Align  {} = True
+    f Delete {} = False
+    f Insert {} = False
 
 
 -- |

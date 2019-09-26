@@ -3,15 +3,16 @@
 module Data.BTree where
 
 import Control.Arrow             ((&&&))
+import Control.Applicative
 import Control.DeepSeq
 import Data.Bifunctor
 import Data.Bifoldable
 import Data.Bitraversable
 import Data.Foldable
 import Data.Key
-import Data.List.NonEmpty hiding (length, takeWhile)
+import Data.List.NonEmpty hiding (length, takeWhile, zipWith)
 import Data.Semigroup
-import Prelude            hiding (head)
+import Prelude            hiding (head, zipWith)
 
 
 
@@ -36,8 +37,8 @@ instance Bifunctor BTree where
     bimap f g (Internal x lhs rhs) = Internal (f <$> x) (bimap f g lhs) (bimap f g rhs)
     bimap _ g (Leaf     x        ) = Leaf $ g <$> x
 
-    first  f (Internal x lhs rhs) = Internal (f <$> x) (first f lhs) (first f rhs)
-    first  _ (Leaf     x        ) = Leaf x
+    first f   (Internal x lhs rhs) = Internal (f <$> x) (first f lhs) (first f rhs)
+    first _   (Leaf     x        ) = Leaf x
 
     second = fmap 
 
@@ -86,6 +87,26 @@ instance Traversable (BTree b) where
 
     traverse f (Leaf (NodeDatum i x)) = Leaf . NodeDatum i <$> f x
     traverse f (Internal n lhs rhs)   = Internal n <$> traverse f lhs <*> traverse f rhs
+
+
+instance Applicative NodeDatum where
+
+    (<*>) (NodeDatum _ f) (NodeDatum s x) = NodeDatum s $ f x
+
+    pure x = NodeDatum
+      { identifier = ""
+      , nodeDatum  = x
+      }
+
+    liftA2 f (NodeDatum _ x) (NodeDatum s y) = NodeDatum s $ f x y
+
+
+
+treeZipWith :: (b -> a) -> (a -> a -> c) -> BTree b a -> BTree b a -> BTree c c
+treeZipWith f g (Internal x lhs1 rhs1) (Internal y lhs2 rhs2) = Internal (liftA2 g (f <$> x) (f <$> y)) (treeZipWith f g lhs1 rhs1) $ treeZipWith f g lhs2 rhs2
+treeZipWith f g (Internal x    _    _) (Leaf     y          ) = Leaf $ liftA2 g (f <$> x) y
+treeZipWith f g (Leaf     x          ) (Internal y    _    _) = Leaf . liftA2 g x $ f <$> y
+treeZipWith _ g (Leaf     x          ) (Leaf     y          ) = Leaf $ liftA2 g x y
 
 
 getNodeDatum :: BTree a a -> a

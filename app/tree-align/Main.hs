@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies, NoMonoLocalBinds #-}
 
 module Main where
 
@@ -18,6 +18,7 @@ import Data.SymbolString
 import File.Input
 import File.Output
 import InputParser
+import Prelude hiding (zipWith)
 import System.IO
 import System.Timing
 
@@ -43,6 +44,7 @@ runInput = do
 --            prelimRenderer x _ = mconcat [ padR maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
             leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
             nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+--            nodeDiffer     x _ = unwords [ padR maxLabelLen     "?:" , {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet x ]
 
             postorder'    = postorderTraverse stringAligner
             preorder'     = preorderTraverse
@@ -75,6 +77,21 @@ runInput = do
                   shownPreCompute = show $ precomputeTime fileInput
                   shownPostorder  = show postorderTime
                   shownPreorder   = show preorderTime
+{-
+                  getStr1         = (^. preliminaryString)
+                  getStr2         = (^.     alignedString)
+                  strZip      x y = zipWith f x $ filterGaps y
+                  diffTree        = treeZipWith id strZip
+                                      (bimap getStr1 getStr1 postorderResult)
+                                      (bimap getStr2 getStr2  preorderResult)
+                  f x y = let x'  = symbolAlignmentMedian x
+                              y'  = symbolAlignmentMedian y
+                              gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
+                          in  if x' == y'
+                              then Align x'  x' x'
+                              else Align gap x' y'
+-}
+
                   dPad = maximum $ length <$>
                       [ shownParseTime
                       , shownUnifyTime
@@ -88,6 +105,7 @@ runInput = do
                 , ""
 --                , renderPhylogeny inputRenderer postorderResult
                 , renderAlignment nodeRenderer leafRenderer preorderResult
+--                , renderAlignment nodeDiffer nodeDiffer diffTree
                 , ""
                 , "Alignment Cost: " <> show alignmentCost
                 , ""

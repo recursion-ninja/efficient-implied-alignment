@@ -6,6 +6,7 @@ module Data.Vector.NonEmpty
   , fromNonEmpty
   , singleton
   -- * Useful stuff
+  , filter
   , reverse
   , uncons
   , unfoldr
@@ -28,7 +29,7 @@ import           Data.Semigroup.Traversable
 import qualified Data.Vector                as V
 import           Data.Vector.Instances             ()
 import           Test.QuickCheck
-import           Prelude                    hiding (reverse)
+import           Prelude                    hiding (filter, reverse)
 
 -- |
 -- A sequence of values that are repeated multiple times in contiguous blocks.
@@ -120,6 +121,13 @@ instance Show a => Show (Vector a) where
 {-# INLINE singleton #-}
 singleton :: a -> Vector a
 singleton = NEV . V.singleton
+
+
+-- |
+-- /O(n)/ Drop elements that do not satisfy the predicate
+{-# INLINE filter #-}
+filter :: (a -> Bool) -> Vector a -> Vector a
+filter f =  NEV . V.filter f . unwrap
 
 
 -- |

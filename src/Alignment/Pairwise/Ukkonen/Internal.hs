@@ -33,9 +33,9 @@ import           Data.Maybe               (isJust)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.Instances    ()
-import           Data.Vector.NonEmpty
+import           Data.Vector.NonEmpty hiding (filter)
 import           Numeric.Extended.Natural
-import           Prelude           hiding (lookup)
+import           Prelude              hiding (lookup)
 
 
 -- |

@@ -26,9 +26,9 @@ import Data.Foldable
 import Data.List.NonEmpty          (NonEmpty(..))
 --import Data.MonoTraversable
 import Data.Semigroup
-import Data.SymbolString
+import Data.SymbolString    hiding (filterGaps)
 import Data.TCM
-import Data.Vector.NonEmpty hiding (reverse)
+import Data.Vector.NonEmpty hiding (filter, reverse)
 import Test.NucleotideSequence
 import Test.Tasty
 import Test.Tasty.QuickCheck
