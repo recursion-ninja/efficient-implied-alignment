@@ -1,5 +1,7 @@
 \documentclass[11pt]{article}
+\usepackage{csvsimple}
 \usepackage{setspace}
+\usepackage{tabularx}
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{subfigure}
@@ -51,7 +53,7 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n * k^{2-c})$} time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n * k * c)$} time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -71,8 +73,8 @@ The more similar the strings, the better the algorithm performs.
 While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
 
-\textbf{TODO}
-Here I can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Note the interplay between these, and any invariants that apply. Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component.
+\textbf{NOTE}
+We can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component. The latter might be sufficiently stated in the previous paragraph.
 
 \section{Definition of the hueristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
@@ -238,7 +240,7 @@ After performing the postorder traversal, each internal node contains the alignm
 Consequently, the root node now contains the entire alignment context information of the leaf set of strings.
 In the next step, we will consume this preliminary alignment context information on each node to efficiently perform an alignment on the strings.
 
-Because the postorder traversal can be performed using any valid hueristic alignment function $\otimes$, the complexity of the postorder traversal is dependant on the complexity of the hueristic alignment function used. Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$. Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$. If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log \left( k \right) \right)$ average case time and space.
+Because the postorder traversal can be performed using any valid hueristic alignment function $\otimes$, the complexity of the postorder traversal is dependant on the complexity of the hueristic alignment function used. Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$. Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$. If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log  k \right)$ average case time and space.
 
 \section{Psuedocode of post-order traversal}
 
@@ -321,23 +323,28 @@ If we are \textit{not} deriving the alignment for a leaf node, then we consume b
 
 \end{itemize}
 
-\textbf{TODO} add analysis and summary here.
-The major difference is the additional stored information allows us to decorate the final assignments without performing another string alignment on each edge.
-This allows the pre-order assignments to be assigned in $\mathcal{O}(n*k)$ instead of $\mathcal{O}(n*k^2)$ time.
-Note that this can be performed simultaneously with an implied alignment pass described in the next section.
+The major difference between the implied alignment algorithm presented here, and the algorithm of previous work, is that the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n * k * c)$ instead of $\mathcal{O}(n^2*k^2)$ time. 
+The aforementioned $n^2$ component occured in previous implementations using a ``back-propogation'' technique, where at each preorder step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
+Additionally, the $k^2$ component occured in previous implementations using a Needleman-Wuncsh string alignment between the parental node and the current node in each preorder step.
+By decorating all the requisite information on the nodes in the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
 
-\section{Description of pre-order traversal for implied alignments}
-\textbf{TODO}
-Here I will describe in the pre-order traversal for implied alignments. I will again note the isomorphism between binary trees and the associative ordering of a binary operation. 
-We will use the preliminary alignment contexts from the post order traversal to assign an implied alignment to each node. 
+Let $c = \frac{m}{k}$, where $k$ is the length of the longest input string, and $m$ is the length of the root node's preliminary string decoration.
+In the best case that the ``perfect alignment'' is derived, where each element of all the input strings can be homologously aligned with one of the elements of the longest input string, then $c = 1$.
+In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be homologously aligned with any of the elements of the longest input string, and all input strings are of equal length, then $c = n$.
+
+In the preorder traversal algorithm presented above we generate an implied alignment in $\mathcal{O}(n * k * c)$ time.
+We must preform a the ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
+The ``sliding zip'' accounts for the $k * c$ factor.
+
+The best case runtime will be when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
+In the best case $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
+Hence the best case runtime of the implied alignment algorithm is $\mathcal{O}(n*k)$ when the input strings are highly correlated and $c = 1$.
+
+The worst case runtime will be when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximim number of elements.
+In the worst case $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$ times the number of input strings $n$.
+Hence the worst case runtime of the implied alignment algorithm is $\mathcal{O}(n^2*k)$ when the input strings are independent of each other and $c = n$.
+
 I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
-
-The major difference is the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n*k^{2-c})$ instead of $\mathcal{O}(n^2*k^2)$ time. 
-The aforementioned $n^2$ component occured in previous implementations using a ``back-propogation'' technique, where at each pre-order step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
-Additionally, the aforementioned $k^2$ component occured in previous implementations using a Needleman-Wunsh string alignment between the parental node and the current node in each preorder step.
-By performing the decorating all the requisite information on the nodes in the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
-
-Here we describe in the most general mathematical detail the nature of dynamic homologies and how the monoid structure can be used to reconstruct the intermediate alignments on internal edges.
 
 
 \section{Pseudocode of pre-order traversal}
@@ -399,151 +406,6 @@ Here we describe in the most general mathematical detail the nature of dynamic h
   \end{algorithmic}
 \end{algorithm}
 
-
-%\begin{algorithm}
-%  \caption{Internal Node Alignment}\label{alignInternal}
-%  \begin{algorithmic}[1]      
-%    \Function{alignInternal}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-%      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-%      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-%      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-%      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-%      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-%      \For{$\textit{i} < \textit{len}$}
-%        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
-%          \State $\textit{result}_i \gets \textit{del}$
-%        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
-%          \Switch{$\textit{pAlignment}_i$}
-%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%            \Default{}
-%              \State $\textit{result}_i \gets \textit{del}$
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndDefault
-%          \EndSwitch
-%        \Else
-%          \Switch{$\textit{pAlignment}_i$}
-%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-%              \Switch{$\textit{pContext}_j$}
-%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%                  \State $\textit{result}_i \gets \textit{del}$
-%                \EndCase
-%                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-%                  \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndCase
-%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-%                  \State $\textit{result}_i \gets \textit{cContext}_k$
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndCase
-%              \EndSwitch
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndCase
-%            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-%              \Switch{$\textit{pContext}_j$}
-%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%                  \State $\textit{result}_i \gets \textit{del}$
-%                \EndCase
-%                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-%                  \State $\textit{result}_i \gets \textit{cContext}_k$
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndCase
-%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-%                  \State $\textit{result}_i \gets \textit{pContext}_j$
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndCase
-%              \EndSwitch
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndCase
-%          \EndSwitch
-%        \EndIf  
-%        \State $\textit{i} \gets \textit{i} + 1$
-%      \EndFor
-%      \Return $\textit{result}$
-%    \EndFunction
-%  \end{algorithmic}
-%\end{algorithm}
-
-%\begin{algorithm}
-%  \caption{Leaf Node Alignment}\label{alignLeaf}
-%  \begin{algorithmic}[1]
-%    \Function{alignLeaf}{$\textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-%      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-%      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-%      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-%      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-%      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-%      \For{$\textit{i} < \textit{len}$}
-%        \If    {$\textit{i} \geq \textit{ccLen} \land \textit{i} \geq \textit{pcLen}$}
-%          \Switch{$\textit{pAlignment}_i$}
-%            \Case{$\textbf{DELETE} \;\;     \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%            \Case{$\textbf{INSERT} \;\;\;\, \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%          \EndSwitch
-%        \ElsIf {$\textit{i} \geq \textit{ccLen}$}
-%          \Switch{$\textit{pAlignment}_i$}
-%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%            \Default{}
-%              \State $\textit{result}_i \gets \textit{del}$
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndDefault
-%          \EndSwitch
-          
-%        \Else
-%          \Switch{$\textit{pAlignment}_i$}
-%            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%              \State $\textit{result}_i \gets \textit{del}$
-%            \EndCase
-%            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-%              \Switch{$\textit{pContext}_j$}
-%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%                  \State $\textit{result}_i \gets \textit{del}$
-%                \EndCase
-%                \Case{$\textbf{INSER1T} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-%                  \If {y = \Call{getMedian}{$\textit{cContext}_k$}}
-%                    \State $\textit{result}_i \gets \textit{cContext}_k$
-%                    \State $\textit{k} \gets \textit{k} + 1$
-%                  \Else
-%                    \State $\textit{result}_i \gets \textit{del}$
-                  
-%                  \EndIf
-%                \EndCase
-%                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-%                  \State $\textit{result}_i \gets \textit{cContext}_k$
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndCase
-%              \EndSwitch
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndCase
-%            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-%              \Switch{$\textit{pContext}_j$}
-%                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-%                  \State $\textit{result}_i \gets \textit{del}$
-%                \EndCase
-%                \Default{}
-%                  \State $\textit{result}_i \gets \textit{cContext}_k$
-%                  \State $\textit{k} \gets \textit{k} + 1$
-%                \EndDefault                
-%              \EndSwitch
-%              \State $\textit{j} \gets \textit{j} + 1$
-%            \EndCase
-%          \EndSwitch
-%        \EndIf  
-%        \State $\textit{i} \gets \textit{i} + 1$
-%      \EndFor
-%      \Return $\textit{result}$
-%    \EndFunction
-%  \end{algorithmic}
-%\end{algorithm}
 
 \newgeometry{top=1mm, bottom=1mm}
 
@@ -626,8 +488,6 @@ Here we describe in the most general mathematical detail the nature of dynamic h
 \restoregeometry
 
 \section{Conclusion and Empirical Examples}
-\textbf{TODO}
-I hope that we can provide data set examples describing how the algorithm runs faster.
 
 We ran the implied alignment algorithm described in this paper on fungi and metazoa biological data sets to show the runtime performance of the preorder traversal. 
 Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment.
@@ -635,7 +495,7 @@ The full leaf set of the tree was repeatedly pruned in half to produce a data se
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
 
-Additionally, a pathological data-set was constructed to exemplify the worst case performance of the implied alignment algorithm.
+Additionally, a pathological data-set was constructed to exemplify the best and worst case performance of the implied alignment algorithm.
 The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
 This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different character.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
@@ -643,8 +503,15 @@ The runtime scaling of this data set was run under two different metrics $\sigma
 The former would prefer substitution events over insertion or deletion events and would scale well.
 The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
 
+The number of input strings, $n$, is presented in the left column of each results table.
+The maximum string length, $k$, is presented in the header row of each results table.
+The data points represent the runtime for in milliseconds for the given $n$ \& $k$ value.
+
 \begin{table}[!hbt]
-\begin{center}
+\caption{Metric costs of $\sigma_1$ \& $\sigma_2$}
+\label{Tab:Metrics}
+\begin{minipage}{0.5\textwidth}
+\centering
 \begin{tabular}{c|ccccc}
 $\sigma_1$ & A & C & G & T & -- \\ \hline 
         A  & 0 & 1 & 1 & 1 & 2  \\
@@ -653,13 +520,13 @@ $\sigma_1$ & A & C & G & T & -- \\ \hline
         T  & 1 & 1 & 1 & 0 & 2  \\
         -- & 2 & 2 & 2 & 2 & 0
 \end{tabular}
-\caption{Metric costs $\sigma_1$, prefer Align}
-\label{tab1}
-\end{center}
-\end{table}
-
-\begin{table}[!hbt]
-\begin{center}
+\caption{Prefer Align}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\textwidth}
+\centering
+%\begin{table}[!hbt]
+%\begin{center}
 \begin{tabular}{c|ccccc}
 $\sigma_2$ & A & C & G & T & -- \\ \hline 
         A  & 0 & 3 & 3 & 3 & 1  \\
@@ -668,13 +535,160 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
         T  & 3 & 3 & 3 & 0 & 1  \\
         -- & 1 & 1 & 1 & 1 & 0
 \end{tabular}
-\caption{Metric costs $\sigma_2$, prefer Insert/Delete}
-\label{tab1}
-\end{center}
+\caption{Prefer Insert/Delete}
+\end{minipage}
 \end{table}
 
+%\begin{table}
+%\scriptsize
+%\begin{minipage}{0.5\textwidth}
+%\centering
+%\caption{Fungi preorder results}
+%\begin{tabular}{l|l|l}%
+%    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
+%    \csvreader[head to column names]{fungi-11.preorder.csv}{}% use head of csv as column names
+%    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
+%\end{tabular}
+%\end{minipage}
+%\hfill
+%\begin{minipage}{0.5\textwidth}
+%\centering
+%\caption{Metazoa preorder results}
+%\begin{tabular}{l|l|l}%
+%    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
+%    \csvreader[head to column names]{metazoa-11.preorder.csv}{}% use head of csv as column names
+%    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
+%\end{tabular}
+%\end{minipage}
+%\end{table}
+
+%\begin{table}
+%\scriptsize
+%\begin{minipage}{0.5\textwidth}
+%\centering
+%\caption{Best case preorder results}
+%\begin{tabular}{l|l|l}%
+%    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
+%    \csvreader[head to column names]{pathological-12.preorder.csv}{}% use head of csv as column names
+%    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
+%\end{tabular}
+%\end{minipage}
+%\hfill
+%\begin{minipage}{0.5\textwidth}
+%\centering
+%\caption{Worst case preorder results}
+%\begin{tabular}{l|l|l}%
+%    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
+%    \csvreader[head to column names]{pathological-31.preorder.csv}{}% use head of csv as column names
+%    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
+%\end{tabular}
+%\end{minipage}
+%\end{table}
+
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\begin{table}
+\scriptsize
+\caption{Fungi preorder results (milliseconds)}
+\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
+                      25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
+                      50  &  1385 &   2214 &   3497 &   5696 &   23837 &   16300 \\
+                     100  &  4133 &   5301 &   9498 &  14467 &   24514 &   34216 \\
+                     200  &  7238 &  11577 &  18303 &  23809 &   57262 &   78167 \\
+                     400  & 12092 &  24190 &  35627 &  66681 &  140659 &  214599 \\
+                     800  & 36959 &  52147 & 101514 & 217350 &  333379 &  709528 \\
+                    1553  & 86631 & 137355 & 310405 & 487501 & 1462000 & 1743000
+\label{Tab:Fungi}
+\end{tabular}
+
+%\end{table}
+%\begin{table}
+\scriptsize
+\caption{Metazoa preorder results (milliseconds)}
+\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
+                      25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
+                      50  &    979 &   1543 &   3074 &    8333 &   15272 &   27715 \\
+                     100  &   1824 &   3668 &   7526 &   17478 &   33379 &   64810 \\
+                     200  &   3874 &  12721 &  29071 &   56608 &   97899 &  187654 \\
+                     400  &  14621 &  29731 &  63591 &  162526 &  347680 &  501298 \\
+                     800  &  49024 &  88415 & 225158 &  503264 &  787639 & 1670000 \\
+                    1766  & 194138 & 365731 & 726205 & 1533000 & 2889000 & 6925000
+\label{Tab:Metazoa}
+\end{tabular}
+%\end{table}
+%\begin{table}
+\scriptsize
+\caption{Best case preorder results (milliseconds)}
+\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+                       4  &     21 &    118 &     46 &     118 &     270 \\
+                       8  &     50 &     49 &    103 &     207 &     382 \\
+                      16  &     54 &    130 &    203 &     400 &     887 \\
+                      32  &    138 &    233 &    446 &     925 &    1786 \\
+                      64  &    249 &    466 &    881 &    1769 &    3584
+\label{Tab:Best}
+\end{tabular}
+%\end{table}
+%\begin{table}
+\scriptsize
+\caption{Worst case preorder results (milliseconds)}
+\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+                       4  &    127 &     60 &    165 &     244 &     604 \\
+                       8  &    336 &    240 &   1223 &    1002 &    2167 \\
+                      16  &    994 &    997 &   1937 &    3896 &    8369 \\
+                      32  &   1726 &   3938 &   7070 &   15197 &   33148 \\
+                      64  &   6743 &  13620 &  28416 &   63780 &  145712
+\label{Tab:Worst}
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{minipage}{0.49\textwidth}
+\centering
+\caption{Fungi preorder runtime}
+\label{Fig:Fungi}
+\includegraphics[width=1.05\textwidth]{fungi-preorder.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\textwidth}
+\centering
+\caption{Metazoa preorder runtime}
+\label{Fig:Metazoa}
+\includegraphics[width=1.05\textwidth]{metazoa-preorder.png}
+\end{minipage}
+
+\begin{minipage}{0.49\textwidth}
+\centering
+\caption{Best case preorder runtime}
+\label{Fig:Best}
+\includegraphics[width=1.05\textwidth]{pathological-12-preorder.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\textwidth}
+\centering
+\caption{Worst case preorder runtime}
+\label{Fig:Worst}
+\includegraphics[width=1.05\textwidth]{pathological-31-preorder.png}
+\end{minipage}
+\end{figure}
+
+The fungi and metazoa biological data sets show a near linear runtime with respect to the number of input strings and linear runtime with respect to string length. 
+These biological data sets show that the ``real world'' use case performs close to the best case runtime.
+See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
+
+The pathological data sets shows the stark runtime difference bewteen the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes. See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
+
+\textbf{NOTE}
+Expand on the results. 
+Consider adding the average $c$ value of each data set. 
+Consider calculating the best fit line for an exponential function to get the average exponent of $n$.
 
 \section{Why the algorithm is named Implied Alignment}
+
 The algorithm described by Wheeler is was named implied alignment because it allows us to derive an alignment that is implied by the binary tree on a given leaf-set. 
 However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree. 
 In short, it is the lack of associativity of the heuristic function $\oplus$.
