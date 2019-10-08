@@ -500,8 +500,8 @@ The pathological data-set consisted of balanced binary trees which repeatedly do
 This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different character.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
 The runtime scaling of this data set was run under two different metrics $\sigma_1$ \& $\sigma_2$.
-The former would prefer substitution events over insertion or deletion events and would scale well.
-The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
+The former would prefer substitution events over insertion or deletion events and would scale well, generating the ``perfect alignment'' and exemplifying the best case performance of the algorithm.
+The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment, demonstrating the worst case performance.
 
 The number of input strings, $n$, is presented in the left column of each results table.
 The maximum string length, $k$, is presented in the header row of each results table.
