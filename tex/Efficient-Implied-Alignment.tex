@@ -53,7 +53,7 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n * k * c)$} time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}. For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\mathcal{O}(n * k)$}. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -499,6 +499,7 @@ Additionally, a pathological data-set was constructed to illustrate the best and
 The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
 This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
+
 The runtime scaling of this data set was examined under two different metrics $\sigma_1$ \& $\sigma_2$.
 The former would prefer substitution events over insertion or deletion events and would scale well.
 The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
@@ -723,13 +724,16 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
 
 
+
 \section{Future work}
-If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. 
+If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
 Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
-This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''. 
+We would like to thank Eric Ford, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
+ and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
+
 \newpage
 \bibliography{big-refs-3}
 
