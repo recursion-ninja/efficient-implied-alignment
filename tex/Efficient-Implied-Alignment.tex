@@ -53,7 +53,7 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a post order traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n * k * c)$} time by exploiting the monoid structure of a dynamic homology. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}. For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\mathcal{O}(n * k)$}. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -332,7 +332,7 @@ Let $c = \frac{m}{k}$, where $k$ is the length of the longest input string, and 
 In the best case that the ``perfect alignment'' is derived, where each element of all the input strings can be homologously aligned with one of the elements of the longest input string, then $c = 1$.
 In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be homologously aligned with any of the elements of the longest input string, and all input strings are of equal length, then $c = n$.
 
-In the preorder traversal algorithm presented above we generate an implied alignment in $\mathcal{O}(n * k * c)$ time.
+In the preorder traversal algorithm presented above we generate an implied alignment in $\Theta(n * k * c)$ time.
 We must preform a the ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
 The ``sliding zip'' accounts for the $k * c$ factor.
 
@@ -680,7 +680,7 @@ The fungi and metazoa biological data sets show a near linear runtime with respe
 These biological data sets show that the ``real world'' use case performs close to the best case runtime.
 See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
 
-The pathological data sets shows the stark runtime difference bewteen the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes. See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
+The pathological data sets shows the stark runtime difference between the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes. See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
 
 \textbf{NOTE}
 Expand on the results. 
@@ -717,18 +717,21 @@ Traditionally strings are aligned first, and that alignment is held constant as 
 A more modern method of dynamic homology has been decribed by \citep{Wheeler1996}, in which string are not pre-aligned, but rather the strings are aligned on the current tree under consideration in the phylogentic search via implied alignment.
 How the a string alignment is used in a phylogenetic search leads to an important distiction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the inital alignment.
-When using implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
+When using implied alignment to search on a dynamic homology, the alignments depend on the topology.
 
+\textbf{NOTE}
 See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequece aligment algorithm.
 
 
 \section{Future work}
-If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation (citation here) method described by Ward Wheeler could be dramatically improved upon. 
+If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
 Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
-This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''. 
+We would like to thank Eric Ford, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
+ and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
+
 \newpage
 \bibliography{big-refs-3}
 
