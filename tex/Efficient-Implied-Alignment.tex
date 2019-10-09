@@ -53,7 +53,12 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$. This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal. Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time. Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}. For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\mathcal{O}(n * k)$}. This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal.
+Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time.
+Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}.
+For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\mathcal{O}(n * k)$}.
+This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -64,10 +69,12 @@
 Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
 More formal description of the algorithm was presented in \cite{Wheeleretal2006}.
-Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink relationships.  Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.  
+Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink relationships. 
+Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.  
 This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counterexamples.    
 
-In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.  As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
+In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
+As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure, benefit greatly from improvements in the time-complexity of the algorithm.
 The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings. 
@@ -76,7 +83,9 @@ While this algorithm has general use for performing an MSA, it is most particula
 We will provide an example of the IA algorithm's performance on biological data.
 
 \textbf{NOTE}
-We can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic. Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component. The latter might be sufficiently stated in the previous paragraph.
+We can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic.
+Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component.
+The latter might be sufficiently stated in the previous paragraph.
 
 \section{Definition of the heuristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
@@ -93,7 +102,8 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
 Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
-It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context. Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
+It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context.
+Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
 The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. 
 The function $\oplus$ need not be associative.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
@@ -104,16 +114,24 @@ One candidate function fitting the description of $\otimes$ can be defined by ma
 This algorithm is very similar to DO.
 
 First, we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows). 
-We assign the input string based on the data they contain, ensuring commutivity. If this step is not taken, arbitrary biases chosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity. 
-The longer string is tied to the top of the alignment matrix, the shorter string to the left side. If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this insures label invariance). 
+We assign the input string based on the data they contain, ensuring commutivity.
+If this step is not taken, arbitrary biases chosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity.
+The longer string is tied to the top of the alignment matrix, the shorter string to the left side.
+If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this insures label invariance). 
 In the case that the strings are equal, the alignment is trivial.
 
-Next we apply ``wave-front'' update initial phase of the procedure. Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch. 
-However, this traceback differs in one substantial detail. When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either and insertion, deletion, or alignment event, respectively. 
+Next we apply ``wave-front'' update initial phase of the procedure.
+Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch.
+However, this traceback differs in one substantial detail.
+When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either and insertion, deletion, or alignment event, respectively. 
 By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
-The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string. This example function presents the tagging modification as an adaptation of the simple, well-understood Needleman-Wunsch algorithm for clarity. However, this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms. By using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity. By using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
+The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string.
+This example function presents the tagging modification as an adaptation of the simple, well-understood Needleman-Wunsch algorithm for clarity.
+However, this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
+By using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity.
+By using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
 
 It is worth noting that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logarithmic affine gap costs.
 
@@ -240,7 +258,10 @@ After performing the postorder traversal, each internal node contains the alignm
 Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
 In the next step, we will consume this preliminary alignment context to perform efficiently an alignment on the strings.
 
-Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used. Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$. Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$. If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log  k \right)$ average case time and space.
+Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used.
+Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
+Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
+If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log  k \right)$ average case time and space.
 
 \section{Psuedocode of post-order traversal}
 
@@ -323,7 +344,7 @@ If we are \textit{not} deriving the alignment for a leaf node, then we consume b
 
 \end{itemize}
 
-The major difference between the implied alignment algorithm presented here, and the original algorithm, is that the additional stored information allows us to decorate the final assignments in $\mathcal{O}(n * k * c)$ instead of $\mathcal{O}(n^2*k^2)$ time. 
+The major difference between the implied alignment algorithm presented here, and the original algorithm, is that the additional stored information allows us to decorate the final assignments in $\Theta(n * k * c)$ instead of $\mathcal{O}(n^2*k^2)$ time. 
 The aforementioned $n^2$ component occurred in previous implementations using a ``back-propagation'' technique, where at each preorder step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous preorder step.
 Additionally, the $k^2$ component occurred in previous implementations using a Needleman-Wuncsh string alignment between the parental node and the current node in each preorder step.
 By decorating all the requisite information on the nodes in the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
@@ -332,7 +353,7 @@ Let $c = \frac{m}{k}$, where $k$ is the length of the longest input string, and 
 In the best case that the ``perfect alignment'' is derived, where each element of all the input strings can be aligned with one of the elements of the longest input string, then $c = 1$.
 In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $c = n$.
 
-In the preorder traversal algorithm presented above, we generate an implied alignment in $\mathcal{O}(n * k * c)$ time.
+In the preorder traversal algorithm presented above, we generate an implied alignment in $\Theta(n * k * c)$ time.
 We must preform a the ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
 The ``sliding zip'' accounts for the $k * c$ factor.
 
@@ -681,7 +702,8 @@ The fungal and metazoan sequence data sets show a near linear runtime with respe
 These biological data sets show that the ``real world'' use case performs close to the best case runtime.
 See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
 
-The pathological data sets shows the stark runtime difference between the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes. See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
+The pathological data sets shows the stark runtime difference between the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
+See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
 
 \textbf{NOTE}
 Expand on the results. 
@@ -696,7 +718,8 @@ In short, it is the lack of associativity of the heuristic function $\oplus$.
 
 If we are given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
 In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node. 
-The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result. Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results. 
+The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result.
+Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results.
 However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. 
 For example consider such a transposed tree $\mathcal{T'}$:
 
@@ -710,12 +733,13 @@ For example consider such a transposed tree $\mathcal{T'}$:
 \\  &= eval(\mathcal{T})
 \end{align*}
 
-This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$. 
+This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$.
 Clearly, a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set.
 
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
-A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which string are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.  Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
+A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
+Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
 
 How the a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
