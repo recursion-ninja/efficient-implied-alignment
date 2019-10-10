@@ -57,7 +57,7 @@
 This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal.
 Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time.
 Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}.
-For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\mathcal{O}(n * k)$}.
+For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\Omega(n * k)$}.
 This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
@@ -359,7 +359,7 @@ The ``sliding zip'' accounts for the $k * c$ factor.
 
 The best case runtime will be when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
 In the best case, $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
-Hence, the best case runtime of the implied alignment algorithm is $\mathcal{O}(n*k)$ when the input strings are highly correlated and $c = 1$.
+Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $c = 1$.
 
 The worst case runtime will be when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
 In the worst case, $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$ times the number of input strings $n$.
@@ -702,7 +702,7 @@ The fungal and metazoan sequence data sets show a near linear runtime with respe
 These biological data sets show that the ``real world'' use case performs close to the best case runtime.
 See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
 
-The pathological data sets shows the stark runtime difference between the best case $\mathcal{O}(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
+The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
 See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
 
 \textbf{NOTE}
