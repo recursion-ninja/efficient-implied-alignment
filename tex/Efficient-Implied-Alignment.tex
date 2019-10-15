@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage{csvsimple}
+\usepackage{dcolumn}
 \usepackage{setspace}
 \usepackage{tabularx}
 \usepackage{graphicx}
@@ -510,11 +511,14 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 \section{Conclusion and Empirical Examples}
 
+An example Haskell implementation of the implied alignment algorithm described above can be found here: \url{https://github.com/amnh/fastc/}
+
 We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal. 
 Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (ie. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
+Both biological data sets used the discrete metric $\sigma_0$.
 
 Additionally, a pathological data-set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
@@ -525,14 +529,37 @@ The runtime scaling of this data set was examined under two different metrics $\
 The former would prefer substitution events over insertion or deletion events and would scale well.
 The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
 
-The number of input strings, $n$, is presented in the left column of each results table.
-The maximum string length, $k$, is presented in the header row of each results table.
-The data points represent the runtime for in milliseconds for the given $n$ \& $k$ value.
+After running each data set, we took the $log_2$ of both  input dimensions $k$ and $n$ as well as the runtime output in milliseconds.
+From this data we constructed a linear model to calculate the coefficients of each input.
+Note that because the log of the inputs was taken, we would expect a coefficient of $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
+See Table \ref{Tab:Regression}.
+
+The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
+The linear model supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set.
+See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}
+
+The linear model showed that for the biological data sets, the number of input strings $n$ dominated the runtime, not string length $k$. 
+The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear runtime with respect to the number of input strings and linear runtime with respect to string length. 
+The fungal data sets shows that some the ``real world'' use cases can  perform close to the theoretical best case runtime.
+See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
 
 \begin{table}[!hbt]
-\caption{Metric costs of $\sigma_1$ \& $\sigma_2$}
+\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
 \label{Tab:Metrics}
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}{0.3\textwidth}
+	\centering
+	\begin{tabular}{c|ccccc}
+		$\sigma_0$ & A & C & G & T & -- \\ \hline 
+		A  & 0 & 1 & 1 & 1 & 1  \\
+		C  & 1 & 0 & 1 & 1 & 1  \\
+		G  & 1 & 1 & 0 & 1 & 1  \\
+		T  & 1 & 1 & 1 & 0 & 1  \\
+		-- & 1 & 1 & 1 & 1 & 0
+	\end{tabular}
+%	\caption{Discrete}
+\end{minipage}
+\hfill
+\begin{minipage}{0.33\textwidth}
 \centering
 \begin{tabular}{c|ccccc}
 $\sigma_1$ & A & C & G & T & -- \\ \hline 
@@ -542,10 +569,10 @@ $\sigma_1$ & A & C & G & T & -- \\ \hline
         T  & 1 & 1 & 1 & 0 & 2  \\
         -- & 2 & 2 & 2 & 2 & 0
 \end{tabular}
-\caption{Prefer Align}
+%\caption{Prefer Align}
 \end{minipage}
 \hfill
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}{0.3\textwidth}
 \centering
 %\begin{table}[!hbt]
 %\begin{center}
@@ -557,7 +584,7 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
         T  & 3 & 3 & 3 & 0 & 1  \\
         -- & 1 & 1 & 1 & 1 & 0
 \end{tabular}
-\caption{Prefer Insert/Delete}
+%\caption{Prefer InDel}
 \end{minipage}
 \end{table}
 
@@ -607,65 +634,35 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 %\end{minipage}
 %\end{table}
 
-\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
-\begin{table}
-\scriptsize
-\caption{Fungi preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
-\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
-                      25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
-                      50  &  1385 &   2214 &   3497 &   5696 &   23837 &   16300 \\
-                     100  &  4133 &   5301 &   9498 &  14467 &   24514 &   34216 \\
-                     200  &  7238 &  11577 &  18303 &  23809 &   57262 &   78167 \\
-                     400  & 12092 &  24190 &  35627 &  66681 &  140659 &  214599 \\
-                     800  & 36959 &  52147 & 101514 & 217350 &  333379 &  709528 \\
-                    1553  & 86631 & 137355 & 310405 & 487501 & 1462000 & 1743000
-\label{Tab:Fungi}
-\end{tabular}
-
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Metazoa preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
-\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
-                      25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
-                      50  &    979 &   1543 &   3074 &    8333 &   15272 &   27715 \\
-                     100  &   1824 &   3668 &   7526 &   17478 &   33379 &   64810 \\
-                     200  &   3874 &  12721 &  29071 &   56608 &   97899 &  187654 \\
-                     400  &  14621 &  29731 &  63591 &  162526 &  347680 &  501298 \\
-                     800  &  49024 &  88415 & 225158 &  503264 &  787639 & 1670000 \\
-                    1766  & 194138 & 365731 & 726205 & 1533000 & 2889000 & 6925000
-\label{Tab:Metazoa}
-\end{tabular}
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Best case preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
-\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
-                       4  &     21 &    118 &     46 &     118 &     270 \\
-                       8  &     50 &     49 &    103 &     207 &     382 \\
-                      16  &     54 &    130 &    203 &     400 &     887 \\
-                      32  &    138 &    233 &    446 &     925 &    1786 \\
-                      64  &    249 &    466 &    881 &    1769 &    3584
-\label{Tab:Best}
-\end{tabular}
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Worst case preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
-\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
-                       4  &    127 &     60 &    165 &     244 &     604 \\
-                       8  &    336 &    240 &   1223 &    1002 &    2167 \\
-                      16  &    994 &    997 &   1937 &    3896 &    8369 \\
-                      32  &   1726 &   3938 &   7070 &   15197 &   33148 \\
-                      64  &   6743 &  13620 &  28416 &   63780 &  145712
-\label{Tab:Worst}
-\end{tabular}
+% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
+% Requires LaTeX packages: dcolumn 
+\begin{table}[!htbp] \centering 
+	\caption{Regression coefficients of leaf-set size and string length on runtime} 
+	\label{Tab:Regression} 
+	\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
+		\\[-1.8ex]\hline 
+		\hline \\[-1.8ex] 
+		& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+		\cline{2-5} 
+		\\[-1.8ex] & \multicolumn{4}{c}{log2(Runtime)} \\ 
+		& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
+		\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
+		\hline \\[-1.8ex] 
+		log2(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
+		& & & & \\ 
+		log2(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
+		& & & & \\ 
+		\hline \\[-1.8ex] 
+		Observations & \multicolumn{1}{c}{24} & \multicolumn{1}{c}{24} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
+		Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
+		\hline 
+		\hline \\[-1.8ex] 
+	\end{tabular} 
 \end{table}
+
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
 \begin{figure}[h]
 \centering
@@ -698,17 +695,6 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 \end{minipage}
 \end{figure}
 
-The fungal and metazoan sequence data sets show a near linear runtime with respect to the number of input strings and linear runtime with respect to string length. 
-These biological data sets show that the ``real world'' use case performs close to the best case runtime.
-See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
-
-The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
-See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
-
-\textbf{NOTE}
-Expand on the results. 
-Consider adding the average $c$ value of each data set. 
-Consider calculating the best fit line for an exponential function to get the average exponent of $n$.
 
 \section{Why `Implied' Alignment}
 
@@ -747,8 +733,6 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
 
-
-
 \section{Future work}
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
 Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
@@ -760,6 +744,68 @@ We would like to thank Eric Ford, Katherine St. John, and Erilia Wu for insightf
 
 \newpage
 \bibliography{big-refs-3}
+\newpage
+
+\section{Appendix}
+
+\begin{table}
+	\scriptsize
+	\caption{Fungi preorder results (milliseconds)}
+	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+		\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
+		25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
+		50  &  1385 &   2214 &   3497 &   5696 &   23837 &   16300 \\
+		100  &  4133 &   5301 &   9498 &  14467 &   24514 &   34216 \\
+		200  &  7238 &  11577 &  18303 &  23809 &   57262 &   78167 \\
+		400  & 12092 &  24190 &  35627 &  66681 &  140659 &  214599 \\
+		800  & 36959 &  52147 & 101514 & 217350 &  333379 &  709528 \\
+		1553  & 86631 & 137355 & 310405 & 487501 & 1462000 & 1743000
+		\label{Tab:Fungi}
+	\end{tabular}
+	
+	%\end{table}
+	%\begin{table}
+	\scriptsize
+	\caption{Metazoa preorder results (milliseconds)}
+	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+		\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
+		25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
+		50  &    979 &   1543 &   3074 &    8333 &   15272 &   27715 \\
+		100  &   1824 &   3668 &   7526 &   17478 &   33379 &   64810 \\
+		200  &   3874 &  12721 &  29071 &   56608 &   97899 &  187654 \\
+		400  &  14621 &  29731 &  63591 &  162526 &  347680 &  501298 \\
+		800  &  49024 &  88415 & 225158 &  503264 &  787639 & 1670000 \\
+		1766  & 194138 & 365731 & 726205 & 1533000 & 2889000 & 6925000
+		\label{Tab:Metazoa}
+	\end{tabular}
+	%\end{table}
+	%\begin{table}
+	\scriptsize
+	\caption{Best case preorder results (milliseconds)}
+	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+		4  &     21 &    118 &     46 &     118 &     270 \\
+		8  &     50 &     49 &    103 &     207 &     382 \\
+		16  &     54 &    130 &    203 &     400 &     887 \\
+		32  &    138 &    233 &    446 &     925 &    1786 \\
+		64  &    249 &    466 &    881 &    1769 &    3584
+		\label{Tab:Best}
+	\end{tabular}
+	%\end{table}
+	%\begin{table}
+	\scriptsize
+	\caption{Worst case preorder results (milliseconds)}
+	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+		4  &    127 &     60 &    165 &     244 &     604 \\
+		8  &    336 &    240 &   1223 &    1002 &    2167 \\
+		16  &    994 &    997 &   1937 &    3896 &    8369 \\
+		32  &   1726 &   3938 &   7070 &   15197 &   33148 \\
+		64  &   6743 &  13620 &  28416 &   63780 &  145712
+		\label{Tab:Worst}
+	\end{tabular}
+\end{table}
+
 
 \end{document}
 \grid
