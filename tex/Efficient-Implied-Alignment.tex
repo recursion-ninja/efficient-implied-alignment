@@ -37,6 +37,9 @@
 \algtext*{EndCase}%
 \algtext*{EndDefault}%
 
+\newcommand*\NEPowerset{\mathcal{P}_{\geq 1}}
+\newcommand*\gap{\textrm{(--)}}
+
 \DeclarePairedDelimiter\setsize{\lvert}{\rvert}%
 
 \title{ \textbf{Efficient Implied Alignment}}
@@ -59,7 +62,7 @@ This is done by first decorating each node of the tree with an alignment context
 Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(k^2 * n^2)$ time.
 Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(k * n^2)$}.
 For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\Omega(k * n)$}.
-This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
@@ -88,22 +91,21 @@ We will provide an example of the IA algorithm's performance on biological data.
 \section{Definition of the heuristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
-Let (--) be a gap symbol which will have a special meaning in the context of an alignment and (--) $\in \Sigma$.
-Let $\mathcal{P}(x)$ be the power set of x $\setminus \emptyset$.
+Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
+Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
 Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 \begin{align*}
-  \Sigma_{\Gamma} &      = \textbf{ALIGN}  \;\;\;\;\;\,  \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
-\\                & \;\, | \;\; \textbf{DELETE} \;\;     \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
-\\                & \;\, | \;\; \textbf{INSERT} \;\;\;\, \mathcal{P} (\Sigma) \;\; \quad\quad\;         \;\; \mathcal{P} (\Sigma)
+  \Sigma_{\Gamma} &      = \textbf{ALIGN}  \;\;\;\;\;\,  \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
+\\                & \;\, | \;\; \textbf{DELETE} \;\;     \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
+\\                & \;\, | \;\; \textbf{INSERT} \;\;\;\, \NEPowerset (\Sigma) \;\; \quad\quad\quad\;         \;\; \NEPowerset (\Sigma)
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
+Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\mathbb{N}\;,\; \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
 It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context.
-Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
-The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. 
-The function $\oplus$ need not be associative.
+Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
+The function $\oplus$ must be must be commutative but need not be associative.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
 
 \section{Definition of an example heuristic function}
@@ -115,14 +117,14 @@ First, we assure that the function is commutative by deterministically choosing 
 We assign the input string based on the data they contain, ensuring commutivity.
 If this step is not taken, arbitrary biases chosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity.
 The longer string is tied to the top of the alignment matrix, the shorter string to the left side.
-If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this insures label invariance). 
+If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this ensures label invariance). 
 In the case that the strings are equal, the alignment is trivial.
 
 Next we apply ``wave-front'' update initial phase of the procedure.
-Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch.
+Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch algorithm.
 However, this traceback differs in one substantial detail.
-When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either and insertion, deletion, or alignment event, respectively. 
-By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
+When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either an insertion, deletion, or alignment event, respectively. 
+By adding this additional tag of information to the pairwise alignment result, we can later consume the tags when merging local, pairwise alignments to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
 The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string.
@@ -227,10 +229,10 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
     \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d)\right)$\newline\hspace*{3.85cm}
-      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\,   ,      \nwarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(\, rightCost,    rightElem \cup \textbf{--}, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(    downCost,     downElem \cup \textbf{--}, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
+      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
+      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
       $]$
     \EndFunction  
   \end{algorithmic}
@@ -245,7 +247,7 @@ The postorder traversal described here is very similar to the  DO postorder trav
 The main difference is the use of a heuristic alignment function $\otimes$ which captures the alignment context of a subtree, instead of generating a preliminary median string assignment.
 
 Starting at the leaf nodes, we set the \textit{node.cost} field to be $0$.
-Additionally, if the string on the leaf node is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$, we call $\Call{initializeString}{node.prelimString}$ on the string value to apply the transformation $\Sigma^{*} \mapsto \Sigma^{*}_{\Gamma}$.
+Additionally, if the string on the leaf node is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$, we call $\Call{initializeString}{node.prelimString}$ on the string value to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
 That is to say, if the binary tree's leaf node has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not a finite string of alignment contexts over the alphabet $\Sigma_{\Gamma}$, we lift the string's symbols into the appropriate alignment context. %do youmnea create teh other stuff needd?  If so wouldn't this always be done?
 
 On each internal node of the binary tree $\mathcal{T}$, we call $\otimes$ on the \textit{prelimString} fields of the node's left and right children.
@@ -254,14 +256,14 @@ By performing this operation in a postorder traversal over the binary tree $\mat
 
 After performing the postorder traversal, each internal node contains the alignment context information and the cost for it's entire subtree.
 Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
-In the next step, we will consume this preliminary alignment context to perform efficiently an alignment on the strings.
+In the next step, we will consume this preliminary alignment context to perform an (efficient) alignment on the strings.
 
 Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used.
 Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
 Then postorder traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
 If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
-\section{Psuedocode of post-order traversal}
+\section{Pseudocode of post-order traversal}
 
 \begin{algorithm}
   \caption{Post-order Traversal}\label{postOrder}
@@ -270,7 +272,7 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
     \Function{initializeString}{$\textit{inputString}$}
       \State $i \gets \vert\textit{inputString} \;\vert - 1,$
       \While{$i \geq 0$}
-        \State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_ii \right\}$
+        \State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
       \EndWhile 
       \Return $\textit{inputString}$
     \EndFunction 
@@ -297,7 +299,7 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
 
 
 \section{Description of pre-order traversal for final alignments}
-The preorder traversal of the binary tree $\mathcal{T}$ a consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
+The preorder traversal of the binary tree $\mathcal{T}$ consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
 First, the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context with all deletion events replaced with substitution events.
 This is required because at the root node, deletion events originated from  alignments of the left subtree and insertion events originated from alignments of the right sub tree, however the origin of these events are indistinguishable at the root node.
 By initializing the root node in this manner, we treat the root node the same as we would any other parental node when deriving the internal node alignments.
@@ -307,7 +309,7 @@ If it is the left child, then each deletion event of the parent node's final ali
 This is required because (as with the root) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however we must consider the converse for the resulting alignment to be consistent when assigning the final alignment context to a node which is the left child of it's parent.
 
 Once the parental final alignment context has been correctly initialized, we proceed to assign the final alignment context of the current node.
-The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context due to the addition of alignment gaps (--).
+The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context due to the addition of alignment gaps $\gap$.
 The resulting value assigned to the current node's final alignment context will have the same length as the parental final alignment context.
 Since this invariant is maintained from the root node to the leaf node's final alignment context assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that all node's final alignment assignments will be of equal length and constitute a genuine string alignment.
@@ -348,20 +350,20 @@ Additionally, the $k^2$ component occurred in previous implementations using a N
 By decorating all the requisite information on the nodes in the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
 
 Let $m = \frac{a}{k}$, where $k$ is the length of the longest input string, and $a$ is the length of the root node's preliminary string decoration.
-In the best case that the ``perfect alignment'' is derived, where each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
+In the case that a ``perfect alignment'' is derived, that is, each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
 In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
 
 In the preorder traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
-We must preform a the ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
+We must preform a ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
 The ``sliding zip'' accounts for the $k * m$ factor.
 
-The best case runtime will be when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
-In the best case, $m = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
+The best case runtime occurs when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
+In this case, $m = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
 Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $m = 1$.
 
-The worst case runtime will be when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
-In the worst case, $m = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$ times the number of input strings $n$.
-Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other and $m = n$.
+The worst case runtime occurs when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
+In the worst case, $m >> 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings $n$.
+Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
 %I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
 
@@ -511,34 +513,32 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 An example Haskell implementation of the implied alignment algorithm described above can be found here: \url{https://github.com/amnh/fastc/}
 
 We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal. 
-Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (ie. including gaps).
+Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
 Both biological data sets used the discrete metric $\sigma_0$.
 
-Additionally, a pathological data-set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
-The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
-This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
+Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
+The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
+The strings of the pathological data set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
 
-The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ \& $\sigma_2$.
-The former would prefer substitution events over insertion or deletion events and would produce the ``perfect alignment.''
-The latter would prefer insertion or deletion events over substitution events and would produce the ``degenerate alignment.''
+The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
+The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
+Conversely, the latter selects for insertion or deletion over substitution thus producing the ``degenerate alignment.''
 
-After running each data set, we took the $\log_2$ of both  input dimensions $k$ and $n$ as well as the runtime output in milliseconds.
+After running each data set, we took the binary logarithm, $\log_{2}$, of both input dimensions $k$ and $n$ as well as the runtime output in milliseconds.
 From this data we constructed a linear model to calculate the coefficients of each input.
-Note that because the log of the inputs was taken, we would expect a coefficient of $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
+Note that because the logarithm of the inputs was taken, we would expect a coefficient of $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
 See Table \ref{Tab:Regression}.
 
-The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
-The linear model supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set.
-See Figures \ref{Fig:Best} \& \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst} 
+The pathological data sets shows the stark difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
+The linear model supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst} 
 
 The linear model also showed that the runtime scales well for the biological data sets.
 The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear runtime with respect to the number of input strings and linear runtime with respect to string length. 
-The fungal data sets shows that some the ``real world'' use cases can  perform close to the theoretical best case runtime.
-See Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}. % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
+The fungal data sets shows that some the ``real world'' use cases can  perform close to the theoretical best case runtime (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}). % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
 
 \begin{table}[!hbt]
 \caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
@@ -724,9 +724,9 @@ Traditionally all input sequence strings are aligned first, and that alignment i
 A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
 Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
 
-How the a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
+How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
-When using implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
+When using implied alignment to search on a dynamic homology, the alignments depend on the topology.
 
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
 
