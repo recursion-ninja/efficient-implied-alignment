@@ -536,9 +536,19 @@ See Table \ref{Tab:Regression}.
 The pathological data sets shows the stark difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
 The linear model supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst} 
 
-The linear model also showed that the runtime scales well for the biological data sets.
+After running each data set, we constructed an Ordinary Least Square (OLS) model with the output runtime in milliseconds as a function of dimensions $k$ and $n$.
+We took the binary logarithm, $\log_{2}$, of both input dimensions as well as the output.
+From there, we calculated the coefficients of each input in this equation: $\log_2(runtime) = \beta_0 + \beta_1 \log_2(n) + \beta_2 \log_2(k) + \epsilon$, where $\epsilon$ represents the estimation error.
+Note that because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
+See Table \ref{Tab:Regression}.
+
+The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
+The OLS model empirically supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst} 
+
+The OLS model also showed that the runtime scales well for the biological data sets.
 The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear runtime with respect to the number of input strings and linear runtime with respect to string length.
-The fungal data sets shows that some the ``real world'' use cases can  perform close to the theoretical best case runtime (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}). % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
+The fungal data sets shows that some of the ``real world'' use cases can perform close to the theoretical best case runtime (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}). % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
+
 
 \begin{table}[!hbt]
 \caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
