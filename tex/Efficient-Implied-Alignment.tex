@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage{csvsimple}
+\usepackage{dcolumn}
 \usepackage{setspace}
 \usepackage{tabularx}
 \usepackage{graphicx}
@@ -36,6 +37,9 @@
 \algtext*{EndCase}%
 \algtext*{EndDefault}%
 
+\newcommand*\NEPowerset{\mathcal{P}_{\geq 1}}
+\newcommand*\gap{\textrm{(--)}}
+
 \DeclarePairedDelimiter\setsize{\lvert}{\rvert}%
 
 \title{ \textbf{Efficient Implied Alignment}}
@@ -53,16 +57,17 @@
 
 \maketitle
 \begin{abstract}
-  For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal.
-Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(n^2 * k^2)$ time.
-Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(n^2 * k)$}.
-For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\Omega(n * k)$}.
-This reduction in the time complexity of the procedure dramatically improves the utility of the procedure in generating multiple sequence alignments and their heuristic utility.
+Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(k^2 * n^2)$ time.
+Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(k * n^2)$}.
+For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\Omega(k * n)$}.
+This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
 \tableofcontents
 \newpage
+
 
 %\doublespacing
 \section{Introduction}
@@ -70,61 +75,56 @@ Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direc
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
 More formal description of the algorithm was presented in \cite{Wheeleretal2006}.
 Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink relationships. 
-Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.  
-This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counterexamples.    
+Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
+This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counterexamples.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure, benefit greatly from improvements in the time-complexity of the algorithm.
-The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings. 
-The more similar the strings, the better the algorithm performs. 
+The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
+The more similar the strings, the better the algorithm performs.
 While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
 
-\textbf{NOTE}
-We can also define the parameters: binary tree, dynamic homology, pairwise alignment heuristic.
-Then describe the motivation for an implied alignment: as a visualization tool, a de novo alignment method, and as a static approximation heuristic component.
-The latter might be sufficiently stated in the previous paragraph.
 
 \section{Definition of the heuristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
-Let (--) be a gap symbol which will have a special meaning in the context of an alignment and (--) $\in \Sigma$.
-Let $\mathcal{P}(x)$ be the power set of x $\setminus \emptyset$.
+Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
+Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
 Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 \begin{align*}
-  \Sigma_{\Gamma} &      = \textbf{ALIGN}  \;\;\;\;\;\,  \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
-\\                & \;\, | \;\; \textbf{DELETE} \;\;     \mathcal{P} (\Sigma) \;\; \mathcal{P} (\Sigma)
-\\                & \;\, | \;\; \textbf{INSERT} \;\;\;\, \mathcal{P} (\Sigma) \;\; \quad\quad\;         \;\; \mathcal{P} (\Sigma)
+  \Sigma_{\Gamma} &      = \textbf{ALIGN}  \;\;\;\;\;\,  \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
+\\                & \;\, | \;\; \textbf{DELETE} \;\;     \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
+\\                & \;\, | \;\; \textbf{INSERT} \;\;\;\, \NEPowerset (\Sigma) \;\; \quad\quad\quad\;         \;\; \NEPowerset (\Sigma)
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \left(\mathbb{N}, \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
+Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\mathbb{N}\;,\; \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
 It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context.
-Therefore let $\oplus \colon \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \mapsto \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. 
-The function $\oplus$ must be closed under $\Sigma^{*}_{\Gamma}$ and must be commutative. 
-The function $\oplus$ need not be associative.
+Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result.
+The function $\oplus$ must be must be commutative but need not be associative.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
 
 \section{Definition of an example heuristic function}
-We will provide one definition of $\otimes$ sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$. 
+We will provide one definition of $\otimes$ sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$.
 One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
 This algorithm is very similar to DO.
 
-First, we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows). 
+First, we assure that the function is commutative by deterministically choosing which string is tied to the top (columns) of the alignment matrix and which string is tied to the left side (rows).
 We assign the input string based on the data they contain, ensuring commutivity.
 If this step is not taken, arbitrary biases chosen in the implementation details of the alignment matrix back-trace can cause the following $\otimes$ definition to violate commutivity.
 The longer string is tied to the top of the alignment matrix, the shorter string to the left side.
-If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this insures label invariance). 
+If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this ensures label invariance). 
 In the case that the strings are equal, the alignment is trivial.
 
 Next we apply ``wave-front'' update initial phase of the procedure.
-Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch.
+Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch algorithm.
 However, this traceback differs in one substantial detail.
-When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either and insertion, deletion, or alignment event, respectively. 
-By adding this additional tag of information to the pairwise alignment result, we can later consume the tags to when merging local, pairwise alignment to efficiently generate a multiple string alignment.
+When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either an insertion, deletion, or alignment event, respectively. 
+By adding this additional tag of information to the pairwise alignment result, we can later consume the tags when merging local, pairwise alignments to efficiently generate a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and the one we present in this paper.
 
 The example $\otimes$ function presented here runs in $\Theta\left( k^2 \right)$ time and space, where $k$ is the length of the longer string.
@@ -149,7 +149,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
       \Else
         \State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
       \EndIf
-    \EndFunction  
+    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
@@ -167,7 +167,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
         \State \Return $\left( 0, \nwarrow, \textbf{--} \right)$
       \ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
         \State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
-        \State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$ 
+        \State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$
       \ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
         \State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
         \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
@@ -178,11 +178,11 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
         \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
         \If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
           \State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
-        \Else 
+        \Else
           \State \Return $\left( minCost, minDir, minElem \right)$
         \EndIf
       \EndIf
-    \EndFunction  
+    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
@@ -215,7 +215,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
         \State $alignedStr \gets nextElement + alignedStr$
       \EndWhile
       \State \Return $\left(alignedCost, alignedStr \right)$
-    \EndFunction  
+    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
@@ -223,18 +223,18 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
   \caption{Get the minimal directional matrix context from the $3$ inputs}\label{getMinimal}
   \begin{algorithmic}[1]
     \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
-    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}         
+    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{$\left(    downCost,    downElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
     \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d)\right)$\newline\hspace*{3.85cm}
-      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\,   ,      \nwarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(\, rightCost,    rightElem \cup \textbf{--}, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(    downCost,     downElem \cup \textbf{--}, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
+      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
+      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
+      $,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
       $]$
-    \EndFunction  
+    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
@@ -247,8 +247,8 @@ The postorder traversal described here is very similar to the  DO postorder trav
 The main difference is the use of a heuristic alignment function $\otimes$ which captures the alignment context of a subtree, instead of generating a preliminary median string assignment.
 
 Starting at the leaf nodes, we set the \textit{node.cost} field to be $0$.
-Additionally, if the string on the leaf node is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$, we call $\Call{initializeString}{node.prelimString}$ on the string value to apply the transformation $\Sigma^{*} \mapsto \Sigma^{*}_{\Gamma}$.
-That is to say, if the binary tree's leaf node has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not a finite string of alignment contexts over the alphabet $\Sigma$, we lift the string's symbols into the appropriate alignment context. %do youmnea create teh other stuff needd?  If so wouldn't this always be done?
+Additionally, if the string on the leaf node is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$, we call $\Call{initializeString}{node.prelimString}$ on the string value to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
+That is to say, if the binary tree's leaf node has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not a finite string of alignment contexts over the alphabet $\Sigma_{\Gamma}$, we lift the string's symbols into the appropriate alignment context. %do youmnea create teh other stuff needd?  If so wouldn't this always be done?
 
 On each internal node of the binary tree $\mathcal{T}$, we call $\otimes$ on the \textit{prelimString} fields of the node's left and right children.
 The node's \textit{prelimString} field is assigned the result of the call to $\otimes$ and the node's  \textit{cost} field is assigned the sum of the node's left and right childern's \textit{cost} fields and the cost returned by the call to $\otimes$.
@@ -256,14 +256,14 @@ By performing this operation in a postorder traversal over the binary tree $\mat
 
 After performing the postorder traversal, each internal node contains the alignment context information and the cost for it's entire subtree.
 Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
-In the next step, we will consume this preliminary alignment context to perform efficiently an alignment on the strings.
+In the next step, we will consume this preliminary alignment context to perform an (efficient) alignment on the strings.
 
 Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used.
-Let the complexity of $\otimes$ be defined as $H\left(k\right)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
-Then postorder traversal runs in $\mathcal{O}(n * H(k))$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
-If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}\left( n * k * \log  k \right)$ average case time and space.
+Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
+Then postorder traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
+If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
-\section{Psuedocode of post-order traversal}
+\section{Pseudocode of post-order traversal}
 
 \begin{algorithm}
   \caption{Post-order Traversal}\label{postOrder}
@@ -272,11 +272,11 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
     \Function{initializeString}{$\textit{inputString}$}
       \State $i \gets \vert\textit{inputString} \;\vert - 1,$
       \While{$i \geq 0$}
-        \State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_ii \right\}$
-      \EndWhile 
+        \State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
+      \EndWhile
       \Return $\textit{inputString}$
-    \EndFunction 
-        
+    \EndFunction
+
     \Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
     \Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
     %    \Procedure{postOrder(n)}{}
@@ -299,7 +299,7 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
 
 
 \section{Description of pre-order traversal for final alignments}
-The preorder traversal of the binary tree $\mathcal{T}$ a consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
+The preorder traversal of the binary tree $\mathcal{T}$ consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
 First, the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context with all deletion events replaced with substitution events.
 This is required because at the root node, deletion events originated from  alignments of the left subtree and insertion events originated from alignments of the right sub tree, however the origin of these events are indistinguishable at the root node.
 By initializing the root node in this manner, we treat the root node the same as we would any other parental node when deriving the internal node alignments.
@@ -309,7 +309,7 @@ If it is the left child, then each deletion event of the parent node's final ali
 This is required because (as with the root) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however we must consider the converse for the resulting alignment to be consistent when assigning the final alignment context to a node which is the left child of it's parent.
 
 Once the parental final alignment context has been correctly initialized, we proceed to assign the final alignment context of the current node.
-The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context due to the addition of alignment gaps (--).
+The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context due to the addition of alignment gaps $\gap$.
 The resulting value assigned to the current node's final alignment context will have the same length as the parental final alignment context.
 Since this invariant is maintained from the root node to the leaf node's final alignment context assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that all node's final alignment assignments will be of equal length and constitute a genuine string alignment.
@@ -344,26 +344,26 @@ If we are \textit{not} deriving the alignment for a leaf node, then we consume b
 
 \end{itemize}
 
-The major difference between the implied alignment algorithm presented here, and the original algorithm, is that the additional stored information allows us to decorate the final assignments in $\Theta(n * k * c)$ instead of $\mathcal{O}(n^2*k^2)$ time. 
+The major difference between the implied alignment algorithm presented here, and the original algorithm, is that the additional stored information allows us to decorate the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time. 
 The aforementioned $n^2$ component occurred in previous implementations using a ``back-propagation'' technique, where at each preorder step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous preorder step.
 Additionally, the $k^2$ component occurred in previous implementations using a Needleman-Wuncsh string alignment between the parental node and the current node in each preorder step.
 By decorating all the requisite information on the nodes in the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
 
-Let $c = \frac{m}{k}$, where $k$ is the length of the longest input string, and $m$ is the length of the root node's preliminary string decoration.
-In the best case that the ``perfect alignment'' is derived, where each element of all the input strings can be aligned with one of the elements of the longest input string, then $c = 1$.
-In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $c = n$.
+Let $m = \frac{a}{k}$, where $k$ is the length of the longest input string, and $a$ is the length of the root node's preliminary string decoration.
+In the case that a ``perfect alignment'' is derived, that is, each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
+In the pathological case that the ``degenerate alignment'' is derived, where no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
 
-In the preorder traversal algorithm presented above, we generate an implied alignment in $\Theta(n * k * c)$ time.
-We must preform a the ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
-The ``sliding zip'' accounts for the $k * c$ factor.
+In the preorder traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
+We must preform a ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
+The ``sliding zip'' accounts for the $k * m$ factor.
 
-The best case runtime will be when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
-In the best case, $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
-Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $c = 1$.
+The best case runtime occurs when the length of the derived alignment is the length of the longest input string, an alignment with the minimal number of elements.
+In this case, $m = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$.
+Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $m = 1$.
 
-The worst case runtime will be when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
-In the worst case, $c = 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string $k$ times the number of input strings $n$.
-Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(n^2*k)$ when the input strings are independent of each other and $c = n$.
+The worst case runtime occurs when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
+In the worst case, $m >> 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings $n$.
+Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
 %I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
 
@@ -399,7 +399,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
         \Call{deletionToInsertion}{$\textit{context}$}
       \EndFor
     \EndFunction
-      
+
     \Function{deletionToInsertion}{$\textit{context}$}
       \Switch{$\textit{context}$}
         \Case{$\textbf{DELETE} \;\; \textit{m} \;\; \textit{x} \;\;$}
@@ -432,7 +432,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 \begin{algorithm}
   \caption{Internal Node Alignment}\label{deriveAlignment}
-  \begin{algorithmic}[1]      
+  \begin{algorithmic}[1]
     \Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
       \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
       \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
@@ -498,7 +498,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
               \State $\textit{j} \gets \textit{j} + 1$
             \EndCase
           \EndSwitch
-        \EndIf  
+        \EndIf
         \State $\textit{i} \gets \textit{i} + 1$
       \EndFor
       \Return $\textit{result}$
@@ -510,54 +510,80 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 \section{Conclusion and Empirical Examples}
 
-We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal. 
-Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (ie. including gaps).
+An example Haskell implementation of the implied alignment algorithm described above can be found here: \url{https://github.com/amnh/fastc/}
+
+We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal.
+Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
+Both biological data sets used the discrete metric $\sigma_0$.
 
-Additionally, a pathological data-set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
-The pathological data-set consisted of balanced binary trees which repeatedly doubled in size.
-This strings of the pathological data-set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
+Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
+The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
+The strings of the pathological data set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
 
-The runtime scaling of this data set was examined under two different metrics $\sigma_1$ \& $\sigma_2$.
-The former would prefer substitution events over insertion or deletion events and would scale well.
-The latter would prefer insertion or deletion events over substitution events and would produce the degenerate string alignment.
+The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
+The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
+Conversely, the latter selects for insertion or deletion over substitution thus producing the ``degenerate alignment.''
 
-The number of input strings, $n$, is presented in the left column of each results table.
-The maximum string length, $k$, is presented in the header row of each results table.
-The data points represent the runtime for in milliseconds for the given $n$ \& $k$ value.
+After running each data set, we constructed an Ordinary Least Square (OLS) model with the output runtime in milliseconds as a function of dimensions $k$ and $n$.
+We took the binary logarithm, $\log_{2}$, of both input dimensions as well as the output.
+From there, we calculated the coefficients of each input in this equation: $\log_2(runtime) = \beta_0 + \beta_1 \log_2(n) + \beta_2 \log_2(k) + \epsilon$, where $\epsilon$ represents the estimation error.
+Note that because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and close to $2$ for quadratic performance.
+See Table \ref{Tab:Regression}.
+
+The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
+The OLS model empirically supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst}
+
+The OLS model also showed that the runtime scales well for the biological data sets.
+The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear runtime with respect to the number of input strings and linear runtime with respect to string length.
+The fungal data sets shows that some of the ``real world'' use cases can perform close to the theoretical best case runtime (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}). % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
+
 
 \begin{table}[!hbt]
-\caption{Metric costs of $\sigma_1$ \& $\sigma_2$}
+\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
 \label{Tab:Metrics}
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}{0.3\textwidth}
+	\centering
+	\begin{tabular}{c|ccccc}
+		$\sigma_0$ & A & C & G & T & -- \\ \hline
+		A  & 0 & 1 & 1 & 1 & 1  \\
+		C  & 1 & 0 & 1 & 1 & 1  \\
+		G  & 1 & 1 & 0 & 1 & 1  \\
+		T  & 1 & 1 & 1 & 0 & 1  \\
+		-- & 1 & 1 & 1 & 1 & 0
+	\end{tabular}
+%	\caption{Discrete}
+\end{minipage}
+\hfill
+\begin{minipage}{0.33\textwidth}
 \centering
 \begin{tabular}{c|ccccc}
-$\sigma_1$ & A & C & G & T & -- \\ \hline 
+$\sigma_1$ & A & C & G & T & -- \\ \hline
         A  & 0 & 1 & 1 & 1 & 2  \\
         C  & 1 & 0 & 1 & 1 & 2  \\
         G  & 1 & 1 & 0 & 1 & 2  \\
         T  & 1 & 1 & 1 & 0 & 2  \\
         -- & 2 & 2 & 2 & 2 & 0
 \end{tabular}
-\caption{Prefer Align}
+%\caption{Prefer Align}
 \end{minipage}
 \hfill
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}{0.3\textwidth}
 \centering
 %\begin{table}[!hbt]
 %\begin{center}
 \begin{tabular}{c|ccccc}
-$\sigma_2$ & A & C & G & T & -- \\ \hline 
+$\sigma_2$ & A & C & G & T & -- \\ \hline
         A  & 0 & 3 & 3 & 3 & 1  \\
         C  & 3 & 0 & 3 & 3 & 1  \\
         G  & 3 & 3 & 0 & 3 & 1  \\
         T  & 3 & 3 & 3 & 0 & 1  \\
         -- & 1 & 1 & 1 & 1 & 0
 \end{tabular}
-\caption{Prefer Insert/Delete}
+%\caption{Prefer InDel}
 \end{minipage}
 \end{table}
 
@@ -607,65 +633,35 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 %\end{minipage}
 %\end{table}
 
-\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
-\begin{table}
-\scriptsize
-\caption{Fungi preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
-\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
-                      25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
-                      50  &  1385 &   2214 &   3497 &   5696 &   23837 &   16300 \\
-                     100  &  4133 &   5301 &   9498 &  14467 &   24514 &   34216 \\
-                     200  &  7238 &  11577 &  18303 &  23809 &   57262 &   78167 \\
-                     400  & 12092 &  24190 &  35627 &  66681 &  140659 &  214599 \\
-                     800  & 36959 &  52147 & 101514 & 217350 &  333379 &  709528 \\
-                    1553  & 86631 & 137355 & 310405 & 487501 & 1462000 & 1743000
-\label{Tab:Fungi}
-\end{tabular}
-
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Metazoa preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
-\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
-                      25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
-                      50  &    979 &   1543 &   3074 &    8333 &   15272 &   27715 \\
-                     100  &   1824 &   3668 &   7526 &   17478 &   33379 &   64810 \\
-                     200  &   3874 &  12721 &  29071 &   56608 &   97899 &  187654 \\
-                     400  &  14621 &  29731 &  63591 &  162526 &  347680 &  501298 \\
-                     800  &  49024 &  88415 & 225158 &  503264 &  787639 & 1670000 \\
-                    1766  & 194138 & 365731 & 726205 & 1533000 & 2889000 & 6925000
-\label{Tab:Metazoa}
-\end{tabular}
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Best case preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
-\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
-                       4  &     21 &    118 &     46 &     118 &     270 \\
-                       8  &     50 &     49 &    103 &     207 &     382 \\
-                      16  &     54 &    130 &    203 &     400 &     887 \\
-                      32  &    138 &    233 &    446 &     925 &    1786 \\
-                      64  &    249 &    466 &    881 &    1769 &    3584
-\label{Tab:Best}
-\end{tabular}
-%\end{table}
-%\begin{table}
-\scriptsize
-\caption{Worst case preorder results (milliseconds)}
-\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
-\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
-                       4  &    127 &     60 &    165 &     244 &     604 \\
-                       8  &    336 &    240 &   1223 &    1002 &    2167 \\
-                      16  &    994 &    997 &   1937 &    3896 &    8369 \\
-                      32  &   1726 &   3938 &   7070 &   15197 &   33148 \\
-                      64  &   6743 &  13620 &  28416 &   63780 &  145712
-\label{Tab:Worst}
-\end{tabular}
+% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
+% Requires LaTeX packages: dcolumn 
+\begin{table}[!htbp] \centering 
+	\caption{Regression coefficients of leaf-set size and string length on runtime} 
+	\label{Tab:Regression} 
+	\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
+		\\[-1.8ex]\hline 
+		\hline \\[-1.8ex]
+		& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+		\cline{2-5} 
+		\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
+		& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
+		\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
+		\hline \\[-1.8ex] 
+		$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
+		& & & & \\ 
+		$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
+		& & & & \\ 
+		\hline \\[-1.8ex]
+		Observations & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
+		Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
+		\hline 
+		\hline \\[-1.8ex] 
+	\end{tabular}
 \end{table}
+
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
 \begin{figure}[h]
 \centering
@@ -698,30 +694,19 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 \end{minipage}
 \end{figure}
 
-The fungal and metazoan sequence data sets show a near linear runtime with respect to the number of input strings and linear runtime with respect to string length. 
-These biological data sets show that the ``real world'' use case performs close to the best case runtime.
-See Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa} and Figures \ref{Fig:Fungi} \& \ref{Fig:Metazoa}.
-
-The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(n^2 * k)$ runtimes.
-See Tables \ref{Tab:Best} \& \ref{Tab:Worst} and Figures \ref{Fig:Best} \& \ref{Fig:Worst}.
-
-\textbf{NOTE}
-Expand on the results. 
-Consider adding the average $c$ value of each data set. 
-Consider calculating the best fit line for an exponential function to get the average exponent of $n$.
 
 \section{Why `Implied' Alignment}
 
 The algorithm originally described by \cite{Wheeler2003} was given the name implied alignment to differentiate it from other methods (e.g. sum-of-pairs alignment) unconnected to the vertex string assignments `implied' by the binary tree on a given leaf-set. 
-However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree.  
+However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree.
 In short, it is the lack of associativity of the heuristic function $\oplus$.
 
 If we are given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
-In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node. 
+In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node.
 The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result.
 Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results.
 However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. 
-For example consider such a transposed tree $\mathcal{T'}$:
+For example consider a transposed tree $\mathcal{T'}$:
 
 \begin{align*}
   eval(\mathcal{T'}) &= eval((D,C),(B,A))
@@ -741,13 +726,11 @@ Traditionally all input sequence strings are aligned first, and that alignment i
 A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
 Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
 
-How the a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
+How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
-When using implied alignment to search on a dynamic homology, the alignments depend on the toplogy.
+When using implied alignment to search on a dynamic homology, the alignments depend on the topology.
 
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
-
-
 
 \section{Future work}
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
@@ -760,7 +743,66 @@ We would like to thank Eric Ford, Katherine St. John, and Erilia Wu for insightf
 
 \newpage
 \bibliography{big-refs-3}
+\newpage
+
+%\section{Appendix}
+%
+%\begin{table}
+%	\scriptsize
+%	\caption{Fungi preorder results (milliseconds)}
+%	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+%		\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
+%		25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
+%		50  &  1385 &   2214 &   3497 &   5696 &   23837 &   16300 \\
+%		100  &  4133 &   5301 &   9498 &  14467 &   24514 &   34216 \\
+%		200  &  7238 &  11577 &  18303 &  23809 &   57262 &   78167 \\
+%		400  & 12092 &  24190 &  35627 &  66681 &  140659 &  214599 \\
+%		800  & 36959 &  52147 & 101514 & 217350 &  333379 &  709528 \\
+%		1553  & 86631 & 137355 & 310405 & 487501 & 1462000 & 1743000
+%		\label{Tab:Fungi}
+%	\end{tabular}
+%	
+%	%\end{table}
+%	%\begin{table}
+%	\scriptsize
+%	\caption{Metazoa preorder results (milliseconds)}
+%	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
+%		\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
+%		25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
+%		50  &    979 &   1543 &   3074 &    8333 &   15272 &   27715 \\
+%		100  &   1824 &   3668 &   7526 &   17478 &   33379 &   64810 \\
+%		200  &   3874 &  12721 &  29071 &   56608 &   97899 &  187654 \\
+%		400  &  14621 &  29731 &  63591 &  162526 &  347680 &  501298 \\
+%		800  &  49024 &  88415 & 225158 &  503264 &  787639 & 1670000 \\
+%		1766  & 194138 & 365731 & 726205 & 1533000 & 2889000 & 6925000
+%		\label{Tab:Metazoa}
+%	\end{tabular}
+%	%\end{table}
+%	%\begin{table}
+%	\scriptsize
+%	\caption{Best case preorder results (milliseconds)}
+%	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+%		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+%		4  &     21 &    118 &     46 &     118 &     270 \\
+%		8  &     50 &     49 &    103 &     207 &     382 \\
+%		16  &     54 &    130 &    203 &     400 &     887 \\
+%		32  &    138 &    233 &    446 &     925 &    1786 \\
+%		64  &    249 &    466 &    881 &    1769 &    3584
+%		\label{Tab:Best}
+%	\end{tabular}
+%	%\end{table}
+%	%\begin{table}
+%	\scriptsize
+%	\caption{Worst case preorder results (milliseconds)}
+%	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
+%		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
+%		4  &    127 &     60 &    165 &     244 &     604 \\
+%		8  &    336 &    240 &   1223 &    1002 &    2167 \\
+%		16  &    994 &    997 &   1937 &    3896 &    8369 \\
+%		32  &   1726 &   3938 &   7070 &   15197 &   33148 \\
+%		64  &   6743 &  13620 &  28416 &   63780 &  145712
+%		\label{Tab:Worst}
+%	\end{tabular}
+%\end{table}
 
 \end{document}
-\grid
-\grid
