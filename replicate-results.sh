@@ -1,5 +1,21 @@
 #!/bin/bash
 #Script to run implied alingment data sets
+
+#load Haskell dependencies
+which stack || curl -sSL https://get.haskellstack.org/ | sh
+
+#load Python3 dependencies
+which python3        || apt-get install python3     --yes
+which pip3           || apt-get install python3-pip --yes
+pip3 show matplotlib || pip3 install --upgrade matplotlib
+
+#load R dependencies
+which R || sudo apt install r-base
+
+#build binaries
+stack install
+
+#run data sets
 ./bin/generate-timings \
     --data data-sets/fungi.afasta \
     --tree data-sets/fungi.tree \
