@@ -528,18 +528,10 @@ The runtime scaling of this pathological data set was examined under two differe
 The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
 Conversely, the latter selects for insertion or deletion over substitution thus producing the ``degenerate alignment.''
 
-After running each data set, we took the binary logarithm, $\log_{2}$, of both input dimensions $k$ and $n$ as well as the runtime output in milliseconds.
-From this data we constructed a linear model to calculate the coefficients of each input.
-Note that because the logarithm of the inputs was taken, we would expect a coefficient of $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
-See Table \ref{Tab:Regression}.
-
-The pathological data sets shows the stark difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
-The linear model supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst} 
-
 After running each data set, we constructed an Ordinary Least Square (OLS) model with the output runtime in milliseconds as a function of dimensions $k$ and $n$.
 We took the binary logarithm, $\log_{2}$, of both input dimensions as well as the output.
 From there, we calculated the coefficients of each input in this equation: $\log_2(runtime) = \beta_0 + \beta_1 \log_2(n) + \beta_2 \log_2(k) + \epsilon$, where $\epsilon$ represents the estimation error.
-Note that because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and a coefficient of $2$ for quadratic performance.
+Note that because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and close to $2$ for quadratic performance.
 See Table \ref{Tab:Regression}.
 
 The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
@@ -653,13 +645,13 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 		\hline \\[-1.8ex] 
 		& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
 		\cline{2-5} 
-		\\[-1.8ex] & \multicolumn{4}{c}{log2(Runtime)} \\ 
+		\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
 		& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
 		\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
 		\hline \\[-1.8ex] 
-		log2(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
+		$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
 		& & & & \\ 
-		log2(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
+		$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
 		& & & & \\ 
 		\hline \\[-1.8ex] 
 		Observations & \multicolumn{1}{c}{24} & \multicolumn{1}{c}{24} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
