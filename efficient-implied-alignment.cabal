@@ -2,7 +2,7 @@ cabal-version:  2.2
 category:       Algorithms
 build-type:     Simple
 
-name:           commutative-multi-string-alignment
+name:           efficient-implied-alignment
 version:        0.1.0
 
 author:         Alex Washburn
@@ -21,8 +21,8 @@ description:    Using a commutative, binary string alignment operator and a
                 case /O(n*k*log(k))/ and the pre-order traversal should be
                 /O(n*k)/.
 
-homepage:       https://github.com/githubuser/commutative-multi-string-alignment#readme
-bug-reports:    https://github.com/githubuser/commutative-multi-string-alignment/issues
+homepage:       https://github.com/githubuser/efficient-implied-alignment#readme
+bug-reports:    https://github.com/githubuser/efficient-implied-alignment/issues
                 
 extra-source-files:
     ChangeLog.md
@@ -30,7 +30,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/commutative-multi-string-alignment
+  location: https://github.com/githubuser/efficient-implied-alignment
 
 
 -- A litany of GHC warnings designed to alert us during the build of any common
@@ -165,7 +165,7 @@ executable tree-align
   build-depends:
       ansi-wl-pprint
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , deepseq
     , keys
     , lens
@@ -173,7 +173,7 @@ executable tree-align
     , semigroupoids
 
   other-modules:
-      Paths_commutative_multi_string_alignment
+      Paths_efficient_implied_alignment
       InputParser
 
   default-language: Haskell2010
@@ -194,7 +194,7 @@ executable generate-timings
   build-depends:
       ansi-wl-pprint
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , containers         >=0.5.8
     , Decimal          
     , deepseq
@@ -229,8 +229,44 @@ executable newick-add-delete-taxon
   build-depends:
       ansi-wl-pprint
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , deepseq
+    , directory
+    , filepath                    
+    , keys
+    , lens
+    , megaparsec         >=7.0
+    , MissingH          
+    , optparse-applicative
+    , process          
+    , scientific          
+    , semigroupoids
+    , split
+    , vector
+
+  default-language: Haskell2010
+
+  
+executable draw-figure
+
+  import:  ghc-flags
+
+  main-is: draw-figure.hs
+
+  hs-source-dirs:
+      app
+
+  ghc-options: -g
+--               -threaded -rtsopts -with-rtsopts=-N -g
+
+  build-depends:
+      ansi-wl-pprint
+    , base       >=4.7 && <5
+    , efficient-implied-alignment
+    , deepseq
+    , diagrams
+    , diagrams-lib
+    , diagrams-svg
     , directory
     , filepath                    
     , keys
@@ -262,7 +298,7 @@ executable reduce-fasta
   build-depends:
       ansi-wl-pprint
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , deepseq
     , directory
     , filepath                    
@@ -290,9 +326,8 @@ test-suite test-align
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
   build-depends:
-      commutative-multi-string-alignment
+      efficient-implied-alignment
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -302,7 +337,7 @@ test-suite test-align
     , validation
 
   other-modules:
-      Paths_commutative_multi_string_alignment
+      Paths_efficient_implied_alignment
       SampleData
 
   default-language: Haskell2010
@@ -334,7 +369,7 @@ test-suite test-trees
     , validation
 
   other-modules:
-      Paths_commutative_multi_string_alignment
+      Paths_efficient_implied_alignment
       SampleData
 
   default-language: Haskell2010
