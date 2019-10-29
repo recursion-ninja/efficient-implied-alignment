@@ -513,7 +513,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 \begin{figure}[h]
 	\raggedleft
-	\caption{Example preorder alignment}
+	\caption{Example preorder alignment for two internal nodes}
 	\label{Fig:ExamplePreorder}
 	\hspace{-10em}
 	\includegraphics[width=1.2\textwidth, inner]{example-preorder.png}
@@ -523,7 +523,9 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 \section{Conclusion and Empirical Examples}
 
-An example Haskell implementation of the implied alignment algorithm described above can be found here: \url{https://github.com/amnh/fastc/}
+An example Haskell implementation of the implied alignment algorithm described above can be found here: 
+
+\centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
 We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal.
 Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
