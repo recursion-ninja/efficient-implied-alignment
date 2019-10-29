@@ -301,7 +301,7 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
 
 \section{Description of pre-order traversal for final alignments}
 The preorder traversal of the binary tree $\mathcal{T}$ consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
-First, the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context with all deletion events replaced with substitution events.
+First, the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context with all deletion events replaced with insertion events.
 This is required because at the root node, deletion events originated from  alignments of the left subtree and insertion events originated from alignments of the right sub tree, however the origin of these events are indistinguishable at the root node.
 By initializing the root node in this manner, we treat the root node the same as we would any other parental node when deriving the internal node alignments.
 
@@ -310,7 +310,7 @@ If it is the left child, then each deletion event of the parent node's final ali
 This is required because (as with the root) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however we must consider the converse for the resulting alignment to be consistent when assigning the final alignment context to a node which is the left child of it's parent.
 
 Once the parental final alignment context has been correctly initialized, we proceed to assign the final alignment context of the current node.
-The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the current node's preliminary alignment context due to the addition of alignment gaps $\gap$.
+The parental final alignment context will necessarily be of greater than or equal length to the parental preliminary alignment context and the parental preliminary alignment context is also greater than or equal to than the current node's preliminary alignment context due to the addition of alignment gaps $\gap$ on the postorder.
 The resulting value assigned to the current node's final alignment context will have the same length as the parental final alignment context.
 Since this invariant is maintained from the root node to the leaf node's final alignment context assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that all node's final alignment assignments will be of equal length and constitute a genuine string alignment.
@@ -512,11 +512,10 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 
 \begin{figure}[h]
-	\raggedleft
 	\caption{Example preorder alignment for two internal nodes}
 	\label{Fig:ExamplePreorder}
-	\hspace{-10em}
-	\includegraphics[width=1.2\textwidth, inner]{example-preorder.png}
+	\vspace{2ex}
+	\includegraphics{example-preorder.png}
 \end{figure}
 
 \restoregeometry
@@ -653,7 +652,7 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 % Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
 % Requires LaTeX packages: dcolumn 
 \begin{table}[!htbp] \centering 
-	\caption{Regression coefficients of leaf-set size and string length on runtime} 
+	\caption{Regression coefficients of string count and string length on runtime} 
 	\label{Tab:Regression} 
 	\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
 		\\[-1.8ex]\hline 
@@ -753,7 +752,7 @@ Even an incredibly expensive, poly-time heuristic function $\otimes$ would have 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
-We would like to thank Eric Ford, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
+We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
  and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
 
 \newpage
