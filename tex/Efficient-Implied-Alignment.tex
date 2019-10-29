@@ -37,6 +37,7 @@
 \algtext*{EndSwitch}%
 \algtext*{EndCase}%
 \algtext*{EndDefault}%
+\renewcommand{\algorithmicensure}{\textbf{Result:}}
 
 \newcommand*\NEPowerset{\mathcal{P}_{\geq 1}}
 \newcommand*\gap{\textrm{(--)}}
@@ -139,7 +140,8 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
 \begin{algorithm}
   \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
   \begin{algorithmic}[1]
-    \Require{$lhs, rhs \in \Sigma_{\Gamma}^{*}$ }
+    \Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
+    \Ensure{$\Sigma_{\Gamma}^{*}$}
     \Function{$\otimes$}{$\textit{lhs}, \textit{rhs}$}
       \newline
       \Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
@@ -161,6 +163,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
     \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
     \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
+    \Ensure{$\Sigma_{\Gamma}$}
     \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
       \If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
         \State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
@@ -190,8 +193,9 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
 \begin{algorithm}
   \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{matrixTraceback}
   \begin{algorithmic}[1]
-    \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
+    \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Ensure{$\Sigma_{\Gamma}^{*}$}
 
     \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
       \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
@@ -227,6 +231,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
     \Require{$\left(\, rightCost,   rightElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{$\left(    downCost,    downElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
+    \Ensure{$\left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
     \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
@@ -270,6 +275,7 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
   \caption{Post-order Traversal}\label{postOrder}
   \begin{algorithmic}[1]
     \Require{$inputString \in \Sigma^{*}$ }
+    \Ensure{$\Sigma_{\Gamma}^{*}$ }
     \Function{initializeString}{$\textit{inputString}$}
       \State $i \gets \vert\textit{inputString} \;\vert - 1,$
       \While{$i \geq 0$}
@@ -531,16 +537,18 @@ Both full data sets consisted of a pre-selected tree and pre-deterimined string 
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
-Both biological data sets used the discrete metric $\sigma_0$.
+Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{$ A, C, G, T, -- $\}$.
 
 Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
-The strings of the pathological data set consisted of a single symbol repeated a specific number of times, each string with a different alphabet element.
+The strings of the pathological data set consisted of a single symbol from repeated a specific number of times.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
+The data set used the alphabet $\Sigma = \{$ A, C, G, T, -- $\}$.
 
 The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
 The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
 Conversely, the latter selects for insertion or deletion over substitution thus producing the ``degenerate alignment.''
+
 
 After running each data set, we constructed an Ordinary Least Square (OLS) model with the output runtime in milliseconds as a function of dimensions $k$ and $n$.
 We took the binary logarithm, $\log_{2}$, of both input dimensions as well as the output.
