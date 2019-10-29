@@ -441,28 +441,28 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
       \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
       \For{$\textit{i} < \textit{len}$}
         \If    {$\textit{j} \geq \textit{pcLen} \land \textit{k} \geq \textit{ccLen}$}
-          \State $\textit{result}_i \gets \textit{del}$
+          \State $\textit{result}_i \gets \textit{del}$ \Comment{Case 0}
         \ElsIf {$\textit{k} \geq \textit{ccLen}$}
           \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 1}
               \State $\textit{result}_i \gets \textit{del}$
             \EndCase
-            \Default{}
+            \Default{} \Comment{Case 2}
               \State $\textit{result}_i \gets \textit{del}$
               \State $\textit{j} \gets \textit{j} + 1$
             \EndDefault
           \EndSwitch
         \Else
           \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 3}
               \State $\textit{result}_i \gets \textit{del}$
             \EndCase
-            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} 
               \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 4}
                   \State $\textit{result}_i \gets \textit{del}$
                 \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 5}
                   \If {$\textit{isLeaf} \land y \neq \;$\Call{getMedian}{$\textit{cContext}_k$}}
                     \State $\textit{result}_i \gets \textit{del}$
                   \Else
@@ -470,23 +470,23 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
                     \State $\textit{k} \gets \textit{k} + 1$
                   \EndIf
                 \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 6}
                   \State $\textit{result}_i \gets \textit{cContext}_k$
                   \State $\textit{k} \gets \textit{k} + 1$
                 \EndCase
               \EndSwitch
               \State $\textit{j} \gets \textit{j} + 1$
             \EndCase
-            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} 
               \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 7}
                   \State $\textit{result}_i \gets \textit{del}$
                 \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 8}
                   \State $\textit{result}_i \gets \textit{cContext}_k$
                   \State $\textit{k} \gets \textit{k} + 1$
                 \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 9}
                   \If {$\textit{isLeaf}$}
                     \State $\textit{result}_i \gets \textit{cContext}_k$
                   \Else
@@ -507,29 +507,6 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 \end{algorithm}
 
 \restoregeometry
-
-\begin{tikzpicture}[font=\ttfamily,
-array/.style={matrix of nodes,nodes={draw, minimum size=7mm, fill=green!30},column sep=-\pgflinewidth, row sep=0.5mm, nodes in empty cells,
-	row 1/.style={nodes={draw=none, fill=none, minimum size=5mm}},
-	row 1 column 1/.style={nodes={draw}}}]
-
-\matrix[array] (array) {
-	0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\
-	&   &   &   &   &   &   &   &   &  \\};
-\node[draw, fill=gray, minimum size=4mm] at (array-2-9) (box) {};
-
-\begin{scope}[on background layer]
-\fill[green!10] (array-1-1.north west) rectangle (array-1-10.south east);
-\end{scope}
-
-\draw[<->]([yshift=-3mm]array-2-1.south west) -- node[below] {Array length is 10} ([yshift=-3mm]array-2-10.south east);
-
-\draw (array-1-1.north)--++(90:3mm) node [above] (first) {First index};
-\draw (array-1-10.east)--++(0:3mm) node [right]{Indices};
-\node [align=center, anchor=south] at (array-2-9.north west|-first.south) (8) {Element\\ (at index 8)};
-\draw (8)--(box);
-%
-\end{tikzpicture}
 
 \section{Conclusion and Empirical Examples}
 
