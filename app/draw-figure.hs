@@ -10,25 +10,18 @@ import Prelude hiding (zip)
 
 
 main :: IO ()
-main = mainWith $ canvas # connectOutside' arrowLine "frame 0" "frame 1"
-                         # connectOutside' arrowBent "frame 1" "frame 2"
-                         # connectOutside' arrowLine "frame 2" "frame 3"
-                         # connectOutside' arrowBent "frame 3" "frame 4"
-                         # connectOutside' arrowLine "frame 4" "frame 5"
-                         # connectOutside' arrowBent "frame 5" "frame 6"
-                         # connectOutside' arrowLine "frame 6" "frame 7"
-                         # connectOutside' arrowBent "frame 7" "frame 8"
-                         # connectOutside' arrowLine "frame 8" "frame 9"
-                         # connectOutside' arrowBent "frame 9" "frame 10"
---                         # connectOutside' arrowSquiggle "frame 1" "frame 2"
---main = print points *> mainWith (position (zip points frames))
-{-
-main = do
-    print points
-    mainWith $ (frames !! 0 ||| frames !! 1) # connectOutside "frame 0" "frame 1"
--}
---main = mainWith $ (frames !! 0 ||| frames !! 1) # connectOutside "frame 0" "frame 1"
---main = mainWith $ stackVertical frames
+main = mainWith
+     . scale 7
+     $ canvas # connectOutside' arrowLine "frame 0" "frame 1"
+              # connectOutside' arrowBent "frame 1" "frame 2"
+              # connectOutside' arrowLine "frame 2" "frame 3"
+              # connectOutside' arrowBent "frame 3" "frame 4"
+              # connectOutside' arrowLine "frame 4" "frame 5"
+              # connectOutside' arrowBent "frame 5" "frame 6"
+              # connectOutside' arrowLine "frame 6" "frame 7"
+              # connectOutside' arrowBent "frame 7" "frame 8"
+              # connectOutside' arrowLine "frame 8" "frame 9"
+              # connectOutside' arrowBent "frame 9" "frame 10"
 
 
 canvas :: Diagram B
@@ -36,16 +29,16 @@ canvas = position (zip fPoints frames <> zip lPoints labels)
 
 
 arrowLine :: (Typeable n, RealFloat n) => ArrowOpts n
-arrowLine = with & shaftStyle %~ lw 0.5
-                 & headLength .~ 1
+arrowLine = with & shaftStyle %~ lw 3
+                 & headLength .~ 12
 
 
 arrowBent :: (Typeable n, RealFloat n) => ArrowOpts n
 arrowBent =
-    let shaft = trailFromVertices $ map p2 [(0, 0), (0, 0.5), (3, 0.5), (3, 1) ]
+    let shaft = trailFromVertices $ map p2 [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
     in  with & arrowShaft .~ shaft
-             & headLength .~ 0.5
-             & shaftStyle %~ lw 0.5
+             & headLength .~ 12
+             & shaftStyle %~ lw 3
 
 
 data  AlignCell
@@ -81,7 +74,7 @@ makeAlignments (i,j,k) = stackVertical
     ]
   where
     f   = withEnvelope box
-    box = phantom (rect 0.75 2 :: Diagram B) :: Diagram B
+    box = phantom (rect 1 2 :: Diagram B) :: Diagram B
     makeIndexPad = box ||| box ||| box ||| box
     makeIndexLabel :: String -> Word -> Diagram B
     makeIndexLabel idx val = f smb ||| f eqs ||| f num ||| box
@@ -90,7 +83,7 @@ makeAlignments (i,j,k) = stackVertical
         smb = txt idx
         eqs = txt "="
         num = txt $ show val
-        txt = scale 1.25 . bold . text
+        txt = scale 1.5 . bold . text
 
 
 stackVertical
@@ -136,7 +129,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
         atCursorStop = e == Spacing && k' == cursorStop
         k'  = toEnum k
         txt = cellText $ [toSymbol e]
-        sqr = clr . lineWidth 0.25 . pad 1.2 $ square 2
+        sqr = clr cellBox
         clr | atCursorStop = lineColor (sRGB 196 0 0)
             | e == Spacing = lineColor (sRGB   0 0 0)
             | otherwise    = case k' `compare` i of
@@ -151,6 +144,9 @@ cellText = alignT . scale (5/3) . (<> phantom box) . bold . text
     box = square 0.65 :: Diagram B
 
 
+cellBox :: Diagram B
+cellBox = lineWidth 2 . pad 1.2 $ square 2
+
 
 derivedAt :: Word -> [AlignCell] -> Diagram B
 derivedAt i xs = foldl makeCell mempty cells 
@@ -163,7 +159,7 @@ derivedAt i xs = foldl makeCell mempty cells
       | otherwise                = a ||| (txt <> sqr)
       where
         txt = cellText $ [toSymbol e]
-        sqr = clr . lineWidth 0.25 . pad 1.2 $ square 2
+        sqr = clr cellBox
         clr | e == Question = redLine
             | e == Spacing  = redLine
             | otherwise     = bluLine
@@ -181,7 +177,7 @@ stp = upper <> lower
   where
     upper  = mkLine [origin, (sqrt 2) ^& sqrt 2]
     lower  = mkLine [0 ^& (sqrt 2), sqrt 2 ^& 0]
-    mkLine = centerXY . lineWidth 0.25 . strokeLine . lineFromVertices
+    mkLine = centerXY . lineWidth 2 . strokeLine . lineFromVertices
 
 
 fPoints :: [P2 Double]
@@ -202,16 +198,20 @@ fPoints = map p2
 
 lPoints :: [P2 Double]
 lPoints = map p2
-    [ (20, 92)
-    , (20, 84)
-    , (20, 74)
-    , (20, 66)
-    , (20, 56)
-    , (20, 48)
-    , (20, 38)
-    , (20, 30)
-    , (20, 20)
-    , (20, 12)
+    [ (20,  92 )
+    , (20,  84 )
+    , (20,  74 )
+    , (20,  66 )
+    , (20,  56 )
+    , (20,  48 )
+    , (20,  38 )
+    , (20,  30 )
+    , (20,  20 )
+    , (20,  12 )
+    , (26.5  ,  3.5 ), (48    ,  3.5), (56.125,  3.5)
+    , (29.625,  1   ), (48.375,  1  ), (56.125,  1  )
+    , (29.125, -1.5 ), (48.375, -1.5), (56.125, -1.5)
+    , (26    , -4   ), (48    , -4  ), (56.125, -4  )
     ]
 
 
@@ -228,6 +228,10 @@ labels =
         , lab "Case 1"
         , lab "Case 2"
         , lab "Case 0"
+        , lab "Parent's final       alignment", lab "(preorder" , lab "result)"
+        , lab "Parent's preliminary alignment", lab "(postorder", lab "result)"
+        , lab "Child's  preliminary alignment", lab "(postorder", lab "result)"
+        , lab "Child's  final       alignment", lab "(preorder" , lab "result)"
         ]
 
 

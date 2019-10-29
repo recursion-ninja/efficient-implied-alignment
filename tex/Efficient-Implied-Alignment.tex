@@ -3,6 +3,7 @@
 \usepackage{dcolumn}
 \usepackage{setspace}
 \usepackage{tabularx}
+\usepackage[export]{adjustbox}
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{subfigure}
@@ -320,29 +321,31 @@ At each step of the ``sliding zip'' one element of the parental final alignment 
 Additionally, one element of either the parental preliminary alignment context, the current node's preliminary alignment context, or both elements will also be consumed in each step of the ``sliding zip.''
 The process is called a ``sliding zip'' because the elements of the parental and current node's preliminary alignment contexts do not have a fixed index to which they correspond to the parental final alignment context being used as the basis of the zip.
 Rather the elements of the parental and current node's preliminary alignment contexts ``slide'' through the zipping process, and their corresponding index with the basis is deduced dynamically.
+An example alignment of this ``sliding zip'' process for two internal  nodes is shown in Figure \ref{Fig:ExamplePreorder}.
 Deletion events in the parental final alignment context are propagated to the current node's final alignment context without consuming elements of the parental or current node's preliminary alignment contexts.
 For each non-deletion element in the parental final alignment context, one element from either the parental preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment context depending on the deletion, insertion, or alignment event of the next parental preliminary alignment context element.
 However, the final alignment context assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
+There are ten special cases describing how to derive each index current node's final alignment. The special cases are best describe by the pseudocode in Algorithm \ref{Alg:Preorder} and Figure \ref{Fig:ExamplePreorder}.
 
-\begin{itemize}
-
-\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary alignment context.
-If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context. 
-If the median value is the same as the inserted value from the parental preliminary alignment context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
-
-\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-
-\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, we must check if we are deriving the alignment for a leaf node.
-If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-If we are \textit{not} deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
-
-\end{itemize}
+%\begin{itemize}
+%
+%\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
+%
+%\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment context.
+%
+%\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+%
+%\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary alignment context.
+%If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context. 
+%If the median value is the same as the inserted value from the parental preliminary alignment context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
+%
+%\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+%
+%\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, we must check if we are deriving the alignment for a leaf node.
+%If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+%If we are \textit{not} deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
+%
+%\end{itemize}
 
 The major difference between the implied alignment algorithm presented here, and the original algorithm, is that the additional stored information allows us to decorate the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time. 
 The aforementioned $n^2$ component occurred in previous implementations using a ``back-propagation'' technique, where at each preorder step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous preorder step.
@@ -362,7 +365,7 @@ In this case, $m = 1$ and the ``sliding zip'' performed on each node performs wo
 Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $m = 1$.
 
 The worst case runtime occurs when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
-In the worst case, $m >> 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings $n$.
+In the worst case, $m \gg 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings $n$.
 Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
 %I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
@@ -431,6 +434,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 \newgeometry{top=1mm, bottom=1mm}
 
 \begin{algorithm}
+  \label{Alg:Preorder}
   \caption{Internal Node Alignment}\label{deriveAlignment}
   \begin{algorithmic}[1]
     \Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
@@ -505,6 +509,15 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
+
+
+\begin{figure}[h]
+	\raggedleft
+	\caption{Example preorder alignment}
+	\label{Fig:ExamplePreorder}
+	\hspace{-10em}
+	\includegraphics[width=1.2\textwidth, inner]{example-preorder.png}
+\end{figure}
 
 \restoregeometry
 
