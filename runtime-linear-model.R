@@ -78,7 +78,7 @@ summary(mod_metazoa)
 
 ### format all models, extract coefficients and adj. r2----
 # specify the output file to be .tex
-stargazer(mod_best, mod_worst, mod_fungi, #mod_metazoa,
+stargazer(mod_best, mod_worst, mod_fungi, mod_metazoa,
           type="latex",
           title="Regression coefficients of leaf-set size and string length on runtime",
           column.labels = c("Best", "Worst", "Fungi", "Metazoa"),
