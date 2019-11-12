@@ -41,6 +41,7 @@
 
 \newcommand*\NEPowerset{\mathcal{P}_{\geq 1}}
 \newcommand*\gap{\textrm{(--)}}
+\newcommand*\NonNegReals{\mathbb{R}_{\geq 0}}
 
 \DeclarePairedDelimiter\setsize{\lvert}{\rvert}%
 
@@ -59,7 +60,7 @@
 
 \maketitle
 \begin{abstract}
-For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment \citep{Wheeler2003} can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal.
 Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(k^2 * n^2)$ time.
 Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(k * n^2)$}.
@@ -76,14 +77,14 @@ This reduction in the time complexity of the procedure dramatically improves its
 Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
 More formal description of the algorithm was presented in \cite{Wheeleretal2006}.
-Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink relationships. 
+Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by A. \cite{WhitingAetal2006} in their analysis of skink relationships. 
 Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
-This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counterexamples.
+This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counter-examples.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure, benefit greatly from improvements in the time-complexity of the algorithm.
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
 The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
 The more similar the strings, the better the algorithm performs.
 While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
@@ -104,7 +105,7 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\mathbb{N}\;,\; \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning an alignment cost and alignment context.
+Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning a non-negative alignment cost and alignment context.
 It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context.
 Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result.
 The function $\oplus$ must be must be commutative but need not be associative.
@@ -122,7 +123,7 @@ The longer string is tied to the top of the alignment matrix, the shorter string
 If the strings are the same length, we take the larger string under the lexical ordering of their elements and tie it to the top row, the lesser string is tied to the left side of the alignment matrix (this ensures label invariance). 
 In the case that the strings are equal, the alignment is trivial.
 
-Next we apply ``wave-front'' update initial phase of the procedure.
+Next, we apply ``wave-front'' update initial phase of the procedure.
 Followed by a ``traceback'' through the generated alignment matrix in a manner similar to the Needleman-Wunsch algorithm.
 However, this traceback differs in one substantial detail.
 When using the directional arrows to determine which way to move through the matrix in the traceback, we also use the upward, leftward, and diagonal directional arrows to tag the element as either an insertion, deletion, or alignment event, respectively. 
@@ -160,7 +161,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
   \caption{Generate the alignment matrix of $\otimes$}\label{matrixDefinition}
   \begin{algorithmic}[1]
     \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
     \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
     \Ensure{$\Sigma_{\Gamma}$}
@@ -194,7 +195,7 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
   \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{matrixTraceback}
   \begin{algorithmic}[1]
     \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \mapsto \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Ensure{$\Sigma_{\Gamma}^{*}$}
 
     \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
@@ -227,15 +228,15 @@ It is worth noting that $\sigma$ presented in the pseudocode below can represent
 \begin{algorithm}
   \caption{Get the minimal directional matrix context from the $3$ inputs}\label{getMinimal}
   \begin{algorithmic}[1]
-    \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
-    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
-    \Require{$\left(    downCost,    downElem \right) \in \left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+    \Require{$\left(    downCost,    downElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
-    \Ensure{$\left(\mathbb{N}, \Sigma_{\Gamma} \right)$}
+    \Ensure{$\left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
                           $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \mapsto \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
+      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
       $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
       $,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
       $,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
@@ -323,7 +324,7 @@ This constitutes a simple inductive proof that all node's final alignment assign
 
 The final alignment context for the current node is derived by performing a ``sliding zip'' over the parental final alignment assignment, the parental preliminary alignment context, and the current node's preliminary alignment context.
 The parental final alignment context is used as the basis of the zip.
-At each step of the ``sliding zip'' one element of the parental final alignment context will be consumed and one element of the current node's final alignment context will be defined.
+At each step of the ``sliding zip,'' one element of the parental final alignment context will be consumed and one element of the current node's final alignment context will be defined.
 Additionally, one element of either the parental preliminary alignment context, the current node's preliminary alignment context, or both elements will also be consumed in each step of the ``sliding zip.''
 The process is called a ``sliding zip'' because the elements of the parental and current node's preliminary alignment contexts do not have a fixed index to which they correspond to the parental final alignment context being used as the basis of the zip.
 Rather the elements of the parental and current node's preliminary alignment contexts ``slide'' through the zipping process, and their corresponding index with the basis is deduced dynamically.
@@ -331,7 +332,7 @@ An example alignment of this ``sliding zip'' process for two internal  nodes is 
 Deletion events in the parental final alignment context are propagated to the current node's final alignment context without consuming elements of the parental or current node's preliminary alignment contexts.
 For each non-deletion element in the parental final alignment context, one element from either the parental preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment context depending on the deletion, insertion, or alignment event of the next parental preliminary alignment context element.
 However, the final alignment context assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
-There are ten special cases describing how to derive each index current node's final alignment. The special cases are best describe by the pseudocode in Algorithm \ref{Alg:Preorder} and Figure \ref{Fig:ExamplePreorder}.
+There are ten special cases describing how to derive each index current node's final alignment. The special cases are described in the pseudocode in Algorithm \ref{Alg:Preorder} and Figure \ref{Fig:ExamplePreorder}.
 
 %\begin{itemize}
 %
@@ -532,7 +533,7 @@ An example Haskell implementation of the implied alignment algorithm described a
 
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
-We ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets to explore the runtime performance of the preorder traversal.
+To explore the runtime performance of the preorder traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
 Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
