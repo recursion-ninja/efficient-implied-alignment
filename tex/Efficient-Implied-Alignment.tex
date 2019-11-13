@@ -62,9 +62,9 @@
 \begin{abstract}
 For a given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 This is done by first decorating each node of the tree with an alignment context using the function $\otimes$ in a postorder traversal, then by inferring from the internal node decorations on which edges all insertion and deletion events occurred during a subsequent pre-order traversal.
-Previous descriptions of generating an implied alignment suggest a technique of ``back-propagation'' which runs in $\mathcal{O}(k^2 * n^2)$ time.
-Here we describe a method for generating an implied alignment which runs in \textsc{$\mathcal{O}(k * n^2)$}.
-For well behaved data, such as molecular sequences, the runtime approaches the best case runtime of \textsc{$\Omega(k * n)$}.
+Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' that runs in $\mathcal{O}(k^2 * n^2)$ time.
+Here we describe an implied alignment algorithm that runs in \textsc{$\mathcal{O}(k * n^2)$}.
+For well-behaved data, such as molecular sequences, the runtime approaches a best case runtime of \textsc{$\Omega(k * n)$}.
 This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
 \end{abstract}
 \newpage
@@ -74,25 +74,24 @@ This reduction in the time complexity of the procedure dramatically improves its
 
 %\doublespacing
 \section{Introduction}
-Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} analysis of DNA sequence data for verification and more rapid heuristic analysis.
+Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} phylogenetic tree search in order to provide verification and more rapid heuristic analysis.
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
-More formal description of the algorithm was presented in \cite{Wheeleretal2006}.
-Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by A. \cite{WhitingAetal2006} in their analysis of skink relationships. 
-Furthermore, A. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
-This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}) and we have not yet come upon any counter-examples.
+A more formal description of the algorithm was presented in \cite{Wheeleretal2006}.
+Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink phylogenies. 
+Furthermore, Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
+This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
-The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
+The IA algorithm presented in this paper uses the repeated application of a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree, where each edge describes the pairwise relationship of strings where the strings are labels of the attached nodes.
 The more similar the strings, the better the algorithm performs.
-While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
+Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
 
 
 \section{Definition of the heuristic function}
-In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
+In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the implied alignment algorithm.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
 Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
@@ -105,7 +104,7 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 \end{align*}
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be our heuristic function returning a non-negative alignment cost and alignment context.
+Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a non-negative alignment cost and alignment context.
 It is often convenient to ignore the cost returned from the heuristic function and consider only the resulting alignment context.
 Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result.
 The function $\oplus$ must be must be commutative but need not be associative.
