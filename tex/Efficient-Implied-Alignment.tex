@@ -84,11 +84,19 @@ This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
+<<<<<<< HEAD
 The IA algorithm presented in this paper uses the repeated application of a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree, where each edge describes the pairwise relationship of strings where the strings are labels of the attached nodes.
+=======
+The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than the algorithm in POY.
+Previous work relied on DO to first assign median states, and then later IA consumed these median states to produce the alignment.
+Here we describe IA as a way to produce the alignment first without the median states from DO, and the alignment from IA can then later be consumed to produce the median states.
+
+The algorithm uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
+>>>>>>> 3bad6b886050a7860fc23bb524fdbb3ee29145d4
 The more similar the strings, the better the algorithm performs.
 Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
-
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
 
 \section{Definition of the heuristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the implied alignment algorithm.
@@ -255,8 +263,13 @@ On each internal node, $i_x$ with children $c_l$ and $c_r$, of $\mathcal{T}$, we
 The resultant \textit{prelimString} is assigned to $i_x.prelimString$, and the sum of the $c_l.cost$ and $c_r.cost$ is assigned to $i_x.cost$.
 By performing this operation in a postorder traversal over $\mathcal{T}$, we propagate the alignment contexts and costs returned from the calls to $\otimes$ up the tree from the leaves to the root.
 
+<<<<<<< HEAD
 After performing the postorder traversal, each internal node contains the alignment context information and the cost for its entire subtree.
 Consequently, when the postorder traversal is complete, the root node contains the alignment context information of the full leaf set of strings.
+=======
+After performing the postorder traversal, each internal node contains the alignment context information and the cost for the entire subtree.
+Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
+>>>>>>> 3bad6b886050a7860fc23bb524fdbb3ee29145d4
 In the next step, we will consume this preliminary alignment context to perform an (efficient) alignment on the strings.
 
 Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used.
@@ -741,7 +754,7 @@ Clearly, a heuristic function $\oplus$ that is both commutative \emph{and} assoc
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
 A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
-Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
+Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY \citealp{POY5, Wheeleretal2015}) or as the basis of a search itself as with more traditional approaches.
 
 How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
@@ -751,7 +764,7 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
 \section{Future work}
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
-Even an incredibly expensive, poly-time heuristic function $\otimes$ would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
+Even an incredibly expensive, poly-time heuristic function $\otimes$ would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
