@@ -366,7 +366,7 @@ In this case, $m = 1$ and the ``sliding zip'' performed on each node performs wo
 Hence, the best case runtime of the implied alignment algorithm is $\Omega(n*k)$ when the input strings are highly correlated and $m = 1$.
 
 The worst case runtime occurs when the length of the derived alignment is equal to the sum of the lengths of the input strings, an alignment with the maximum number of elements.
-In the worst case, $m \gg 1$ and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings $n$.
+In the worst case, $m \gg 1$, and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings, $n$.
 Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
 %I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
@@ -528,7 +528,7 @@ An example Haskell implementation of the implied alignment algorithm described a
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
 To explore the runtime performance of the preorder traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
-Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
+Both full data sets consisted of a preselected tree and predetermined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
