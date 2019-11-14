@@ -1,5 +1,7 @@
 # Efficient Implied Alignment
 
+This repository hosts the pre-print manuscript for the *Efficient Implied Alignment* paper, an program `tree-align` implementing the algorithm described in the paper, and a script to replicate the results of the paper.
+
 ### Installation of `tree-align`
 
 You can build and install `tree-align` from source using the Haskell build system `stack`
