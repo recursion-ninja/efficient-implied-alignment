@@ -84,12 +84,15 @@ This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
-The IA algorithm presented in this paper uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
+The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than the algorithm in POY.
+Previous work relied on DO to first assign median states, and then later IA consumed these median states to produce the alignment.
+Here we describe IA as a way to produce the alignment first without the median states from DO, and the alignment from IA can then later be consumed to produce the median states.
+
+The algorithm uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
 The more similar the strings, the better the algorithm performs.
 While this algorithm has general use for performing an MSA, it is most particularly well suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
-
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
 
 \section{Definition of the heuristic function}
 In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree before the implied alignment algorithm is performed.
