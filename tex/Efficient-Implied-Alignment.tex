@@ -261,7 +261,7 @@ On each internal node of the binary tree $\mathcal{T}$, we call $\otimes$ on the
 The node's \textit{prelimString} field is assigned the result of the call to $\otimes$ and the node's  \textit{cost} field is assigned the sum of the node's left and right childern's \textit{cost} fields and the cost returned by the call to $\otimes$.
 By performing this operation in a postorder traversal over the binary tree $\mathcal{T}$ we propagate the alignment contexts and cost returned from the calls to $\otimes$ up the tree from the leaves to the root.
 
-After performing the postorder traversal, each internal node contains the alignment context information and the cost for it's entire subtree.
+After performing the postorder traversal, each internal node contains the alignment context information and the cost for the entire subtree.
 Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
 In the next step, we will consume this preliminary alignment context to perform an (efficient) alignment on the strings.
 
@@ -533,7 +533,7 @@ An example Haskell implementation of the implied alignment algorithm described a
 
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
-To explore the runtime performance of the preorder traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
+To explore the runtime performance of the preorder traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999, GiribetandWheeler2001} respectively.
 Both full data sets consisted of a pre-selected tree and pre-deterimined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
@@ -747,7 +747,7 @@ Clearly, a heuristic function $\oplus$ that is both commutative \emph{and} assoc
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
 A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
-Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY) or as the basis of a search itself as with more traditional approaches.
+Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY \citealp{POY5, Wheeleretal2015}) or as the basis of a search itself as with more traditional approaches.
 
 How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
 When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
@@ -757,7 +757,7 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
 \section{Future work}
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
-Even an incredibly expensive, poly-time heuristic function $\otimes$ would have it's cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
+Even an incredibly expensive, poly-time heuristic function $\otimes$ would have a cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
