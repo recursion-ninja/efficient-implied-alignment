@@ -1,30 +1,39 @@
-\documentclass[11pt]{article}
-\usepackage{csvsimple}
-\usepackage{dcolumn}
-\usepackage{setspace}
-\usepackage{tabularx}
+%% BioMed_Central_Tex_Template_v1.06
+\documentclass{bmcart}
+%\documentclass[11pt]{article}
 \usepackage[export]{adjustbox}
-\usepackage{graphicx}
-\usepackage{geometry}
-\usepackage{subfigure}
-\usepackage{lscape}
-\usepackage{flafter}  % Don't place floats before their definition
-\usepackage{bm}  % Define \bm{} to use bold math fonts
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{bm}  % Define \bm{} to use bold math fonts
+\usepackage{csvsimple}
+\usepackage{dcolumn}
+\usepackage{flafter}  % Don't place floats before their definition
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage[utf8]{inputenc} %unicode support
+\usepackage{lscape}
 \usepackage{mathtools}
 \usepackage{MnSymbol}
-\usepackage{url}
 \usepackage{natbib}
+\usepackage{setspace}
+\usepackage{subfigure}
+\usepackage{tabularx}
+\usepackage{url}
+
+
 %\usepackage{fullpage}
 \bibliographystyle{cbe}
 \citestyle{aa}
-\usepackage{algorithm}
-\usepackage[noend]{algpseudocode}
+
 %\usepackage[vlined,algochapter,ruled]{algorithm2e}
 %\usepackage[vlined,ruled]{algorithm2e}
 %\SetKwComment{Comment}{$\triangleright\ $}{}
+
+%%% Put your definitions there:
+\startlocaldefs
 
 \algnewcommand\algorithmicforeach{\textbf{for each}}
 \algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
@@ -45,30 +54,114 @@
 
 \DeclarePairedDelimiter\setsize{\lvert}{\rvert}%
 
-\title{ \textbf{Efficient Implied Alignment}}
-\author{Alex J. Washburn and Ward C. Wheeler\\
-		Division of  Invertebrate Zoology\\
-		American Museum of Natural History\\
-		200 Central Park West\\
-		New York, NY 10024-5192\\
-		USA\\
-		academia@recursion.ninja\\
-		wheeler@amnh.org\\
-		212-769-5754}
-	%\date{}
-\begin{document}
+\endlocaldefs
 
-\maketitle
-\begin{abstract}
-Given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
-This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
-Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' that runs in $\mathcal{O}(k^2 * n^2)$ time.
-Here we describe an implied alignment algorithm that runs in \textsc{$\mathcal{O}(k * n^2)$}.
-For well-behaved data, such as molecular sequences, the runtime approaches a best case runtime of \textsc{$\Omega(k * n)$}.
-This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
-\end{abstract}
-\newpage
-\tableofcontents
+	
+\begin{document}
+%%% Start of article front matter
+\begin{frontmatter}
+\begin{fmbox}
+	\dochead{Research}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                                          %%
+	%% Enter the title of your article here     %%
+	%%                                          %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\title{Efficient Implied Alignment}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                                          %%
+	%% Enter the authors here                   %%
+	%%                                          %%
+	%% Specify information, if available,       %%
+	%% in the form:                             %%
+	%%   <key>={<id1>,<id2>}                    %%
+	%%   <key>=                                 %%
+	%% Comment or delete the keys which are     %%
+	%% not used. Repeat \author command as much %%
+	%% as required.                             %%
+	%%                                          %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\author[
+	addressref={aff1},
+	email={academia@recursion.ninja}
+	]{\inits{AJW} \fnm{Alex J} \snm{Washburn}}
+	\author[
+	addressref={aff1},
+	email={wheeler@amnh.org}   % email address
+	]{\inits{WCW}\fnm{Ward C} \snm{Wheeler}}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                                          %%
+	%% Enter the authors' addresses here        %%
+	%%                                          %%
+	%% Repeat \address commands as much as      %%
+	%% required.                                %%
+	%%                                          %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\address[id=aff1]{%                           % unique id
+		\orgname{Division of  Invertebrate Zoology, American Museum of Natural History}, % university, etc
+		\street{200 Central Park West},                     %
+		\postcode{10024-5192}                                % post or zip code
+		\city{New York, NY},                              % city
+		\cny{USA}                                    % country
+	}
+
+\end{fmbox}% comment this for two column layout
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% The Abstract begins here                 %%
+%%                                          %%
+%% Please refer to the Instructions for     %%
+%% authors on http://www.biomedcentral.com  %%
+%% and include the section headings         %%
+%% accordingly for your article type.       %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstractbox}
+	
+	\begin{abstract}
+		Given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
+		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' that runs in $\mathcal{O}(k^2 * n^2)$ time.
+		Here we describe an implied alignment algorithm that runs in \textsc{$\mathcal{O}(k * n^2)$}.
+		For well-behaved data, such as molecular sequences, the runtime approaches a best case runtime of \textsc{$\Omega(k * n)$}.
+		This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
+	\end{abstract}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                                          %%
+	%% The keywords begin here                  %%
+	%%                                          %%
+	%% Put each keyword in separate \kwd{}.     %%
+	%%                                          %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	\begin{keyword}
+		\kwd{multiple string alignment}
+		\kwd{tree alignment}
+		\kwd{phylogenetics}
+	\end{keyword}
+	
+	% MSC classifications codes, if any
+	%\begin{keyword}[class=AMS]
+	%\kwd[Primary ]{}
+	%\kwd{}
+	%\kwd[; secondary ]{}
+	%\end{keyword}
+	
+\end{abstractbox}
+%
+%\end{fmbox}% uncomment this for twcolumn layout
+
+\end{frontmatter}
+
 \newpage
 
 
@@ -140,113 +233,6 @@ Additionally, by using the method described by \cite{Hirschberg1975}, this algor
 
 Note that $\sigma$ presented in throughout the pseudocode below can represent a more complex metric, such as using affine or logarithmic affine gap costs. For usage see Algorithms \ref{Alg:pairwiseAlignment},  \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
-\begin{algorithm}
-  \caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
-  \begin{algorithmic}[1]
-    \Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
-    \Ensure{$\Sigma_{\Gamma}^{*}$}
-    \Function{$\otimes$}{$\textit{lhs}, \textit{rhs}$}
-      \newline
-      \Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
-      \If    {$\textit{lhs} = \textit{rhs}$}
-        \State \Return $\textit{lhs}$
-      \ElsIf {$\textit{lhs} < \textit{rhs}$}
-        \State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
-      \Else
-        \State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
-      \EndIf
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-  \caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
-  \begin{algorithmic}[1]
-    \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
-    \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
-    \Ensure{$\Sigma_{\Gamma}$}
-    \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
-      \If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
-        \State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
-      \ElsIf{$i = 0 \land j = 0$} \Comment{Handle the origin}
-        \State \Return $\left( 0, \nwarrow, \textbf{--} \right)$
-      \ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
-        \State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
-        \State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$
-      \ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
-        \State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
-        \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
-      \Else \Comment{General recursive case}
-        \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
-        \State $y \gets \sigma \left(           \textit{•}it{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
-        \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
-        \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
-        \If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
-          \State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
-        \Else
-          \State \Return $\left( minCost, minDir, minElem \right)$
-        \EndIf
-      \EndIf
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-  \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{Alg:matrixTraceback}
-  \begin{algorithmic}[1]
-    \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
-    \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Ensure{$\Sigma_{\Gamma}^{*}$}
-
-    \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
-      \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
-      \State \Return $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
-      \State $alignedStr \gets \left[ \,\right]$
-      \While{$\left( i, j \right) > \left( 0, 0 \right)$}
-        \State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
-        \Switch{$\textit{dirArrow}$}
-          \Case{$\leftarrow$}
-            \State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
-            \State $nextElement \gets \textbf{DELETE} \;\;   elem \;\; \textit{longer}_{j-1}$
-          \EndCase
-          \Case{$\uparrow$}
-            \State $\left( i, j\right) \gets \left( i - 1      , j \quad\;\; \right)$
-            \State $nextElement \gets \textbf{INSERT} \;\;\; elem \hspace{1.9cm} \textit{lesser}_{i-1}$
-          \EndCase
-          \Case{$\nwarrow$}
-            \State $\left( i, j\right) \gets \left( i - 1      , j - 1       \right)$
-            \State $nextElement \gets \textbf{ALIGN} \quad\; elem \;\; \textit{longer}_{j-1} \;\; \textit{lesser}_{i-1}$
-          \EndCase
-        \EndSwitch
-        \State $alignedStr \gets nextElement + alignedStr$
-      \EndWhile
-      \State \Return $\left(alignedCost, alignedStr \right)$
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}
-  \caption{Get the minimal directional matrix context from the $3$ inputs}\label{Alg:getMinimal}
-  \begin{algorithmic}[1]
-    \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Require{$\left(\, rightCost,   rightElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Require{$\left(    downCost,    downElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
-    \Ensure{$\left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
-                          $,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
-                          $,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-      \State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
-      $[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
-      $,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
-      $]$
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
 
 \section{Description of post-order traversal}
 The post-order traversal (from the leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure.
@@ -270,43 +256,7 @@ Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum s
 Then post-order traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
 If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
-\section{Pseudocode of post-order traversal}
-
-\begin{algorithm}
-  \caption{Post-order Traversal}\label{post-order}
-  \begin{algorithmic}[1]
-    \Require{$inputString \in \Sigma^{*}$ }
-    \Ensure{$\Sigma_{\Gamma}^{*}$ }
-    \Function{initializeString}{$\textit{inputString}$}
-      \State $i \gets \vert\textit{inputString} \;\vert - 1,$
-      \While{$i \geq 0$}
-        \State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
-      \EndWhile
-      \Return $\textit{inputString}$
-    \EndFunction
-
-    \Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
-    \Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
-    %    \Procedure{post-order(n)}{}
-    \Function{post-order}{$\textit{node}$}
-      \If   {isLeaf ( $\textit{node}$ )}
-        \State $\textit{node.cost} \gets 0$
-%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
-%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
-%sy        \EndIf
-      \Else
-        \State $\textit{lhs}  \gets \Call{post-order}{\textit{node.children.first}}$
-        \State $\textit{rhs}  \gets \Call{post-order}{\textit{node.children.second}}$
-        \State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
-        \State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
-        \State $\textit{node.prelimString} \gets \textit{alignContext}$
-      \EndIf
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-
-\section{Description of pre-order traversal for final alignments}
+\section{Description of pre-order traversal}
 The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations created in the post-order traversal in order to assign final alignment decorations to each node.
 First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however the origin of these events are indistinguishable at the root node.
@@ -376,156 +326,6 @@ The worst case runtime occurs when the length of the derived alignment is equal 
 In the worst case, $m \gg 1$, and the ``sliding zip'' performed on each node performs work equal to the length of the longest input string, $k$, times the number of input strings, $n$.
 Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
-%I will note the similarity and difference to implied alignment derivation mentioned by Ward's previous works.
-
-
-\section{Pseudocode of pre-order traversal}
-
-\begin{algorithm}
-  \caption{Pre-order Traversal}\label{pre-order}
-  \begin{algorithmic}[1]
-    \Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
-    \Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
-    \Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
-    \Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
-    \Function{pre-order}{$\textit{node}$}
-      \If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
-        \State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
-      \Else
-        \State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
-        \State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
-        \State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
-        \If {isLeftChildOfParent($\textit{node}$)}
-          \ForEach {$\textit{context} \in \textit{parentPrelim}$}
-            \State \Call{reverseContext}{$\textit{context}$}
-          \EndFor
-        \EndIf
-        \State $\textit{v} \gets$ \Call{deriveAlignment}{$isLeaf ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
-        \State $\textit{node.finalString} \gets \textit{v}$
-      \EndIf
-    \EndFunction
-
-    \Function{initializeRootString}{$\textit{rootString}$}
-      \ForEach {$\textit{context} \in \textit{rootString}$}
-        \Call{deletionToInsertion}{$\textit{context}$}
-      \EndFor
-    \EndFunction
-
-    \Function{deletionToInsertion}{$\textit{context}$}
-      \Switch{$\textit{context}$}
-        \Case{$\textbf{DELETE} \;\; \textit{m} \;\; \textit{x} \;\;$}
-          \Return $\textbf{INSERT} \;\; \textit{m} \;\; \textit{x} \;\;$
-        \EndCase
-        \Case{$\textit{v} \;\;$}
-          \Return $\textit{v}$
-        \EndCase
-      \EndSwitch
-    \EndFunction
-
-    \Function{reverseContext}{$\textit{context}$}
-      \Switch{$\textit{context}$}
-        \Case{    $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-          \Return $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{y} \;\; \textit{x} \;\;$
-        \EndCase
-        \Case{    $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-          \Return $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{x} \;\;$
-        \EndCase
-        \Case{    $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-          \Return $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{y} \;\;$
-        \EndCase
-      \EndSwitch
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-
-\newgeometry{top=1mm, bottom=1mm}
-
-\begin{algorithm}
-  \label{Alg:pre-order}
-  \caption{Internal Node Alignment}\label{deriveAlignment}
-  \begin{algorithmic}[1]
-    \Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-      \State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-      \For{$\textit{i} < \textit{len}$}
-        \If    {$\textit{j} \geq \textit{pcLen} \land \textit{k} \geq \textit{ccLen}$}
-          \State $\textit{result}_i \gets \textit{del}$ \Comment{Case 0}
-        \ElsIf {$\textit{k} \geq \textit{ccLen}$}
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 1}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Default{} \Comment{Case 2}
-              \State $\textit{result}_i \gets \textit{del}$
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndDefault
-          \EndSwitch
-        \Else
-          \Switch{$\textit{pAlignment}_i$}
-            \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 3}
-              \State $\textit{result}_i \gets \textit{del}$
-            \EndCase
-            \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} 
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 4}
-                  \State $\textit{result}_i \gets \textit{del}$
-                \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 5}
-                  \If {$\textit{isLeaf} \land y \neq \;$\Call{getMedian}{$\textit{cContext}_k$}}
-                    \State $\textit{result}_i \gets \textit{del}$
-                  \Else
-                    \State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
-                    \State $\textit{k} \gets \textit{k} + 1$
-                  \EndIf
-                \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 6}
-                  \State $\textit{result}_i \gets \textit{cContext}_k$
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-              \EndSwitch
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndCase
-            \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} 
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 7}
-                  \State $\textit{result}_i \gets \textit{del}$
-                \EndCase
-                \Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 8}
-                  \State $\textit{result}_i \gets \textit{cContext}_k$
-                  \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-                \Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 9}
-                  \If {$\textit{isLeaf}$}
-                    \State $\textit{result}_i \gets \textit{cContext}_k$
-                  \Else
-                    \State $\textit{result}_i \gets \textit{pContext}_j$
-                  \EndIf
-                    \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-              \EndSwitch
-              \State $\textit{j} \gets \textit{j} + 1$
-            \EndCase
-          \EndSwitch
-        \EndIf
-        \State $\textit{i} \gets \textit{i} + 1$
-      \EndFor
-      \Return $\textit{result}$
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{figure}[h]
-	\caption{Example pre-order alignment for two internal nodes}
-	\label{Fig:Examplepre-order}
-	\vspace{2ex}
-	\includegraphics{example-preorder.eps}
-\end{figure}
-
-\restoregeometry
 
 \section{Conclusion and Empirical Examples}
 
@@ -563,52 +363,6 @@ The OLS model empirically supports the theoretical best and worst case runtimes 
 The OLS model also showed that the runtime scales well for the biological data sets.
 The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear runtime with respect to the number of input strings and linear runtime with respect to string length.
 The fungal data sets shows that some of the ``real world'' use cases can perform close to the theoretical best case runtime (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}). % and Tables \ref{Tab:Fungi} \& \ref{Tab:Metazoa}.
-
-
-\begin{table}[!hbt]
-\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
-\label{Tab:Metrics}
-\begin{minipage}{0.3\textwidth}
-	\centering
-	\begin{tabular}{c|ccccc}
-		$\sigma_0$ & A & C & G & T & -- \\ \hline
-		A  & 0 & 1 & 1 & 1 & 1  \\
-		C  & 1 & 0 & 1 & 1 & 1  \\
-		G  & 1 & 1 & 0 & 1 & 1  \\
-		T  & 1 & 1 & 1 & 0 & 1  \\
-		-- & 1 & 1 & 1 & 1 & 0
-	\end{tabular}
-%	\caption{Discrete}
-\end{minipage}
-\hfill
-\begin{minipage}{0.33\textwidth}
-\centering
-\begin{tabular}{c|ccccc}
-$\sigma_1$ & A & C & G & T & -- \\ \hline
-        A  & 0 & 1 & 1 & 1 & 2  \\
-        C  & 1 & 0 & 1 & 1 & 2  \\
-        G  & 1 & 1 & 0 & 1 & 2  \\
-        T  & 1 & 1 & 1 & 0 & 2  \\
-        -- & 2 & 2 & 2 & 2 & 0
-\end{tabular}
-%\caption{Prefer Align}
-\end{minipage}
-\hfill
-\begin{minipage}{0.3\textwidth}
-\centering
-%\begin{table}[!hbt]
-%\begin{center}
-\begin{tabular}{c|ccccc}
-$\sigma_2$ & A & C & G & T & -- \\ \hline
-        A  & 0 & 3 & 3 & 3 & 1  \\
-        C  & 3 & 0 & 3 & 3 & 1  \\
-        G  & 3 & 3 & 0 & 3 & 1  \\
-        T  & 3 & 3 & 3 & 0 & 1  \\
-        -- & 1 & 1 & 1 & 1 & 0
-\end{tabular}
-%\caption{Prefer InDel}
-\end{minipage}
-\end{table}
 
 %\begin{table}
 %\scriptsize
@@ -656,67 +410,7 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 %\end{minipage}
 %\end{table}
 
-
-% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
-% Requires LaTeX packages: dcolumn 
-\begin{table}[!htbp] \centering 
-	\caption{Regression coefficients of string count and string length on runtime} 
-	\label{Tab:Regression} 
-	\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
-		\\[-1.8ex]\hline 
-		\hline \\[-1.8ex]
-		& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
-		\cline{2-5} 
-		\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
-		& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
-		\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
-		\hline \\[-1.8ex] 
-		$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
-		& & & & \\ 
-		$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
-		& & & & \\ 
-		\hline \\[-1.8ex]
-		Observations & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
-		Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
-		\hline 
-		\hline \\[-1.8ex] 
-	\end{tabular}
-\end{table}
-
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
-
-\begin{figure}[h]
-\centering
-\begin{minipage}{0.49\textwidth}
-\centering
-\caption{Fungi pre-order runtime}
-\label{Fig:Fungi}
-\includegraphics[width=1.05\textwidth]{fungi-preorder.png}
-\end{minipage}
-\hfill
-\begin{minipage}{0.49\textwidth}
-\centering
-\caption{Metazoa pre-order runtime}
-\label{Fig:Metazoa}
-\includegraphics[width=1.05\textwidth]{metazoa-preorder.png}
-\end{minipage}
-
-\begin{minipage}{0.49\textwidth}
-\centering
-\caption{Best case pre-order runtime}
-\label{Fig:Best}
-\includegraphics[width=1.05\textwidth]{pathological-12-preorder.png}
-\end{minipage}
-\hfill
-\begin{minipage}{0.49\textwidth}
-\centering
-\caption{Worst case pre-order runtime}
-\label{Fig:Worst}
-\includegraphics[width=1.05\textwidth]{pathological-31-preorder.png}
-\end{minipage}
-\end{figure}
-
 
 \section{Why `Implied' Alignment}
 
@@ -761,12 +455,6 @@ If a heuristic function $\otimes$ that was both commutative and associative and 
 Even an incredibly expensive, poly-time $\otimes$ definition would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
-\section{Acknowledgements}
-We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
- and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
-
-\newpage
-\bibliography{big-refs-3}
 \newpage
 
 %\section{Appendix}
@@ -828,5 +516,452 @@ We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia 
 %		\label{Tab:Worst}
 %	\end{tabular}
 %\end{table}
+
+\begin{backmatter}
+	
+	\section*{Acknowledgements}
+	We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
+	and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                  The Bibliography                       %%
+	%%                                                         %%
+	%%  Bmc_mathpys.bst  will be used to                       %%
+	%%  create a .BBL file for submission.                     %%
+	%%  After submission of the .TEX file,                     %%
+	%%  you will be prompted to submit your .BBL file.         %%
+	%%                                                         %%
+	%%                                                         %%
+	%%  Note that the displayed Bibliography will not          %%
+	%%  necessarily be rendered by Latex exactly as specified  %%
+	%%  in the online Instructions for Authors.                %%
+	%%                                                         %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	% if your bibliography is in bibtex format, use those commands:
+	\bibliographystyle{bmc-mathphys} % Style BST file (bmc-mathphys, vancouver, spbasic).
+	\bibliography{big-refs-3}
+	% for author-year bibliography (bmc-mathphys or spbasic)
+	% a) write to bib file (bmc-mathphys only)
+	% @settings{label, options="nameyear"}
+	% b) uncomment next line
+	%\nocite{label}
+	
+	% or include bibliography directly:
+	% \begin{thebibliography}
+	% \bibitem{b1}
+	% \end{thebibliography}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                               %%
+	%% Figures                       %%
+	%%                               %%
+	%% NB: this is for captions and  %%
+	%% Titles. All graphics must be  %%
+	%% submitted separately and NOT  %%
+	%% included in the Tex document  %%
+	%%                               %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	%%
+	%% Do not use \listoffigures as most will included as separate files
+	
+	\section*{Figures}
+	
+	\begin{figure}[h!]
+		\caption{\csentence{Example pre-order alignment for two internal nodes}
+			Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure.}
+		\label{Fig:Examplepre-order}
+		\vspace{2ex}
+		\includegraphics{example-preorder.eps}
+	\end{figure}
+	
+	\begin{figure}[h!]
+			\caption{Fungi pre-order runtime}
+			\label{Fig:Fungi}
+			\includegraphics[width=1.05\textwidth]{fungi-preorder.png}
+	\end{figure}
+
+    \begin{figure}[h!]
+			\caption{Metazoa pre-order runtime}
+			\label{Fig:Metazoa}
+			\includegraphics[width=1.05\textwidth]{metazoa-preorder.png}
+	\end{figure}
+	
+    \begin{figure}[h!]
+			\caption{Best case pre-order runtime}
+			\label{Fig:Best}
+			\includegraphics[width=1.05\textwidth]{pathological-12-preorder.png}
+	\end{figure}
+
+    \begin{figure}[h!]
+			\caption{Worst case pre-order runtime}
+			\label{Fig:Worst}
+			\includegraphics[width=1.05\textwidth]{pathological-31-preorder.png}
+	\end{figure}
+	
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%                               %%
+	%% Tables                        %%
+	%%                               %%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	%% Use of \listoftables is discouraged.
+	%%
+	\section*{Tables}
+	\begin{table}[!hbt]
+		\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
+		\label{Tab:Metrics}
+		\begin{minipage}{0.3\textwidth}
+			\centering
+			\begin{tabular}{c|ccccc}
+				$\sigma_0$ & A & C & G & T & -- \\ \hline
+				A  & 0 & 1 & 1 & 1 & 1  \\
+				C  & 1 & 0 & 1 & 1 & 1  \\
+				G  & 1 & 1 & 0 & 1 & 1  \\
+				T  & 1 & 1 & 1 & 0 & 1  \\
+				-- & 1 & 1 & 1 & 1 & 0
+			\end{tabular}
+			%	\caption{Discrete}
+		\end{minipage}
+		\hfill
+		\begin{minipage}{0.33\textwidth}
+			\centering
+			\begin{tabular}{c|ccccc}
+				$\sigma_1$ & A & C & G & T & -- \\ \hline
+				A  & 0 & 1 & 1 & 1 & 2  \\
+				C  & 1 & 0 & 1 & 1 & 2  \\
+				G  & 1 & 1 & 0 & 1 & 2  \\
+				T  & 1 & 1 & 1 & 0 & 2  \\
+				-- & 2 & 2 & 2 & 2 & 0
+			\end{tabular}
+			%\caption{Prefer Align}
+		\end{minipage}
+		\hfill
+		\begin{minipage}{0.3\textwidth}
+			\centering
+			%\begin{table}[!hbt]
+			%\begin{center}
+			\begin{tabular}{c|ccccc}
+				$\sigma_2$ & A & C & G & T & -- \\ \hline
+				A  & 0 & 3 & 3 & 3 & 1  \\
+				C  & 3 & 0 & 3 & 3 & 1  \\
+				G  & 3 & 3 & 0 & 3 & 1  \\
+				T  & 3 & 3 & 3 & 0 & 1  \\
+				-- & 1 & 1 & 1 & 1 & 0
+			\end{tabular}
+			%\caption{Prefer InDel}
+		\end{minipage}
+	\end{table}
+	
+	% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+	% Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
+	% Requires LaTeX packages: dcolumn 
+	\begin{table}[!htbp] \centering 
+		\caption{Regression coefficients of string count and string length on runtime} 
+		\label{Tab:Regression} 
+		\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
+			\\[-1.8ex]\hline 
+			\hline \\[-1.8ex]
+			& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+			\cline{2-5} 
+			\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
+			& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
+			\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
+			\hline \\[-1.8ex] 
+			$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
+			& & & & \\ 
+			$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
+			& & & & \\ 
+			\hline \\[-1.8ex]
+			Observations & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
+			Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
+			\hline 
+			\hline \\[-1.8ex] 
+		\end{tabular}
+	\end{table}
+	
+	\section*{Algorithms}
+	
+	\begin{algorithm}
+		\caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
+		\begin{algorithmic}[1]
+			\Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
+			\Ensure{$\Sigma_{\Gamma}^{*}$}
+			\Function{$\otimes$}{$\textit{lhs}, \textit{rhs}$}
+			\newline
+			\Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
+			\If    {$\textit{lhs} = \textit{rhs}$}
+			\State \Return $\textit{lhs}$
+			\ElsIf {$\textit{lhs} < \textit{rhs}$}
+			\State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
+			\Else
+			\State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
+			\EndIf
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\begin{algorithm}
+		\caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
+		\begin{algorithmic}[1]
+			\Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
+			\Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
+			\Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
+			\Ensure{$\Sigma_{\Gamma}$}
+			\Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
+			\If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
+			\State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
+			\ElsIf{$i = 0 \land j = 0$} \Comment{Handle the origin}
+			\State \Return $\left( 0, \nwarrow, \textbf{--} \right)$
+			\ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
+			\State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+			\State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$
+			\ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
+			\State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+			\State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
+			\Else \Comment{General recursive case}
+			\State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
+			\State $y \gets \sigma \left(           \textit{•}it{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
+			\State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
+			\State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
+			\If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
+			\State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
+			\Else
+			\State \Return $\left( minCost, minDir, minElem \right)$
+			\EndIf
+			\EndIf
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\begin{algorithm}
+		\caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{Alg:matrixTraceback}
+		\begin{algorithmic}[1]
+			\Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
+			\Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Ensure{$\Sigma_{\Gamma}^{*}$}
+			
+			\Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
+			\State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
+			\State \Return $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+			\State $alignedStr \gets \left[ \,\right]$
+			\While{$\left( i, j \right) > \left( 0, 0 \right)$}
+			\State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+			\Switch{$\textit{dirArrow}$}
+			\Case{$\leftarrow$}
+			\State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
+			\State $nextElement \gets \textbf{DELETE} \;\;   elem \;\; \textit{longer}_{j-1}$
+			\EndCase
+			\Case{$\uparrow$}
+			\State $\left( i, j\right) \gets \left( i - 1      , j \quad\;\; \right)$
+			\State $nextElement \gets \textbf{INSERT} \;\;\; elem \hspace{1.9cm} \textit{lesser}_{i-1}$
+			\EndCase
+			\Case{$\nwarrow$}
+			\State $\left( i, j\right) \gets \left( i - 1      , j - 1       \right)$
+			\State $nextElement \gets \textbf{ALIGN} \quad\; elem \;\; \textit{longer}_{j-1} \;\; \textit{lesser}_{i-1}$
+			\EndCase
+			\EndSwitch
+			\State $alignedStr \gets nextElement + alignedStr$
+			\EndWhile
+			\State \Return $\left(alignedCost, alignedStr \right)$
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\begin{algorithm}
+		\caption{Get the minimal directional matrix context from the $3$ inputs}\label{Alg:getMinimal}
+		\begin{algorithmic}[1]
+			\Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Require{$\left(\, rightCost,   rightElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Require{$\left(    downCost,    downElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
+			\Ensure{$\left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
+				$,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
+				$,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
+			\State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
+			$[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
+			$,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
+			$,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
+			$]$
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\begin{algorithm}
+		\caption{Post-order Traversal}\label{post-order}
+		\begin{algorithmic}[1]
+			\Require{$inputString \in \Sigma^{*}$ }
+			\Ensure{$\Sigma_{\Gamma}^{*}$ }
+			\Function{initializeString}{$\textit{inputString}$}
+			\State $i \gets \vert\textit{inputString} \;\vert - 1,$
+			\While{$i \geq 0$}
+			\State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
+			\EndWhile
+			\Return $\textit{inputString}$
+			\EndFunction
+			
+			\Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
+			\Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
+			%    \Procedure{post-order(n)}{}
+			\Function{post-order}{$\textit{node}$}
+			\If   {isLeaf ( $\textit{node}$ )}
+			\State $\textit{node.cost} \gets 0$
+			%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
+			%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
+			%sy        \EndIf
+			\Else
+			\State $\textit{lhs}  \gets \Call{post-order}{\textit{node.children.first}}$
+			\State $\textit{rhs}  \gets \Call{post-order}{\textit{node.children.second}}$
+			\State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
+			\State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
+			\State $\textit{node.prelimString} \gets \textit{alignContext}$
+			\EndIf
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+\begin{algorithm}
+	\caption{Pre-order Traversal}\label{pre-order}
+	\begin{algorithmic}[1]
+		\Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
+		\Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
+		\Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
+		\Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
+		\Function{pre-order}{$\textit{node}$}
+		\If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
+		\State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
+		\Else
+		\State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
+		\State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
+		\State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
+		\If {isLeftChildOfParent($\textit{node}$)}
+		\ForEach {$\textit{context} \in \textit{parentPrelim}$}
+		\State \Call{reverseContext}{$\textit{context}$}
+		\EndFor
+		\EndIf
+		\State $\textit{v} \gets$ \Call{deriveAlignment}{$isLeaf ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
+		\State $\textit{node.finalString} \gets \textit{v}$
+		\EndIf
+		\EndFunction
+		
+		\Function{initializeRootString}{$\textit{rootString}$}
+		\ForEach {$\textit{context} \in \textit{rootString}$}
+		\Call{deletionToInsertion}{$\textit{context}$}
+		\EndFor
+		\EndFunction
+		
+		\Function{deletionToInsertion}{$\textit{context}$}
+		\Switch{$\textit{context}$}
+		\Case{$\textbf{DELETE} \;\; \textit{m} \;\; \textit{x} \;\;$}
+		\Return $\textbf{INSERT} \;\; \textit{m} \;\; \textit{x} \;\;$
+		\EndCase
+		\Case{$\textit{v} \;\;$}
+		\Return $\textit{v}$
+		\EndCase
+		\EndSwitch
+		\EndFunction
+		
+		\Function{reverseContext}{$\textit{context}$}
+		\Switch{$\textit{context}$}
+		\Case{    $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
+		\Return $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{y} \;\; \textit{x} \;\;$
+		\EndCase
+		\Case{    $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
+		\Return $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{x} \;\;$
+		\EndCase
+		\Case{    $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
+		\Return $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{y} \;\;$
+		\EndCase
+		\EndSwitch
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+
+\newgeometry{top=1mm, bottom=1mm}
+
+\begin{algorithm}
+	\label{Alg:pre-order}
+	\caption{Internal Node Alignment}\label{deriveAlignment}
+	\begin{algorithmic}[1]
+		\Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
+		\State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
+		\State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
+		\State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
+		\State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
+		\State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
+		\For{$\textit{i} < \textit{len}$}
+		\If    {$\textit{j} \geq \textit{pcLen} \land \textit{k} \geq \textit{ccLen}$}
+		\State $\textit{result}_i \gets \textit{del}$ \Comment{Case 0}
+		\ElsIf {$\textit{k} \geq \textit{ccLen}$}
+		\Switch{$\textit{pAlignment}_i$}
+		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 1}
+		\State $\textit{result}_i \gets \textit{del}$
+		\EndCase
+		\Default{} \Comment{Case 2}
+		\State $\textit{result}_i \gets \textit{del}$
+		\State $\textit{j} \gets \textit{j} + 1$
+		\EndDefault
+		\EndSwitch
+		\Else
+		\Switch{$\textit{pAlignment}_i$}
+		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 3}
+		\State $\textit{result}_i \gets \textit{del}$
+		\EndCase
+		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} 
+		\Switch{$\textit{pContext}_j$}
+		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 4}
+		\State $\textit{result}_i \gets \textit{del}$
+		\EndCase
+		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 5}
+		\If {$\textit{isLeaf} \land y \neq \;$\Call{getMedian}{$\textit{cContext}_k$}}
+		\State $\textit{result}_i \gets \textit{del}$
+		\Else
+		\State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
+		\State $\textit{k} \gets \textit{k} + 1$
+		\EndIf
+		\EndCase
+		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 6}
+		\State $\textit{result}_i \gets \textit{cContext}_k$
+		\State $\textit{k} \gets \textit{k} + 1$
+		\EndCase
+		\EndSwitch
+		\State $\textit{j} \gets \textit{j} + 1$
+		\EndCase
+		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} 
+		\Switch{$\textit{pContext}_j$}
+		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 7}
+		\State $\textit{result}_i \gets \textit{del}$
+		\EndCase
+		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 8}
+		\State $\textit{result}_i \gets \textit{cContext}_k$
+		\State $\textit{k} \gets \textit{k} + 1$
+		\EndCase
+		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 9}
+		\If {$\textit{isLeaf}$}
+		\State $\textit{result}_i \gets \textit{cContext}_k$
+		\Else
+		\State $\textit{result}_i \gets \textit{pContext}_j$
+		\EndIf
+		\State $\textit{k} \gets \textit{k} + 1$
+		\EndCase
+		\EndSwitch
+		\State $\textit{j} \gets \textit{j} + 1$
+		\EndCase
+		\EndSwitch
+		\EndIf
+		\State $\textit{i} \gets \textit{i} + 1$
+		\EndFor
+		\Return $\textit{result}$
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+\restoregeometry
+
+\end{backmatter}
 
 \end{document}
