@@ -60,8 +60,8 @@
 
 \maketitle
 \begin{abstract}
-Given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an Implied Alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
-This is done by first decorating each node of $\mathcal{T}$ with an alignment and alignment context using a pairwise alignment function, $\otimes$, in a postorder traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
+Given binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
 Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' that runs in $\mathcal{O}(k^2 * n^2)$ time.
 Here we describe an implied alignment algorithm that runs in \textsc{$\mathcal{O}(k * n^2)$}.
 For well-behaved data, such as molecular sequences, the runtime approaches a best case runtime of \textsc{$\Omega(k * n)$}.
@@ -77,29 +77,25 @@ This reduction in the time complexity of the procedure dramatically improves its
 Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} phylogenetic tree search in order to provide verification and more rapid heuristic analysis.
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
 A more formal description of the algorithm was presented in \cite{Wheeleretal2006}.
-Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink phylogenies. 
+Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink phylogenies.
 Furthermore, Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
 This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity we present in this paper.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
 
-<<<<<<< HEAD
-The IA algorithm presented in this paper uses the repeated application of a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree, where each edge describes the pairwise relationship of strings where the strings are labels of the attached nodes.
-=======
 The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than the algorithm in POY.
 Previous work relied on DO to first assign median states, and then later IA consumed these median states to produce the alignment.
 Here we describe IA as a way to produce the alignment first without the median states from DO, and the alignment from IA can then later be consumed to produce the median states.
 
-The algorithm uses a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
->>>>>>> 3bad6b886050a7860fc23bb524fdbb3ee29145d4
+The algorithm uses the repeated application of a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
 The more similar the strings, the better the algorithm performs.
 Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity of the algorithm.
 
 \section{Definition of the heuristic function}
-In order for a logically consistent implied alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the implied alignment algorithm.
+In order for a logically consistent alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
 Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
@@ -113,37 +109,39 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
 Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a non-negative alignment cost and alignment context.
-For the purposes of this analysis we will ignore the cost returned from the heuristic function and consider only the resulting alignment context.
-Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result.
-The $\oplus$ function must be must be commutative but need not be associative.
+It is required that $\otimes$ be commutative but need not be associative.
+Both of these constraints with be discussed later.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
 
 \section{Definition of an example heuristic function}
-We will provide an example definition of $\otimes$ sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$.
+We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$.
 One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
 This algorithm is very similar to DO.
 
 First, we deterministically decide which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
 We assign the input strings based on the data they contain.
-This assignment is necessary to enforce consistency in the backtrace from edge to edge, thereby assuring commutativity of the following definition of $\otimes$.
 The longer string is assigned to the columns of the alignment matrix, the shorter string to the rows.
-If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix (this ensures label invariance). 
+If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix. 
 In the case that the strings are identical, the alignment is trivial.
+This assignment assures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
+Additionally, the commutivitity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (ie. ensures label invariance).
 
-We now use the Needleman-Wunsch algorithm to align the two strings. The ``wave-front'' phase of the algorithm is unchanged. The subsequent ``traceback,'' however, is modified from the original procedure.
-During the upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
+We now apply ``wave-front'' update procedure, which is very similar to the Needleman-Wunsch procedure to align two strings.
+The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
+The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
+The pre-order traversal performed later will consumed the tagged information when merging alignment contexts.
 Storing this information for each element of the pairwise alignment result allows a more efficient generation of a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and that presented in this paper.
 
-The example $\otimes$ function presented here is of $\Theta\left( k^2 \right)$ complexity in both time and space, where $k$ is the length of the longer string.
+The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment}  is of $\Theta\left( k^2 \right)$ complexity in both time and space, where $k$ is the length of the longer string.
 For clarity, this example function is presented as a modification of the well understood Needleman-Wunsch algorithm, however this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
-By using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity.
-For instance, by using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
+For instance, by using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity.
+Additionally, by using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
 
-Note that $\sigma$ presented in the pseudocode below can represent a more complex metric, such as using affine or logarithmic affine gap costs.
+Note that $\sigma$ presented in throughout the pseudocode below can represent a more complex metric, such as using affine or logarithmic affine gap costs. For usage see Algorithms \ref{Alg:pairwiseAlignment},  \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 \begin{algorithm}
-  \caption{Example $\otimes$ definition}\label{pairwiseAlignment}
+  \caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
   \begin{algorithmic}[1]
     \Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
     \Ensure{$\Sigma_{\Gamma}^{*}$}
@@ -162,7 +160,7 @@ Note that $\sigma$ presented in the pseudocode below can represent a more comple
 \end{algorithm}
 
 \begin{algorithm}
-  \caption{Generate the alignment matrix of $\otimes$}\label{matrixDefinition}
+  \caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
   \begin{algorithmic}[1]
     \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
@@ -196,7 +194,7 @@ Note that $\sigma$ presented in the pseudocode below can represent a more comple
 \end{algorithm}
 
 \begin{algorithm}
-  \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{matrixTraceback}
+  \caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{Alg:matrixTraceback}
   \begin{algorithmic}[1]
     \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
@@ -230,7 +228,7 @@ Note that $\sigma$ presented in the pseudocode below can represent a more comple
 \end{algorithm}
 
 \begin{algorithm}
-  \caption{Get the minimal directional matrix context from the $3$ inputs}\label{getMinimal}
+  \caption{Get the minimal directional matrix context from the $3$ inputs}\label{Alg:getMinimal}
   \begin{algorithmic}[1]
     \Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Require{$\left(\, rightCost,   rightElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
@@ -251,36 +249,31 @@ Note that $\sigma$ presented in the pseudocode below can represent a more comple
 
 
 \section{Description of post-order traversal}
-The postorder traversal of the binary tree $\mathcal{T}$ is a straightforward procedure.
-We assign preliminary string alignment contexts and costs to each node, $n_x$, of $\mathcal{T}$.
-These preliminary string alignment contexts will be consumed to assign a final string alignment in a subsequent pre-order traversal of the tree.
-The postorder traversal described here is very similar to the DO postorder traversal described by \cite{Wheeler2003}, differing only in the use of a heuristic alignment function, $\otimes$, which captures the alignment context of a subtree, instead of generating a preliminary median string assignment.
+The post-order traversal (from the leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure.
+We assign preliminary contexts and costs to each node, $n_x$, of $\mathcal{T}$.
+These preliminary contexts will be consumed to assign a final string alignment in a subsequent pre-order traversal of the tree.
+The post-order traversal described here is very similar to the DO post-order traversal described by \cite{Wheeler2003}, differing only in the use of $\otimes$ which captures the preliminary context of a subtree, instead of generating a preliminary median string assignment.
 
 First, for each leaf node, $l_x$, we set $l_x.cost$ to $0$.
-Additionally, if $l_x$ is of type $\Sigma^{*}$---i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$---and not of type $\Sigma^{*}_{\Gamma}$---that is, it is no decorated with a finite string of alignment contexts over the alphabet $\Sigma_{\Gamma}$---we call $\Call{initializeString}{l_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
+Additionally, if $l_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$ --- i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$ --- then we call $\Call{initializeString}{l_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
 
 On each internal node, $i_x$ with children $c_l$ and $c_r$, of $\mathcal{T}$, we call $c_l$ $\otimes$ $c_r$.
 The resultant \textit{prelimString} is assigned to $i_x.prelimString$, and the sum of the $c_l.cost$ and $c_r.cost$ is assigned to $i_x.cost$.
-By performing this operation in a postorder traversal over $\mathcal{T}$, we propagate the alignment contexts and costs returned from the calls to $\otimes$ up the tree from the leaves to the root.
+By performing this operation in a post-order traversal over $\mathcal{T}$, we propagate the preliminary contexts and costs returned from the calls to $\otimes$ up the tree from the leaves to the root.
 
-<<<<<<< HEAD
-After performing the postorder traversal, each internal node contains the alignment context information and the cost for its entire subtree.
-Consequently, when the postorder traversal is complete, the root node contains the alignment context information of the full leaf set of strings.
-=======
-After performing the postorder traversal, each internal node contains the alignment context information and the cost for the entire subtree.
-Consequently, when the postorder is complete, the root node contains the alignment context information of the full leaf set of strings.
->>>>>>> 3bad6b886050a7860fc23bb524fdbb3ee29145d4
-In the next step, we will consume this preliminary alignment context to perform an (efficient) alignment on the strings.
+After performing the post-order traversal, each internal node contains the preliminary context information and the cost for the entire subtree.
+Consequently, when the post-order traversal is complete, the root node contains the preliminary context information of the full leaf set of strings.
+In the pre-order traversal, we will consume this preliminary context to perform an (efficient) alignment on the strings.
 
-Because the postorder traversal can be performed using any valid heuristic alignment function $\otimes$, the complexity of the postorder traversal is dependent on the complexity of the heuristic alignment function used.
+Because the post-order traversal can be performed using any valid  $\otimes$ definition, the complexity of the post-order traversal is dependent on the complexity of the heuristic alignment function used.
 Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
-Then postorder traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
-If we were to use Ukkonnen's method with the example $\otimes$ function described above, the postorder traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
+Then post-order traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
+If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
 \section{Pseudocode of post-order traversal}
 
 \begin{algorithm}
-  \caption{Post-order Traversal}\label{postOrder}
+  \caption{Post-order Traversal}\label{post-order}
   \begin{algorithmic}[1]
     \Require{$inputString \in \Sigma^{*}$ }
     \Ensure{$\Sigma_{\Gamma}^{*}$ }
@@ -294,16 +287,16 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
 
     \Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
     \Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
-    %    \Procedure{postOrder(n)}{}
-    \Function{postOrder}{$\textit{node}$}
+    %    \Procedure{post-order(n)}{}
+    \Function{post-order}{$\textit{node}$}
       \If   {isLeaf ( $\textit{node}$ )}
         \State $\textit{node.cost} \gets 0$
 %        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
 %          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
 %sy        \EndIf
       \Else
-        \State $\textit{lhs}  \gets \Call{postOrder}{\textit{node.children.first}}$
-        \State $\textit{rhs}  \gets \Call{postOrder}{\textit{node.children.second}}$
+        \State $\textit{lhs}  \gets \Call{post-order}{\textit{node.children.first}}$
+        \State $\textit{rhs}  \gets \Call{post-order}{\textit{node.children.second}}$
         \State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
         \State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
         \State $\textit{node.prelimString} \gets \textit{alignContext}$
@@ -314,63 +307,64 @@ If we were to use Ukkonnen's method with the example $\otimes$ function describe
 
 
 \section{Description of pre-order traversal for final alignments}
-The pre-order traversal of the binary tree $\mathcal{T}$ consumes the preliminary alignment context decorations created in the postorder traversal in order to assign final alignment context decorations to each node.
-First, the root node must be initialized for the preorder traversal by assigning the final alignment context as the preliminary alignment context, replacing all deletion events in the preliminary alignment context with insertion events.
+The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations created in the post-order traversal in order to assign final alignment decorations to each node.
+First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however the origin of these events are indistinguishable at the root node.
-By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments.
+By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{deriveAlignment}.
 
-For each child node $n_x$, we first determine whether the current node is the left or right child of its parent.
-If it is the left child, the parent's final alignment is assigned to $n_x$'s final alignment, then each deletion event of the parent node's final alignment context is changed to an insertion event and each insertion event is changed to a deletion event.
-This is required because (as with the root node) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree. On the pre-order traversal, the converse is necessary for a left child's final alignment to be consistent with that of its parent.
+For each non-root node $n_x$, we first determine whether the current node is the left or right child of its parent.
+If it is the left child, then each deletion event of the parent node's final alignment is changed to an insertion event and each insertion event is changed to a deletion event.
+This is required because (as with the root node) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree. 
+However, we must consider the converse when referencing the parent's final alignment with a node which is the left child of it's parent for the resulting alignment to be consistent.
 
-Once the final alignment context of the parent has been correctly initialized, we proceed to assign the final alignment context of the current node.
-The parent's final alignment context will necessarily be of greater than or equal length to the parent's preliminary alignment context and the parent's preliminary alignment context is also greater than or equal to than the current node's preliminary alignment context, due to the addition of alignment gaps $\gap$ on the postorder traversal.
-The resulting value assigned to the current node's final alignment context will have the same length as the parental final alignment context.
-Since this invariant is maintained from the root node to the leaf node's final alignment context assignments, all alignments will have the same length.
+Once the final alignment of the parent has been correctly initialized, we proceed to assign the final alignment of the current node.
+The parent's final alignment will necessarily be of greater than or equal length to the parent's preliminary context and the parent's preliminary context is also greater than or equal to than the current node's preliminary context, due to the addition of alignment gaps $\gap$ on the post-order traversal.
+The resulting value assigned to the current node's final alignment will have the same length as the parental final alignment.
+Since this invariant is maintained from the root node to the leaf node's final alignment assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that the final alignment assignment of each node will be of equal length and constitute a genuine string alignment.
 
-The final alignment context for the current node is derived by performing a ``sliding zip'' over the parent's final alignment assignment, the parent's preliminary alignment context, and the current node's preliminary alignment context.
-The parent's final alignment context is used as the basis of the zip.
-At each step of the ``sliding zip,'' one element of the parent's final alignment context will be consumed and one element of the current node's final alignment context will be defined.
-Additionally, at each step of the zip, one element of either the parent's preliminary alignment context, the current node's preliminary alignment context, or both elements will also be consumed.
-The process is called a ``sliding zip'' because the elements of the parent's and current node's preliminary alignment contexts do not have a fixed index to which they correspond to the parent's final alignment context being used as the basis of the zip.
-Rather, the elements of the parent's and current node's preliminary alignment contexts ``slide'' through the zipping process, and their corresponding index with the basis is deduced dynamically.
-An example alignment of this ``sliding zip'' process for two internal  nodes is shown in Figure \ref{Fig:ExamplePreorder}.
-Deletion events in the parental final alignment context are propagated to the current node's final alignment context without consuming elements of the parental or current node's preliminary alignment contexts.
-For each non-deletion element in the parental final alignment context, one element from either the parent's preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment context depending on the deletion, insertion, or alignment event of the next parental preliminary alignment context element.
-However, the final alignment context assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
-There are ten special cases describing how to derive each index current node's final alignment. The special cases are described in the pseudocode in Algorithm \ref{Alg:Preorder} and Figure \ref{Fig:ExamplePreorder}.
+The final alignment for the current node is derived by performing a ``sliding zip'' over the parent's final alignment, the parent's preliminary context, and the current node's preliminary context.
+The parent's final alignment is used as the basis of the zip, .
+At each step of the ``sliding zip,'' one element of the parent's final alignment will be consumed and one element of the current node's final alignment will be defined.
+Additionally, at each step of the zip, one element of either the parent's preliminary context, the current node's preliminary context, or both elements will also be consumed.
+The process is called a ``sliding zip'' because the elements of the parent's and current node's preliminary contexts do not have a fixed index to which they correspond to the parent's final alignment being used as the basis of the zip.
+Rather, the elements of the parent's and current node's preliminary contexts ``slide'' through the zipping process, and their corresponding index with the basis is deduced dynamically.
+An example alignment of this ``sliding zip'' process for two internal  nodes is shown in Figure \ref{Fig:Examplepre-order}.
+Deletion events in the parental final alignment are propagated to the current node's final alignment without consuming elements of the parental or current node's preliminary contexts.
+For each non-deletion element in the parental final alignment, one element from either the parent's preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment depending on the deletion, insertion, or alignment event of the next parental preliminary context element.
+However, the final alignment assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
+There are ten special cases describing how to derive each index current node's final alignment. The special cases are described in the pseudocode in Algorithm \ref{Alg:pre-order} and Figure \ref{Fig:Examplepre-order}.
 
 %\begin{itemize}
 %
-%\item If the next element of the parental final alignment context is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment context.
+%\item If the next element of the parental final alignment is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment context is an insertion or alignment event and the next element of the parental preliminary alignment context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment context.
+%\item If the next element of the parental final alignment is an insertion or alignment event and the next element of the parental preliminary context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an alignment event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+%\item If the next element of the parental final alignment is an insertion event and the next element of the parental preliminary context is an alignment event, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment context is an insertion event and the next element of the parental preliminary alignment context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary alignment context.
-%If the median value is \textit{not} the same as the inserted value from the parental preliminary alignment context, then we consume both the parental final alignment context and the parental preliminary alignment context elements and add a deletion event to the current node's final alignment context. 
-%If the median value is the same as the inserted value from the parental preliminary alignment context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
+%\item If the next element of the parental final alignment is an insertion event and the next element of the parental preliminary context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary context.
+%If the median value is \textit{not} the same as the inserted value from the parental preliminary context, then we consume both the parental final alignment and the parental preliminary context elements and add a deletion event to the current node's final alignment. 
+%If the median value is the same as the inserted value from the parental preliminary context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary context to the current node's final alignment, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
 %
-%\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an insertion event, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
+%\item If the next element of the parental final alignment is an alignment event and the next element of the parental preliminary context is an insertion event, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment context is an alignment event and the next element of the parental preliminary alignment context is an alignment event, we must check if we are deriving the alignment for a leaf node.
-%If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the current node's preliminary alignment context to the current node's final alignment context.
-%If we are \textit{not} deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary alignment context and add the consumed element of the parental preliminary alignment context to the current node's final alignment context.
+%\item If the next element of the parental final alignment is an alignment event and the next element of the parental preliminary context is an alignment event, we must check if we are deriving the alignment for a leaf node.
+%If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
+%If we are \textit{not} deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the parental preliminary context to the current node's final alignment.
 %
 %\end{itemize}
 
 The improvement of the implied alignment algorithm presented here compared to the original algorithm is that the additional stored information allows us to determine the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time. 
-The aforementioned $n^2$ component occurred in previous implementations due to the use of a ``back-propagation'' technique, which required that, at each preorder step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous preorder step.
-Additionally, the $k^2$ component in the previous implementation was due to using a Needleman-Wunsch string alignment between the current node and its parent node at each preorder step.
-By saving the requisite information on the nodes during the postorder traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
+The aforementioned $n^2$ component occurred in previous implementations due to the use of a ``back-propagation'' technique, which required that, at each pre-order step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
+Additionally, the $k^2$ component in the previous implementation was due to using a Needleman-Wunsch string alignment between the current node and its parent node at each pre-order step.
+By saving the requisite information on the nodes during the post-order traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
 
 Let $m = \frac{a}{k}$, where $k$ is the length of the longest input string, and $a$ is the length of the root node's preliminary string decoration.
-In the case that a ``perfect alignment'' is derived, that is, that each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
-In the pathological case that no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then ``degenerate alignment'' is derived and $m = n$.
+In the best case that a ``perfect alignment'' is derived, that is, that each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
+In the worst case that a ``degenerate alignment' is derived, that is, that no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
 
-In the preorder traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
+In the pre-order traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
 We must preform a ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
 The ``sliding zip'' accounts for the $k * m$ factor.
 
@@ -388,13 +382,13 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 \section{Pseudocode of pre-order traversal}
 
 \begin{algorithm}
-  \caption{Pre-order Traversal}\label{preOrder}
+  \caption{Pre-order Traversal}\label{pre-order}
   \begin{algorithmic}[1]
     \Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
     \Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
     \Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
     \Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
-    \Function{preOrder}{$\textit{node}$}
+    \Function{pre-order}{$\textit{node}$}
       \If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
         \State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
       \Else
@@ -448,7 +442,7 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 \newgeometry{top=1mm, bottom=1mm}
 
 \begin{algorithm}
-  \label{Alg:Preorder}
+  \label{Alg:pre-order}
   \caption{Internal Node Alignment}\label{deriveAlignment}
   \begin{algorithmic}[1]
     \Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
@@ -526,8 +520,8 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 
 
 \begin{figure}[h]
-	\caption{Example preorder alignment for two internal nodes}
-	\label{Fig:ExamplePreorder}
+	\caption{Example pre-order alignment for two internal nodes}
+	\label{Fig:Examplepre-order}
 	\vspace{2ex}
 	\includegraphics{example-preorder.png}
 \end{figure}
@@ -540,7 +534,7 @@ An example Haskell implementation of the implied alignment algorithm described a
 
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
-To explore the runtime performance of the preorder traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
+To explore the runtime performance of the pre-order traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
 Both full data sets consisted of a preselected tree and predetermined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
@@ -621,20 +615,20 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 %\scriptsize
 %\begin{minipage}{0.5\textwidth}
 %\centering
-%\caption{Fungi preorder results}
+%\caption{Fungi pre-order results}
 %\begin{tabular}{l|l|l}%
 %    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
-%    \csvreader[head to column names]{fungi-11.preorder.csv}{}% use head of csv as column names
+%    \csvreader[head to column names]{fungi-11.pre-order.csv}{}% use head of csv as column names
 %    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
 %\end{tabular}
 %\end{minipage}
 %\hfill
 %\begin{minipage}{0.5\textwidth}
 %\centering
-%\caption{Metazoa preorder results}
+%\caption{Metazoa pre-order results}
 %\begin{tabular}{l|l|l}%
 %    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
-%    \csvreader[head to column names]{metazoa-11.preorder.csv}{}% use head of csv as column names
+%    \csvreader[head to column names]{metazoa-11.pre-order.csv}{}% use head of csv as column names
 %    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
 %\end{tabular}
 %\end{minipage}
@@ -644,20 +638,20 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 %\scriptsize
 %\begin{minipage}{0.5\textwidth}
 %\centering
-%\caption{Best case preorder results}
+%\caption{Best case pre-order results}
 %\begin{tabular}{l|l|l}%
 %    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
-%    \csvreader[head to column names]{pathological-12.preorder.csv}{}% use head of csv as column names
+%    \csvreader[head to column names]{pathological-12.pre-order.csv}{}% use head of csv as column names
 %    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
 %\end{tabular}
 %\end{minipage}
 %\hfill
 %\begin{minipage}{0.5\textwidth}
 %\centering
-%\caption{Worst case preorder results}
+%\caption{Worst case pre-order results}
 %\begin{tabular}{l|l|l}%
 %    \bfseries $n$ & \bfseries $k$ & \bfseries Runtime (ms)% specify table head
-%    \csvreader[head to column names]{pathological-31.preorder.csv}{}% use head of csv as column names
+%    \csvreader[head to column names]{pathological-31.pre-order.csv}{}% use head of csv as column names
 %    {\\\hline\csvcoliii&\csvcoliv&\csvcolv}% specify your coloumns here
 %\end{tabular}
 %\end{minipage}
@@ -697,28 +691,28 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 \centering
 \begin{minipage}{0.49\textwidth}
 \centering
-\caption{Fungi preorder runtime}
+\caption{Fungi pre-order runtime}
 \label{Fig:Fungi}
 \includegraphics[width=1.05\textwidth]{fungi-preorder.png}
 \end{minipage}
 \hfill
 \begin{minipage}{0.49\textwidth}
 \centering
-\caption{Metazoa preorder runtime}
+\caption{Metazoa pre-order runtime}
 \label{Fig:Metazoa}
 \includegraphics[width=1.05\textwidth]{metazoa-preorder.png}
 \end{minipage}
 
 \begin{minipage}{0.49\textwidth}
 \centering
-\caption{Best case preorder runtime}
+\caption{Best case pre-order runtime}
 \label{Fig:Best}
 \includegraphics[width=1.05\textwidth]{pathological-12-preorder.png}
 \end{minipage}
 \hfill
 \begin{minipage}{0.49\textwidth}
 \centering
-\caption{Worst case preorder runtime}
+\caption{Worst case pre-order runtime}
 \label{Fig:Worst}
 \includegraphics[width=1.05\textwidth]{pathological-31-preorder.png}
 \end{minipage}
@@ -729,13 +723,14 @@ $\sigma_2$ & A & C & G & T & -- \\ \hline
 
 The algorithm originally described by \cite{Wheeler2003} was given the name implied alignment to differentiate it from other methods (e.g. sum-of-pairs alignment) unconnected to the vertex string assignments `implied' by the binary tree on a given leaf-set. 
 However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree.
-In short, it is the lack of associativity of the heuristic function $\oplus$.
+In short, it is the lack of associativity.
 
-If we are given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
-In fact, the ancestral state of any internal node defined by the heuristic function $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node.
-The binary structure of the tree directly implies the precedence of each application of the heuristic function $\oplus$ in the final result.
-Since the heuristic function $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results.
-However, since the heuristic function $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. 
+For the purposes of this analysis we will ignore the cost returned from the $\otimes$ and consider only the resulting alignment context.
+Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$ but ignoring the alignment cost of the result. If we are given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
+In fact, the ancestral state of any internal node defined by $\oplus$ can be calculated by applying $\oplus$ recursively to the subtree of the internal node.
+The binary structure of the tree directly implies the precedence of each application of $\oplus$ in the final result.
+Since $\oplus$ need not be associative, the tree $((A,(B,C)),D)$ evaluated as $((A \oplus (B \oplus C)) \oplus D)$, is likely to yield different results.
+However, since $\oplus$ is commutative, transposing any child nodes between the left and right positions of their parent will result in a tree that yields the same internal values. 
 For example consider a transposed tree $\mathcal{T'}$:
 
 \begin{align*}
@@ -748,8 +743,8 @@ For example consider a transposed tree $\mathcal{T'}$:
 \\  &= eval(\mathcal{T})
 \end{align*}
 
-This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under the heuristic function $\oplus$ and not the unique alignment on all trees for the leaf-set under the heuristic function $\oplus$.
-Clearly, a heuristic function $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set.
+This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under $\oplus$ and not the unique alignment on all trees for the leaf-set under $\oplus$.
+Clearly, a $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set.
 
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
@@ -764,7 +759,7 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
 \section{Future work}
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
-Even an incredibly expensive, poly-time heuristic function $\otimes$ would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
+Even an incredibly expensive, poly-time $\otimes$ definition would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
 
 \section{Acknowledgements}
@@ -779,7 +774,7 @@ We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia 
 %
 %\begin{table}
 %	\scriptsize
-%	\caption{Fungi preorder results (milliseconds)}
+%	\caption{Fungi pre-order results (milliseconds)}
 %	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
 %		\bfseries $n\backslash k$ &   364 &    728 &   1456 &   2913 &    5826 &   11652 \\\hline     
 %		25  &   730 &   1399 &   2072 &   2664 &    5691 &    7683 \\
@@ -795,7 +790,7 @@ We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia 
 %	%\end{table}
 %	%\begin{table}
 %	\scriptsize
-%	\caption{Metazoa preorder results (milliseconds)}
+%	\caption{Metazoa pre-order results (milliseconds)}
 %	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}R{1.1cm}}%
 %		\bfseries $n\backslash k$ &   1134 &   2269 &   4539 &    9079 &   18158 &   36317 \\\hline     
 %		25  &    420 &    612 &   1068 &    3401 &    5902 &    9787 \\
@@ -810,7 +805,7 @@ We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia 
 %	%\end{table}
 %	%\begin{table}
 %	\scriptsize
-%	\caption{Best case preorder results (milliseconds)}
+%	\caption{Best case pre-order results (milliseconds)}
 %	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
 %		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
 %		4  &     21 &    118 &     46 &     118 &     270 \\
@@ -823,7 +818,7 @@ We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia 
 %	%\end{table}
 %	%\begin{table}
 %	\scriptsize
-%	\caption{Worst case preorder results (milliseconds)}
+%	\caption{Worst case pre-order results (milliseconds)}
 %	\begin{tabular}{R{0.6cm}|R{1cm}R{1cm}R{1cm}R{1cm}R{1cm}}%
 %		\bfseries $n\backslash k$ &     25 &     50 &    100 &     200 &     400 \\\hline     
 %		4  &    127 &     60 &    165 &     244 &     604 \\
