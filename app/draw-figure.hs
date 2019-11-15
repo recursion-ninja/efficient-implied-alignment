@@ -208,16 +208,16 @@ lPoints = map p2
     , (20,  30 )
     , (20,  20 )
     , (20,  12 )
-    , (26.5  ,  3.5 ), (48    ,  3.5), (56.125,  3.5)
-    , (29.625,  1   ), (48.375,  1  ), (56.125,  1  )
-    , (29.125, -1.5 ), (48.375, -1.5), (56.125, -1.5)
-    , (26    , -4   ), (48    , -4  ), (56.125, -4  )
+    , (28.5  ,  3.5 )--, (45    ,  3.5), (53.125,  3.5)
+    , (30.875,  1   )--, (45.375,  1  ), (53.125,  1  )
+    , (30    , -1.5 )--, (45.375, -1.5), (53.125, -1.5)
+    , (27.625, -4   )--, (45    , -4  ), (53.125, -4  )
     ]
 
 
 labels :: [Diagram B]
 labels =
-    let lab = centerXY . scale 2 . pad 1.5 . bold . text
+    let lab = centerXY . scale 1.8 . pad 1.5 . bold . text
     in  [ lab "Case 9"
         , lab "Case 5"
         , lab "Case 8"
@@ -228,10 +228,10 @@ labels =
         , lab "Case 1"
         , lab "Case 2"
         , lab "Case 0"
-        , lab "Parent's final       alignment", lab "(preorder" , lab "result)"
-        , lab "Parent's preliminary alignment", lab "(postorder", lab "result)"
-        , lab "Child's  preliminary alignment", lab "(postorder", lab "result)"
-        , lab "Child's  final       alignment", lab "(preorder" , lab "result)"
+        , lab "Parent's final       alignment"--, lab "(preorder" , lab "result)"
+        , lab "Parent's preliminary context"  --, lab "(postorder", lab "result)"
+        , lab "Child's  preliminary context"  --, lab "(postorder", lab "result)"
+        , lab "Child's  final       alignment"--, lab "(preorder" , lab "result)"
         ]
 
 
