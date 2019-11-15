@@ -123,8 +123,8 @@ We assign the input strings based on the data they contain.
 The longer string is assigned to the columns of the alignment matrix, the shorter string to the rows.
 If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix. 
 In the case that the strings are identical, the alignment is trivial.
-This assignment assures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
-Additionally, the commutivitity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (ie. ensures label invariance).
+This assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
+Additionally, the commutivitity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (i.e. ensures label invariance).
 
 We now apply ``wave-front'' update procedure, which is very similar to the Needleman-Wunsch procedure to align two strings.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
@@ -166,7 +166,7 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
     \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
     \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
-    \Ensure{$\Sigma_{\Gamma}$}
+    \Ensure{($\NonNegReals$, $\mathbf{Dir}$, $\Sigma_{\Gamma}$)}
     \Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
       \If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
         \State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
@@ -180,7 +180,7 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
         \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
       \Else \Comment{General recursive case}
         \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
-        \State $y \gets \sigma \left(           \textit{•}it{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
+        \State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
         \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
         \State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
         \If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
@@ -198,7 +198,7 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
   \begin{algorithmic}[1]
     \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Ensure{$\Sigma_{\Gamma}^{*}$}
+    \Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}
 
     \Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
       \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
@@ -362,7 +362,7 @@ By saving the requisite information on the nodes during the post-order traversal
 
 Let $m = \frac{a}{k}$, where $k$ is the length of the longest input string, and $a$ is the length of the root node's preliminary string decoration.
 In the best case that a ``perfect alignment'' is derived, that is, that each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
-In the worst case that a ``degenerate alignment' is derived, that is, that no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
+In the worst case that a ``degenerate alignment'' is derived, that is, that no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
 
 In the pre-order traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
 We must preform a ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
@@ -538,13 +538,13 @@ Both full data sets consisted of a preselected tree and predetermined string ali
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
-Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{$ A, C, G, T, -- $\}$.
+Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T, --} \}$.
 
 Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
-The strings of the pathological data set consisted of a single symbol from repeated a specific number of times.
+The strings of the pathological data set consisted of a single symbol repeated some specified number of times.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
-The data set used the alphabet $\Sigma = \{$ A, C, G, T, -- $\}$.
+The data set also used the alphabet $\Sigma = \{\mathrm {A, C, G, T, --} \}$.
 
 The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
 The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
@@ -566,7 +566,7 @@ The fungal data sets shows that some of the ``real world'' use cases can perform
 
 
 \begin{table}[!hbt]
-\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
+\caption{Metric costs of $\sigma_0$, $\sigma_1$, $\sigma_2$}
 \label{Tab:Metrics}
 \begin{minipage}{0.3\textwidth}
 	\centering
