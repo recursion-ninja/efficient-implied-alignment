@@ -61,7 +61,7 @@
 %%% Start of article front matter
 \begin{frontmatter}
 \begin{fmbox}
-	\dochead{Research}
+	\dochead{Methodology}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%                                          %%
@@ -144,9 +144,12 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 	\begin{keyword}
+		\kwd{dynamic homology}
+		\kwd{implied alignment}
 		\kwd{multiple string alignment}
-		\kwd{tree alignment}
 		\kwd{phylogenetics}
+		\kwd{sequence alignment}
+		\kwd{tree alignment}
 	\end{keyword}
 	
 	% MSC classifications codes, if any
@@ -166,7 +169,7 @@
 
 
 %\doublespacing
-\section{Introduction}
+\section*{Background}
 Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} phylogenetic tree search in order to provide verification and more rapid heuristic analysis.
 IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
 A more formal description of the algorithm was presented in \cite{Wheeleretal2006}.
@@ -187,7 +190,7 @@ The more similar the strings, the better the algorithm performs.
 Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
 We will provide an example of the IA algorithm's performance on biological data.
 
-\section{Definition of the heuristic function}
+\section*{Definition of the heuristic function}
 In order for a logically consistent alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
@@ -206,7 +209,7 @@ It is required that $\otimes$ be commutative but need not be associative.
 Both of these constraints with be discussed later.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
 
-\section{Definition of an example heuristic function}
+\section*{Definition of an example heuristic function}
 We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$.
 One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
 This algorithm is very similar to DO.
@@ -234,7 +237,7 @@ Additionally, by using the method described by \cite{Hirschberg1975}, this algor
 Note that $\sigma$ presented in throughout the pseudocode below can represent a more complex metric, such as using affine or logarithmic affine gap costs. For usage see Algorithms \ref{Alg:pairwiseAlignment},  \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 
-\section{Description of post-order traversal}
+\section*{Description of post-order traversal}
 The post-order traversal (from the leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure.
 We assign preliminary contexts and costs to each node, $n_x$, of $\mathcal{T}$.
 These preliminary contexts will be consumed to assign a final string alignment in a subsequent pre-order traversal of the tree.
@@ -256,7 +259,7 @@ Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum s
 Then post-order traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
 If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
-\section{Description of pre-order traversal}
+\section*{Description of pre-order traversal}
 The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations created in the post-order traversal in order to assign final alignment decorations to each node.
 First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however the origin of these events are indistinguishable at the root node.
@@ -327,7 +330,7 @@ In the worst case, $m \gg 1$, and the ``sliding zip'' performed on each node per
 Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}(k * n^2)$ when the input strings are independent of each other.
 
 
-\section{Conclusion and Empirical Examples}
+\section*{Methods}
 
 An example Haskell implementation of the implied alignment algorithm described above, along with a script to replicate the results discussed below can both be found here: 
 
@@ -356,6 +359,8 @@ We took the binary logarithm, $\log_{2}$, of both input dimensions as well as th
 From there, we calculated the coefficients of each input in this equation: $\log_2(runtime) = \beta_0 + \beta_1 \log_2(n) + \beta_2 \log_2(k) + \epsilon$, where $\epsilon$ represents the estimation error.
 Note that because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and close to $2$ for quadratic performance.
 See Table \ref{Tab:Regression}.
+
+\section*{Results}
 
 The pathological data sets shows the stark runtime difference between the best case $\Omega(n * k)$ and worst case $\mathcal{O}(k * n^2)$ runtimes.
 The OLS model empirically supports the theoretical best and worst case runtimes demonstrated by the two runs of the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}. % and  Tables \ref{Tab:Best} \& \ref{Tab:Worst}
@@ -412,7 +417,11 @@ The fungal data sets shows that some of the ``real world'' use cases can perform
 
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
-\section{Why `Implied' Alignment}
+\section*{Conclusions}
+
+The IA algorithm can be improved to run with $\mathcal{O}(k * n^2)$ and best case $\Omega(k * n)$ complexity of time and space. The more similar the input strings are, the closer the performance will be to the best case. When the algorithm is applied to ``real world'' biological sequences, the performance tends strongly towards the best case. The improved algorithm presented in this paper offers immediate and significant gains to applications related to the TAP and MSA.
+
+\section*{Discussion}
 
 The algorithm originally described by \cite{Wheeler2003} was given the name implied alignment to differentiate it from other methods (e.g. sum-of-pairs alignment) unconnected to the vertex string assignments `implied' by the binary tree on a given leaf-set. 
 However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree.
@@ -454,8 +463,6 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
 Even an incredibly expensive, poly-time $\otimes$ definition would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
 The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation.
-
-\newpage
 
 %\section{Appendix}
 %
@@ -517,11 +524,41 @@ The iterative approximation would cease needing to be iterative and rather be an
 %	\end{tabular}
 %\end{table}
 
-\begin{backmatter}
+\section*{Declarations}
+
+  \subsection*{Ethics approval and consent to participate}
+
+    Not Applicable
+    
+  \subsection*{Consent for publication}
+
+    Not applicable   
+
+  \subsection*{Competing interests}
+
+    The authors declare that they have no competing interests
+
+  \subsection*{Availability of data and materials}
+  
+    The datasets generated and analysed in the study are available in the GitHub.com repository,
+    
+    \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
+
+  \subsection*{Authors' contributions}
+  
+    AW developed the algorithmic improvements, implemented the prototype program, quantified the relationship between similar inputs and improved performance.
+    WW provided empirical data sets, developed and implemented pruning methodologies for the scaling of the data sets, and literature review.
+    Both authors read and approved the final manuscript.
+    
+  \subsection*{Funding}
+
+    This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018) and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
+
+  \subsection*{Acknowledgements}
 	
-	\section*{Acknowledgements}
-	We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions. This work was supported by DARPA SIMPLEX (``Integrating Linguistic, Ethnographic, and Genetic Information of Human Populations: Databases and Tools,'' DARPA-BAA-14-59 SIMPLEX TA-2, 2015-2018)
-	and Robert J. Kleberg Jr. and Helen C. Kleberg foundation grant ``Mechanistic Analyses of Pancreatic Cancer Evolution''.
+    We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions
+
+\begin{backmatter}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%%                  The Bibliography                       %%
@@ -566,6 +603,91 @@ The iterative approximation would cease needing to be iterative and rather be an
 	%%
 	%% Do not use \listoffigures as most will included as separate files
 	
+    \newpage
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%                               %%
+    %% Tables                        %%
+    %%                               %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %% Use of \listoftables is discouraged.
+    %%
+    \section*{Tables}
+    \begin{table}[!hbt]
+    	\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
+    	\label{Tab:Metrics}
+    	\begin{minipage}{0.3\textwidth}
+    		\centering
+    		\begin{tabular}{c|ccccc}
+    			$\sigma_0$ & A & C & G & T & -- \\ \hline
+    			A  & 0 & 1 & 1 & 1 & 1  \\
+    			C  & 1 & 0 & 1 & 1 & 1  \\
+    			G  & 1 & 1 & 0 & 1 & 1  \\
+    			T  & 1 & 1 & 1 & 0 & 1  \\
+    			-- & 1 & 1 & 1 & 1 & 0
+    		\end{tabular}
+    		%	\caption{Discrete}
+    	\end{minipage}
+    	\hfill
+    	\begin{minipage}{0.33\textwidth}
+    		\centering
+    		\begin{tabular}{c|ccccc}
+    			$\sigma_1$ & A & C & G & T & -- \\ \hline
+    			A  & 0 & 1 & 1 & 1 & 2  \\
+    			C  & 1 & 0 & 1 & 1 & 2  \\
+    			G  & 1 & 1 & 0 & 1 & 2  \\
+    			T  & 1 & 1 & 1 & 0 & 2  \\
+    			-- & 2 & 2 & 2 & 2 & 0
+    		\end{tabular}
+    		%\caption{Prefer Align}
+    	\end{minipage}
+    	\hfill
+    	\begin{minipage}{0.3\textwidth}
+    		\centering
+    		%\begin{table}[!hbt]
+    		%\begin{center}
+    		\begin{tabular}{c|ccccc}
+    			$\sigma_2$ & A & C & G & T & -- \\ \hline
+    			A  & 0 & 3 & 3 & 3 & 1  \\
+    			C  & 3 & 0 & 3 & 3 & 1  \\
+    			G  & 3 & 3 & 0 & 3 & 1  \\
+    			T  & 3 & 3 & 3 & 0 & 1  \\
+    			-- & 1 & 1 & 1 & 1 & 0
+    		\end{tabular}
+    		%\caption{Prefer InDel}
+    	\end{minipage}
+    \end{table}
+    
+    % Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+    % Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
+    % Requires LaTeX packages: dcolumn 
+    \begin{table}[!htbp] \centering 
+    	\caption{Regression coefficients of string count and string length on runtime} 
+    	\label{Tab:Regression} 
+    	\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
+    		\\[-1.8ex]\hline 
+    		\hline \\[-1.8ex]
+    		& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
+    		\cline{2-5} 
+    		\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
+    		& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
+    		\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
+    		\hline \\[-1.8ex] 
+    		$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
+    		& & & & \\ 
+    		$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
+    		& & & & \\ 
+    		\hline \\[-1.8ex]
+    		Observations & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
+    		Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
+    		\hline 
+    		\hline \\[-1.8ex] 
+    	\end{tabular}
+    \end{table}
+
+	\newpage
+	
 	\section*{Figures}
 	
 	\begin{figure}[h!]
@@ -600,86 +722,7 @@ The iterative approximation would cease needing to be iterative and rather be an
 			\includegraphics[width=1.05\textwidth]{pathological-31-preorder.png}
 	\end{figure}
 	
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	%%                               %%
-	%% Tables                        %%
-	%%                               %%
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-	%% Use of \listoftables is discouraged.
-	%%
-	\section*{Tables}
-	\begin{table}[!hbt]
-		\caption{Metric costs of $\sigma_0$, $\sigma_1$, \& $\sigma_2$}
-		\label{Tab:Metrics}
-		\begin{minipage}{0.3\textwidth}
-			\centering
-			\begin{tabular}{c|ccccc}
-				$\sigma_0$ & A & C & G & T & -- \\ \hline
-				A  & 0 & 1 & 1 & 1 & 1  \\
-				C  & 1 & 0 & 1 & 1 & 1  \\
-				G  & 1 & 1 & 0 & 1 & 1  \\
-				T  & 1 & 1 & 1 & 0 & 1  \\
-				-- & 1 & 1 & 1 & 1 & 0
-			\end{tabular}
-			%	\caption{Discrete}
-		\end{minipage}
-		\hfill
-		\begin{minipage}{0.33\textwidth}
-			\centering
-			\begin{tabular}{c|ccccc}
-				$\sigma_1$ & A & C & G & T & -- \\ \hline
-				A  & 0 & 1 & 1 & 1 & 2  \\
-				C  & 1 & 0 & 1 & 1 & 2  \\
-				G  & 1 & 1 & 0 & 1 & 2  \\
-				T  & 1 & 1 & 1 & 0 & 2  \\
-				-- & 2 & 2 & 2 & 2 & 0
-			\end{tabular}
-			%\caption{Prefer Align}
-		\end{minipage}
-		\hfill
-		\begin{minipage}{0.3\textwidth}
-			\centering
-			%\begin{table}[!hbt]
-			%\begin{center}
-			\begin{tabular}{c|ccccc}
-				$\sigma_2$ & A & C & G & T & -- \\ \hline
-				A  & 0 & 3 & 3 & 3 & 1  \\
-				C  & 3 & 0 & 3 & 3 & 1  \\
-				G  & 3 & 3 & 0 & 3 & 1  \\
-				T  & 3 & 3 & 3 & 0 & 1  \\
-				-- & 1 & 1 & 1 & 1 & 0
-			\end{tabular}
-			%\caption{Prefer InDel}
-		\end{minipage}
-	\end{table}
-	
-	% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-	% Date and time: Fri, Oct 11, 2019 - 11:29:04 AM
-	% Requires LaTeX packages: dcolumn 
-	\begin{table}[!htbp] \centering 
-		\caption{Regression coefficients of string count and string length on runtime} 
-		\label{Tab:Regression} 
-		\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
-			\\[-1.8ex]\hline 
-			\hline \\[-1.8ex]
-			& \multicolumn{4}{c}{\textit{Dependent variable:}} \\ 
-			\cline{2-5} 
-			\\[-1.8ex] & \multicolumn{4}{c}{$\log_2$(Runtime)} \\ 
-			& \multicolumn{1}{c}{Best} & \multicolumn{1}{c}{Worst} & \multicolumn{1}{c}{Fungi} & \multicolumn{1}{c}{Metazoa} \\ 
-			\\[-1.8ex] & \multicolumn{1}{c}{(1)} & \multicolumn{1}{c}{(2)} & \multicolumn{1}{c}{(3)} & \multicolumn{1}{c}{(4)}\\ 
-			\hline \\[-1.8ex] 
-			$\log_2$(String count $\;n$) & 1.000 & 1.854 & 1.193 & 1.499 \\ 
-			& & & & \\ 
-			$\log_2$(String length $k$) & 0.920 & 0.888 & 0.753 & 1.067 \\ 
-			& & & & \\ 
-			\hline \\[-1.8ex]
-			Observations & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{25} & \multicolumn{1}{c}{42} & \multicolumn{1}{c}{42} \\ 
-			Adjusted R$^{2}$ & \multicolumn{1}{c}{0.943} & \multicolumn{1}{c}{0.971} & \multicolumn{1}{c}{0.984} & \multicolumn{1}{c}{0.991} \\ 
-			\hline 
-			\hline \\[-1.8ex] 
-		\end{tabular}
-	\end{table}
+	\newpage
 	
 	\section*{Algorithms}
 	
