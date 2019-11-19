@@ -538,13 +538,13 @@ Both full data sets consisted of a preselected tree and predetermined string ali
 The full leaf set of the tree was repeatedly pruned in half to produce a data set of doubling leaf set sizes.
 The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
-Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T, --} \}$.
+Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
 
 Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
 The strings of the pathological data set consisted of a single symbol repeated some specified number of times.
 The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
-The data set also used the alphabet $\Sigma = \{\mathrm {A, C, G, T, --} \}$.
+The data set also used the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
 
 The runtime scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
 The former metric preferentially selects substitution events over insertion or deletion events and hence produces the ``perfect alignment.''
