@@ -6,12 +6,9 @@ module File.Output
 
 import           Control.Lens
 import           Data.Alphabet
-import           Data.Alphabet.IUPAC
 import           Data.BTree
 import           Data.Decoration
-import           Data.Foldable
 import           Data.Key
-import qualified Data.List.NonEmpty    as NE 
 import           Data.Map                     (Map)
 import qualified Data.Map              as M
 import           Data.SymbolString
@@ -47,6 +44,6 @@ renderAlignments alphabetType alphabet = foldMapWithKey f
 
     g :: SymbolString -> String
     g = case alphabetType of
-          Standard -> renderString alphabet  . fmap symbolAlignmentMedian
-          DNA      -> toList . fmap NE.head . encodeIUPAC iupacToDna . fmap (decodeAmbiguityGroup alphabet . symbolAlignmentMedian)
-          RNA      -> toList . fmap NE.head . encodeIUPAC iupacToRna . fmap (decodeAmbiguityGroup alphabet . symbolAlignmentMedian) 
+          Standard -> renderString alphabet
+          DNA      -> renderLikeDNA
+          RNA      -> renderLikeDNA

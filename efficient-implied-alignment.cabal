@@ -355,9 +355,9 @@ test-suite test-trees
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
   build-depends:
-      commutative-multi-string-alignment
+      efficient-implied-alignment
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -387,10 +387,10 @@ test-suite test-suite
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
   build-depends:
-      commutative-multi-string-alignment
+      efficient-implied-alignment
     , base       >=4.7 && <5
     , bimap
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys

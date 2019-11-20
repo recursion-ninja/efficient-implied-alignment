@@ -295,6 +295,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
     renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
     renderContext (Insert x   _) = if x == gapGroup then "—" else "ι"
+    renderContext Gapping{} = "—"
 
     pad :: Int -> String -> String
     pad n e = replicate (n - len) ' ' <> e <> " "

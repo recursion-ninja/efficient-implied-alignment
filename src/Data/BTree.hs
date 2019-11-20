@@ -10,9 +10,9 @@ import Data.Bifoldable
 import Data.Bitraversable
 import Data.Foldable
 import Data.Key
-import Data.List.NonEmpty hiding (length, takeWhile, zipWith)
+import Data.List.NonEmpty hiding (length, takeWhile)
 import Data.Semigroup
-import Prelude            hiding (head, zipWith)
+import Prelude            hiding (head)
 
 
 

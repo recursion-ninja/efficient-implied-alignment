@@ -54,9 +54,10 @@ toOtherReturnContext (cost, contextVector) =
     let (a, b, c) = unzip3 $ f <$> toList contextVector
     in (cost, filterGaps a, a, b, c)
   where
-    f (Align  x y z) = (x,   y,   z)
-    f (Delete x y  ) = (x,   y, gap)
-    f (Insert x   z) = (x, gap,   z)
+    f (Align  x y z) = (  x,   y,   z)
+    f (Delete x y  ) = (  x,   y, gap)
+    f (Insert x   z) = (  x, gap,   z)
+    f (Gapping _   ) = (gap, gap, gap)
 
 
 filterGaps :: [SymbolAmbiguityGroup] -> [SymbolAmbiguityGroup]
@@ -183,12 +184,20 @@ isValidPairwiseAlignment label alignmentFunction = testGroup label
       where
         (_, _, _, lhs', rhs') = alignmentFunction lhs rhs
         isNotReversed x y = reverse (toList x) /= toList y
-        isNotPalindrome x = reverse (toList x) /= toList x
+        isNotPalindrome x = isNotReversed x x
 
     filterGapsEqualsInput :: (NucleotideSequence, NucleotideSequence) -> Property
-    filterGapsEqualsInput (NS lhs, NS rhs) =
+    filterGapsEqualsInput (NS lhs, NS rhs) = counterexample context $
         filterGaps lhs' === filterGaps (medianList lhs) .&&. filterGaps rhs' === filterGaps (medianList rhs)
       where
+        context = unlines
+          [ "lhs' = " <> show lhs' 
+          , "lhs  = " <> show lhs 
+          , "rhs' = " <> show rhs' 
+          , "rhs  = " <> show rhs
+          , unwords [ "filterGaps lhs' === filterGaps (medianList lhs) =", show (filterGaps lhs'), "===", show (filterGaps (medianList lhs)) ]
+          , unwords [ "filterGaps rhs' === filterGaps (medianList rhs) =", show (filterGaps rhs'), "===", show (filterGaps (medianList rhs)) ]
+          ]
         (_, _, _, lhs', rhs') = alignmentFunction lhs rhs
 
     ungappedHasNogaps :: (NucleotideSequence, NucleotideSequence) -> Property

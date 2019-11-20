@@ -61,7 +61,7 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
             , "Expected Aligned Tree:"
             , closestOutput
             ]
-    assertBool errorMsg (any (== alignedString) outputStrings) 
+    assertBool errorMsg (alignedString `elem` outputStrings) 
     
   where
     postorder' = postorder stringAligner
@@ -69,7 +69,7 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
 
     medianStateFinalizer = preorderInternalLogic
 
-    gatherOutputTrees x y = sequenceA $ (\i -> f $ ((! i) . snd) <$> x) <$> (0:|[1 .. count - 1])
+    gatherOutputTrees x y = sequenceA $ (\i -> f $ (! i) . snd <$> x) <$> (0:|[1 .. count - 1])
       where
         count = length . head . toList $ snd <$> x
         f z = unifyInput defaultAlphabet z y

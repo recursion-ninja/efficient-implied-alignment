@@ -35,7 +35,6 @@ import           Data.TCM
 import           Data.Vector.Instances    ()
 import           Data.Vector.NonEmpty hiding (filter)
 import           Numeric.Extended.Natural
-import           Prelude              hiding (lookup)
 
 
 -- |
@@ -149,7 +148,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
     startOffset = 2
 
     -- If we are filling up 3/4 of the matrix, quit Ukkonen method and just do standard Neeleman-Wunsch.
-    stopOffset  = ((3 * lesserLen - 1) `div` 4)
+    stopOffset  = (3 * lesserLen - 1) `div` 4
 
     -- The largest value the offset can be, logically.
     maximumOffset = lesserLen
@@ -173,7 +172,8 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         longerGaps  = countGaps longerTop
         lesserGaps  = countGaps lesserLeft
         countGaps   = length . filter containsGap . toList
-        containsGap = isJust . (/\ gapGroup) . symbolAlignmentMedian
+        containsGap Gapping{} = True
+        containsGap x         = isJust . (/\ gapGroup) $ symbolAlignmentMedian x
 
     gapGroup = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :|[]
 

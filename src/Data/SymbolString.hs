@@ -23,15 +23,19 @@ module Data.SymbolString
   , reverseContext
   , symbolAlignmentMedian
   , renderAligns
+  , renderLikeDNA
   , renderMonospacedGroup
   , renderSingleton
+  , renderSmartly
   , renderString
   , renderSymbolString
   ) where
 
 import           Control.DeepSeq
 import           Data.Alphabet
+import           Data.Alphabet.IUPAC
 import           Data.Bits
+import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty       (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE
@@ -45,10 +49,14 @@ import           Prelude hiding (filter)
 type SymbolString = Vector SymbolContext
 
 
+data Blank = Blank
+
+
 data  SymbolContext
-    = Align  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
-    | Delete {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
-    | Insert {-# UNPACK #-} !SymbolAmbiguityGroup                                      {-# UNPACK #-} !SymbolAmbiguityGroup
+    = Align   {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Delete  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Insert  {-# UNPACK #-} !SymbolAmbiguityGroup                                      {-# UNPACK #-} !SymbolAmbiguityGroup
+    | Gapping {-# UNPACK #-} !SymbolAmbiguityGroup
     deriving (Eq, Generic, Ord)
 
 
@@ -67,13 +75,18 @@ encodeAmbiguityGroup alphabet xs = force . SAG $ foldlWithKey f 0 alphabet
 
 
 decodeAmbiguityGroup :: Alphabet a -> SymbolAmbiguityGroup -> NonEmpty a
-decodeAmbiguityGroup alphabet xs = NE.fromList $ foldMapWithKey f alphabet
+decodeAmbiguityGroup alphabet xs =
+    case foldMapWithKey f alphabet of
+      y:ys -> y:|ys
+      []   -> error context
   where
     f k e
       | xs `testBit` k = [e]
       | otherwise      = []
 
-  
+    context = unwords ["No set bits found: ", show $ length alphabet, show xs]
+
+
 instance NFData SymbolContext
 
 
@@ -85,6 +98,11 @@ instance Semigroup SymbolAmbiguityGroup where
     (<>) (SAG lhs) (SAG rhs) = SAG $ lhs .|. rhs
 
 
+instance Show Blank where
+
+    show _ = ""
+
+
 instance Show SymbolAmbiguityGroup where
 
     show (SAG v) = show v
@@ -92,9 +110,28 @@ instance Show SymbolAmbiguityGroup where
 
 instance Show SymbolContext where
 
-    show (Align  m x y) = mconcat ["A|", showPad m, "|", showPad x, "|", showPad y, "|"]
-    show (Delete m x  ) = mconcat ["D|", showPad m, "|", showPad x, "|",   "     ", "|"]
-    show (Insert m   y) = mconcat ["I|", showPad m, "|",   "     ", "|", showPad y, "|"]
+    show (Align   m x y) = mconcat ["A|", showPad m, "|", showPad x, "|", showPad y, "|"]
+    show (Delete  m x  ) = mconcat ["D|", showPad m, "|", showPad x, "|",   "     ", "|"]
+    show (Insert  m   y) = mconcat ["I|", showPad m, "|",   "     ", "|", showPad y, "|"]
+    show (Gapping v    ) = mconcat ["G|", showPad v, "|",   "     ", "|",   "     ", "|"]
+
+    showList [] str = str <> "[]"
+    showList xs str = str <> "[" <> foldMap g xs <> "]"
+      where
+        pad :: Show a => a -> String
+        pad x = let s = show x in replicate (maxStrLen - length s) ' ' <> s
+        blank = pad Blank
+
+        maxStrLen        = maximum $ f <$> xs
+        f (Align  m x y) = maximum $ length <$> [show m, show x, show y]
+        f (Delete m x  ) = maximum $ length <$> [show m, show x        ]
+        f (Insert m   y) = maximum $ length <$> [show m,         show y]
+        f (Gapping v   ) = length $ show v
+        
+        g (Align  m x y) = mconcat ["A:", pad m, ".", pad x, ".", pad y, "|"]
+        g (Delete m x  ) = mconcat ["D:", pad m, ".", pad x, ".", blank, "|"]
+        g (Insert m   y) = mconcat ["I:", pad m, ".", blank, ".", pad y, "|"]
+        g (Gapping v   ) = mconcat ["G:", pad v, ".", blank, ".", blank, "|"]
 
 
 -- We pad things to be exactly 5 characters long with leading space because a
@@ -105,11 +142,12 @@ showPad (SAG x) = replicate (5 - length shown) ' ' <> shown
     shown = show x 
 
 
-renderString :: Foldable1 f => Alphabet Char -> f SymbolAmbiguityGroup -> String
+renderString :: Alphabet Char -> SymbolString -> String
 renderString alphabet = foldMap renderGroup . toNonEmpty
   where
+    renderGroup Gapping{} = "-"
     renderGroup grp =
-      case decodeAmbiguityGroup alphabet grp of
+      case decodeAmbiguityGroup alphabet $ symbolAlignmentMedian grp of
         x:|[] -> [x]
         x:|xs -> mconcat ["[",[x],xs,"]"]
 
@@ -120,6 +158,7 @@ renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap r
     renderContext (Align  x _ _) = mconcat ["α: ", renderGroup x ]
     renderContext (Delete x _  ) = mconcat ["δ: ", renderGroup x ]
     renderContext (Insert x   _) = mconcat ["ι: ", renderGroup x ]
+    renderContext (Gapping v   ) = mconcat ["—: ", renderGroup v ]
 
     renderGroup = renderMonospacedGroup alphabet
 
@@ -136,7 +175,7 @@ renderAligns :: Alphabet Char -> SymbolString -> String
 renderAligns alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
     renderContext (Align x _ _) = renderAmbiguityGroup x
-    renderContext _             = renderAmbiguityGroup $ encodeAmbiguityGroup alphabet ('-':|[])
+    renderContext _             = renderAmbiguityGroup . encodeAmbiguityGroup alphabet $ '-':|[]
 
 
 renderSingleton :: Alphabet Char -> SymbolString -> String
@@ -147,28 +186,50 @@ renderSingleton alphabet = foldMap renderContext . toNonEmpty
     renderContext _ = [gap]
 
 
+renderSmartly :: Alphabet Char -> SymbolString -> String
+renderSmartly alphabet
+  | length alphabet == 5 = renderLikeDNA
+  | otherwise            = renderSingleton alphabet
+
+
+renderLikeDNA :: SymbolString -> String
+renderLikeDNA = foldMap toList . interpretAmbiguityAsDNA
+  where
+    interpretAmbiguityAsDNA :: SymbolString -> [NonEmpty Char]
+    interpretAmbiguityAsDNA = encodeIUPAC iupacToDna . fmap getAmbiguityAsDNA . toList
+
+    getAmbiguityAsDNA :: SymbolContext -> NonEmpty Char
+    getAmbiguityAsDNA Gapping{} = '-':|[]
+    getAmbiguityAsDNA x         = decodeAmbiguityGroup dnaAlphabet $ symbolAlignmentMedian x
+
+    dnaAlphabet = fromSymbols ['A','C','G','T','-']
+
+
 renderAmbiguityGroup :: SymbolAmbiguityGroup -> String
 renderAmbiguityGroup = show
 
 
 symbolAlignmentMedian :: SymbolContext -> SymbolAmbiguityGroup
-symbolAlignmentMedian (Align  x _ _) = x
-symbolAlignmentMedian (Delete x _  ) = x
-symbolAlignmentMedian (Insert x   _) = x
+symbolAlignmentMedian (Align   x _ _) = x
+symbolAlignmentMedian (Delete  x _  ) = x
+symbolAlignmentMedian (Insert  x   _) = x
+symbolAlignmentMedian (Gapping _    ) = undefined
 
 
 reverseContext :: SymbolContext -> SymbolContext
 reverseContext (Align  med x y) = Align  med y x
 reverseContext (Delete med x  ) = Insert med   x
 reverseContext (Insert med   y) = Delete med y
+reverseContext x = x
 
 
 filterGaps :: SymbolString -> SymbolString
 filterGaps = filter f 
   where
-    f Align  {} = True
-    f Delete {} = False
-    f Insert {} = False
+    f Align   {} = True
+    f Delete  {} = True
+    f Insert  {} = True
+    f Gapping {} = False
 
 
 -- |

@@ -21,15 +21,12 @@ module Alignment.Internal
   ) where
 
 import           Control.Lens
-import           Data.Bits
 import           Data.Decoration
 import           Data.Foldable
 import           Data.Key
 import qualified Data.List.NonEmpty   as NE
 import           Data.SymbolString
 import           Data.Vector.NonEmpty hiding (reverse)
-
-import Debug.Trace
 
 
 -- |
@@ -70,7 +67,7 @@ preorderRootLogic =
       <$> (^. subtreeCost)
       <*> (^. localCost)
       <*> (^. preliminaryString)
-      <*> setInitialAlignment   . (^. preliminaryString)
+      <*> (^. preliminaryString)
       <*> const True
 
 
@@ -97,8 +94,7 @@ preorderLeafLogic parent current =
 
     r = reverseContext
 
-    derivedStringAlignment = deriveLeafAlignment a p c
---    derivedStringAlignment = deriveAlignment a p c
+    derivedStringAlignment = deriveAlignment a p c
 
 
 -- |
@@ -118,33 +114,33 @@ preorderInternalLogic parent current =
     ) $ either id id current
   where
     derivedStringAlignment = deriveAlignment (parent ^. alignedString) p c
---    derivedStringAlignment = deriveLeafAlignment (parent ^. alignedString) p c
 
     (c, p) = case current of
                Left  x -> (x ^. preliminaryString, reverseContext <$> parent ^. preliminaryString)
                Right x -> (x ^. preliminaryString,                    parent ^. preliminaryString)
 
 
--- TODO: Make this Delete gap gap, don't assume alphabet of size 5
-{-# INLINEABLE del #-}
-del :: SymbolContext
-del = let x = bit 4 in Delete x x
-
-
 {-# INLINEABLE deriveAlignment #-}
 deriveAlignment
   :: SymbolString -- ^ Parent Alignment
   -> SymbolString -- ^ Parent Context
-  -> SymbolString -- ^ Child Context
-  -> SymbolString -- ^ Child Alignment
+  -> SymbolString -- ^ Child  Context
+  -> SymbolString -- ^ Child  Alignment
 deriveAlignment pAlignment pContext cContext = alignment
   where
+--    gap = Gapping
+
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector e@ (x,ys,zs) =
         case (ys, zs) of
           ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
-          _       -> error $ renderResult e
+          _       -> error $ unlines
+                       [ "The impossible happened! (after the ``sliding zip'')"
+                       , "> The parent and/or child context(s) were not fully consumed."
+                       , ""
+                       , renderResult e
+                       ]
 
 --    traceResult e = trace (renderResult e) e
 
@@ -167,125 +163,39 @@ deriveAlignment pAlignment pContext cContext = alignment
         ]
 
     f :: ([SymbolContext], [SymbolContext], [SymbolContext]) -> Int -> SymbolContext -> ([SymbolContext], [SymbolContext], [SymbolContext])
-    f (acc, [], []) k e =
+    f z@(acc, [], _) k e =
         case e of
-          Delete {} -> (del : acc, [], [])
-          _         -> error $ unlines
-                           [ "While deriving INTERNAL label"
-                           , "Cannot Align or Insert when there is no child symbol:"
-                           , "at index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
-                           , "Parent Alignment: " <> show pAlignment
-                           , "Parent Context:   " <> show pContext
-                           , "Child  Context:   " <> show cContext
-                           ]
+          Gapping{}  -> (        e : acc, [], [])
+          Delete _ v -> (Gapping v : acc, [], [])
+          Insert _ v -> (Gapping v : acc, [], [])
+          _          -> error $ unlines
+                          [ "The impossible happened!"
+                          , "> Align encountered after child contexts consumed."
+                          , "  index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
+                          , ""
+                          , renderResult z
+                          ]
 
-    f z@(acc, [], y:ys) k e =
-        case e of
-          Delete {} -> (del : acc, [], y:ys)
-          Insert {} -> (del : acc, [],   ys)
-          Align  {} ->
-            case y of
-              Delete {}  -> (del : acc, [], ys)
-              _          -> error $ unlines
-                                [ "BAD!"
-                                , "at index " <> show k <> ": " <> show e
-                                , "Parent Alignment: " <> show pAlignment
-                                , "Parent Context:   " <> show pContext
-                                , "Child  Context:   " <> show cContext
-                                , renderResult z
-                                ]
-
-    f z@(_, _:_, []) _ _ = error $ "MAD!\n" <> renderResult z
+    f z@(_, _:_, []) k e = error $ unlines
+                            [ "The impossible happened!"
+                            , "> The parent context was consumed before the child context."
+                            , "  index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
+                            , ""
+                            , renderResult z
+                            ]
 
     f (acc, x:xs, y:ys) _ e =
         case e of
-          Delete {} -> (del : acc, x:xs, y:ys)
-          Insert {} ->
+          Gapping {} -> (e : acc, x:xs, y:ys)
+          Align   {} -> (x : acc,   xs,   ys)
+          Delete _ v ->
               case y of
-                Delete {} -> (del : acc, x:xs, ys)
-                Insert {} -> (deletionToInserion x : acc,   xs, ys) --
-                Align  {} -> (  x : acc,   xs, ys)
-          Align  {} ->
+                Delete {} -> (Gapping v : acc, x:xs,   ys)
+                _         -> (        x : acc,   xs,   ys)
+          Insert _ v -> 
               case y of
-                Delete {} -> (del : acc, x:xs, ys)
-                Insert {} -> (  x : acc,   xs, ys)
---                Align  {} -> (  x : acc,   xs, ys) --
-                Align  {} -> (  y : acc,   xs, ys) --
-
-
-{-# INLINEABLE deriveLeafAlignment #-}
-deriveLeafAlignment
-  :: SymbolString -- ^ Parent Alignment
-  -> SymbolString -- ^ Parent Context
-  -> SymbolString -- ^ Child Context
-  -> SymbolString -- ^ Child Alignment
-deriveLeafAlignment pAlignment pContext cContext = alignment
-  where
-    alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
-
-    extractVector e@ (x,ys,zs) =
-        case (ys, zs) of
-          ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
-          _       -> error $ renderResult e
-
---    traceResult e = trace (renderResult e) e
-
-    renderResult (x,y,z) = ("\n"<>) $ unlines
-        [ "While deriving LEAF label"
-        , "A & I in parent alignment: " <> show (countAlignInsert pAlignment)
-        , "Length parent context:     " <> show (length pContext)
-        , if countAlignInsert pAlignment == length pContext
-          then "Parental alignments valid"
-          else "-=-=-=-=-=- INVALID ALIGNMENTS -=-=-=-=-=-"
-        , "Parent Alignment: " <> show pAlignment
-        , "Parent Context:   " <> show pContext
-        , "Child  Context:   " <> show cContext
-        , "Parent Context Renamining: "
-        , show z
-        , "Child Context Renamining: "
-        , show y
-        , "Result Alignment: "
-        , show $ reverse x
-        ]
-
-    f (acc, [], []) k e =
-        case e of
-          Delete {} -> (del : acc, [], [])
-          Insert {} -> (del : acc, [], [])
-          _         -> error $ unlines
-                           [ "While deriving LEAF label"
-                           , "Cannot Align when there is no child symbol:"
-                           , "at index " <> show k <> "/" <> show (length pAlignment - 1) <> ": " <> show e
-                           , "Parent Alignment: " <> show pAlignment
-                           , "Parent Context:   " <> show pContext
-                           , "Child  Context:   " <> show cContext
-                           ]
-
-    f z@(acc, [], y:ys) _ e =
-        case e of
-          Delete {} -> (del : acc, [], y:ys)
-          Insert {} -> (del : acc, [],   ys)
-          Align  {} ->
-              case y of
-                Delete {} -> (del : acc, [], ys)
-                Insert {} -> (del : acc, [], ys)
-                _         -> error $ "SAD!\n" <> renderResult z
-
-    f z@(_, _:_, []) _ _ = error $ "MAD!\n" <> renderResult z
-
-    f (acc, x:xs, y:ys) _ e =
-        case e of
-          Delete {} -> (del : acc, x:xs, y:ys)
-          Insert {} ->
-              case y of
-                Delete {} -> (del : acc, x:xs, ys)
-                Insert {} -> (  x : acc,   xs, ys) --
-                Align  {} -> (  x : acc,   xs, ys)
-          Align {} ->
-              case y of
-                Delete {} -> (del : acc, x:xs, ys)
-                Insert {} -> (  x : acc,   xs, ys)
-                Align  {} -> (  x : acc,   xs, ys) --
+                Insert {} -> (        x : acc,   xs,   ys)
+                _         -> (Gapping v : acc, x:xs,   ys)
 
 
 {-# INLINEABLE countAlignInsert #-}
@@ -295,16 +205,3 @@ countAlignInsert = sum . fmap g
   where
     g Delete {} = 0
     g _         = 1
-
-
-{-# INLINEABLE setInitialAlignment #-}
-{-# SPECIALIZE setInitialAlignment :: Vector SymbolContext -> Vector SymbolContext #-}
-setInitialAlignment :: Functor f => f SymbolContext -> f SymbolContext
-setInitialAlignment = fmap deletionToInserion
-
-
-{-# INLINEABLE deletionToInserion #-}
-deletionToInserion :: SymbolContext -> SymbolContext
-deletionToInserion e@Delete {} = reverseContext e
-deletionToInserion e           = e
-
