@@ -172,16 +172,16 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
   \caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
   \begin{algorithmic}[1]
     \Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
-    \Ensure{$\Sigma_{\Gamma}^{*}$}
+    \Ensure{$\;\;\,\Sigma_{\Gamma}^{*}$}
     \Function{$\otimes$}{$\textit{lhs},\, \textit{rhs}$}
       \newline
       \Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
       \If    {$\textit{lhs} = \textit{rhs}$}
         \State \Return $\textit{lhs}$
       \ElsIf {$\textit{lhs} < \textit{rhs}$}
-        \State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
+        \State \Return $\Call{MatrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
       \Else
-        \State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
+        \State \Return $\Call{MatrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
       \EndIf
     \EndFunction
   \end{algorithmic}
@@ -190,18 +190,19 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
 \begin{algorithm}
 	\caption{Post-order Traversal}\label{post-order}
 	\begin{algorithmic}[1]
-		\Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
-		\Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
+		\Require{A binary tree decorated with leaf $\;$ labels $\;\;\, inputString \in \Sigma^{*}$ }
+		\Ensure{$\;\,$ A binary tree decorated with node labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
 		%    \Procedure{post-order(n)}{}
-		\Function{post-order}{$\textit{node}$}
-		\If   {isLeaf ( $\textit{node}$ )}
+		\Function{PostOrder}{$\textit{node}$}
+		\If   {isLeaf ( $\textit{node}$ )} \Comment{Lift leaf label into preliminary context}
 		\State $\textit{node.cost} \gets 0$
+        \State $\textit{node.prelimString} \gets \Call{InitializeString}{\textit{node.inputString}}$
 		%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
 		%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
 		%sy        \EndIf
-		\Else
-		\State $\textit{lhs}  \gets \Call{post-order}{\textit{node.children.first}}$
-		\State $\textit{rhs}  \gets \Call{post-order}{\textit{node.children.second}}$
+		\Else \Comment{Recursively combine preliminary contexts}
+		\State $\textit{lhs}\,  \gets \Call{PostOrder}{\textit{node.children.first}}$
+		\State $\textit{rhs}  \gets \Call{PostOrder}{\textit{node.children.second}}$
 		\State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
 		\State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
 		\State $\textit{node.prelimString} \gets \textit{alignContext}$
@@ -213,27 +214,27 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
 \begin{algorithm}
   \caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
   \begin{algorithmic}[1]
-    \Require{$lesser, longer \in \Sigma_{\Gamma}^{*}$}
+    \Require{$lesser,\, longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
     \Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
     \Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
-    \Ensure{($\NonNegReals$, $\mathbf{Arrow}$)}
-    \Function{matrixDefinition}{$\textit{lesser},\, \textit{longer},\, \sigma,\, i,\, j$}
+    \Ensure{$\;\;\,(\NonNegReals$, $\mathbf{Arrow})$}
+    \Function{MatrixDefinition}{$\textit{lesser},\, \textit{longer},\, \sigma,\, i,\, j$}
       \If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
         \State \Return $\left( \infty, \nwarrow \right)$
       \ElsIf{$i = 0 \land j = 0$} \Comment{Handle the origin}
         \State \Return $\left( 0, \nwarrow \right)$
       \ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
-        \State $\left(\textit{leftCost}, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+        \State $\left(\textit{leftCost}, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
         \State \Return $\left( \textit{leftCost}, \leftarrow \right)$
       \ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
-        \State $\left(\textit{aboveCost}, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+        \State $\left(\textit{aboveCost}, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
         \State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
       \Else \Comment{General recursive case}
         \State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
         \State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
         \State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
-        \State $\left( minCost, minDir \right) \gets \Call{getMinimal}{x, y, z}$
+        \State $\left( minCost, minDir \right) \gets \Call{GetMinimal}{x, y, z}$
         \If {$\left( \textit{minDir}, \textit{minDir} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
           \State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
         \Else
@@ -249,14 +250,14 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
   \begin{algorithmic}[1]
     \Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
     \Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-    \Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}
+    \Ensure{$\;\;\,(\NonNegReals$, $\Sigma_{\Gamma}^{*})$}
 
-    \Function{matrixTraceback}{$\textit{lesser},\, \textit{longer}$}
+    \Function{MatrixTraceback}{$\textit{lesser},\, \textit{longer}$}
       \State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
-      \State \Return $\left( alignedCost, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+      \State \Return $\left( alignedCost, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
       \State $alignedStr \gets \left[ \,\right]$
       \While{$\left( i, j \right) > \left( 0, 0 \right)$}
-        \State $\left( \_, dirArrow\right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+        \State $\left( \_, dirArrow\right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
         \Switch{$\textit{dirArrow}$}
           \Case{$\leftarrow$}
             \State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
@@ -283,8 +284,8 @@ Note that $\sigma$ presented in throughout the pseudocode below can represent a 
   \begin{algorithmic}[1]
     \Require{$diagCost, \; rightCost, \; downCost \in \NonNegReals$}
     \Require{Total ordering over $\mathbf{Arrow}$ defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
-    \Ensure{$\left(\NonNegReals, \mathbf{Arrow} \right)$}
-    \Function{getMinimal}{$diagCost,\, rightCost,\, downCost$}
+    \Ensure{$\;\;\,\left(\NonNegReals, \mathbf{Arrow} \right)$}
+    \Function{GetMinimal}{$diagCost,\, rightCost,\, downCost$}
       \State \Return $minimumBy \; \left(\lambda \left(c, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
       $[\, \left(\;\;diagCost, \;      \nwarrow    \right)$\newline\hspace*{3.85cm}
       $,\, \left(\, rightCost, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
@@ -302,7 +303,7 @@ These preliminary contexts will be consumed to assign a final string alignment i
 The post-order traversal described here is very similar to the DO post-order traversal described by \cite{Wheeler2003}, differing only in the use of $\otimes$ which captures the preliminary context of a subtree, instead of generating a preliminary median string assignment.
 
 First, for each leaf node, $l_x$, we set $l_x.cost$ to $0$.
-Additionally, if $l_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$ --- i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$ --- then we call $\Call{initializeString}{l_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
+Additionally, if $l_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$ --- i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and not it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$ --- then we call $\Call{InitializeString}{l_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
 
 On each internal node, $i_x$ with children $c_l$ and $c_r$, of $\mathcal{T}$, we call $c_l$ $\otimes$ $c_r$.
 The resultant \textit{prelimString} is assigned to $i_x.prelimString$, and the sum of the $c_l.cost$ and $c_r.cost$ is assigned to $i_x.cost$.
@@ -323,8 +324,8 @@ If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \r
   \caption{String Initialization}\label{string-initialization}
   \begin{algorithmic}[1]
     \Require{$inputString \in \Sigma^{*}$ }
-    \Ensure{$\Sigma_{\Gamma}^{*}$ }
-    \Function{initializeString}{$\textit{inputString}$}
+    \Ensure{$\;\;\,\Sigma_{\Gamma}^{*}$ }
+    \Function{InitializeString}{$\textit{inputString}$}
       \State $i \gets \vert\textit{inputString} \;\vert - 1,$
       \While{$i \geq 0$}
         \State $\textit{inputString}_i \gets \textbf{\texttt{ALIGN}} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
@@ -342,27 +343,51 @@ This is required because, at the root node, deletion events originate from align
 By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{deriveAlignment}.
 
 For each non-root node $n_x$, we first determine whether the current node is the left or right child of its parent.
-If it is the left child, then each deletion event of the parent node's final alignment is changed to an insertion event and each insertion event is changed to a deletion event.
-This is required because (as with the root node) deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree. 
-However, we must consider the converse when referencing the parent's final alignment with a node which is the left child of it's parent for the resulting alignment to be consistent.
+This is required because (deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, and we must use this information when deriving the current node's alignment.
 
-Once the final alignment of the parent has been correctly initialized, we proceed to assign the final alignment of the current node.
-The parent's final alignment will necessarily be of greater than or equal length to the parent's preliminary context and the parent's preliminary context is also greater than or equal to than the current node's preliminary context, due to the addition of alignment gaps $\gap$ on the post-order traversal.
+The parent's final alignment will necessarily be of greater than or equal length to the parent's preliminary context because the alignment contains all the information from the context, plus the information from the the rest of the tree.
+The parent's preliminary context is also greater than or equal to than the current node's preliminary context, due to the parent's context containing all information from the current node's context, plus the addition of the current node's sister subtree.
 The resulting value assigned to the current node's final alignment will have the same length as the parental final alignment.
 Since this invariant is maintained from the root node to the leaf node's final alignment assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that the final alignment assignment of each node will be of equal length and constitute a genuine string alignment.
 
 The final alignment for the current node is derived by performing a ``sliding zip'' over the parent's final alignment, the parent's preliminary context, and the current node's preliminary context.
-The parent's final alignment is used as the basis of the zip, .
+The parent's final alignment is used as the basis of the zip.
 At each step of the ``sliding zip,'' one element of the parent's final alignment will be consumed and one element of the current node's final alignment will be defined.
-Additionally, at each step of the zip, one element of either the parent's preliminary context, the current node's preliminary context, or both elements will also be consumed.
-The process is called a ``sliding zip'' because the elements of the parent's and current node's preliminary contexts do not have a fixed index to which they correspond to the parent's final alignment being used as the basis of the zip.
+Additionally, at each step of the zip either, the just parent's preliminary context element, the parent and current node's preliminary contexts elements, or neither elements will also be consumed.
+Lastly, we only define an element of the current node's final alignment to be either an element from the current node's preliminary context or a gap.
+The process is called a ``sliding zip'' because, due to the varying lengths of the three inputs, the elements of the parent's and current node's preliminary contexts do not have a fixed index to which they correspond to the parent's final alignment being used as the basis of the zip.
 Rather, the elements of the parent's and current node's preliminary contexts ``slide'' through the zipping process, and their corresponding index with the basis is deduced dynamically.
-An example alignment of this ``sliding zip'' process for two internal  nodes is shown in Figure \ref{Fig:Examplepre-order}.
-Deletion events in the parental final alignment are propagated to the current node's final alignment without consuming elements of the parental or current node's preliminary contexts.
-For each non-deletion element in the parental final alignment, one element from either the parent's preliminary context or the current node's preliminary context, or both elements are consumed to determine which element is added to the current node's final alignment depending on the deletion, insertion, or alignment event of the next parental preliminary context element.
-However, the final alignment assignments for internal nodes and leaf nodes are defined slightly differently within the ``sliding zip.''
-There are ten special cases describing how to derive each index current node's final alignment. The special cases are described in the pseudocode in Algorithm \ref{Alg:pre-order} and Figure \ref{Fig:Examplepre-order}.
+The logic applied in the ``sliding zip'' is to propogate gaps from the tree above the current node down to the current node. When not dealing with a gap propogated from an above node, to align the non-gap elements or introduce a new gap to be propogated.
+An example alignment of this ``sliding zip'' process for two 
+internal nodes is shown in Figure \ref{Fig:Examplepre-order}.
+
+There are five cases describing logic determining how to derive each index of the current node's final alignment. The cases are presented in the pseudocode in Algorithm \ref{Alg:pre-order}, and Figure \ref{Fig:Examplepre-order}, and described below.
+
+\begin{itemize}
+
+  \item Case 0: When the sliding zip has consumed all elements of the current node's preliminary context, then the next element of the current node's final alignment is ``\texttt{GAPPED}.''
+  Because we only define the next element of the current node's final alignment to be either an element from the current node's preliminary context or a gap, the latter is the only choice.
+
+  \item Case 1: When the element of the parent's final alignment is ``\texttt{ALIGN},'' then we consume the next element of both the parent and current node's preliminary context and we assign to the next element of the current node's final alignment is the consumed current node's preliminary context element.
+  Because the parent's final alignment element was marked as an alignment event, we know that the current node was aligned with it's sister subtree at this index, and that the current node's preliminary context element is the correct element for this index of the alignment.
+  
+  \item Case 2: When the both the parent's final alignment element and the parent's preliminary context element is ``\texttt{DELETE},'' and the current node is the \textit{left} child of it's parent, then we consume the next element of both the parent and current node's preliminary context and we assign to the next element of the current node's final alignment is the consumed current node's preliminary context element.
+  Because deletion events originate from the left subtree of a node, and this node is the left child of it's parent, this means that the current node's preliminary context element is the correct element for this index of the alignment.
+  If the same deletion event was encountered but the current node was the right child of it's parent, then the current node's preliminary context element would not be the correct element for this index of the alignment, because deletion events originate from the left subtree and the deletion event was encountered in the right subtree.
+  In the case that a deletion event is encountered in a right subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the node's sister subtree.
+  This is caught be Case 4.
+  
+  \item Case 3: When the both the parent's final alignment element and the parent's preliminary context element is ``\texttt{INSERT},'' and the current node is the \textit{right} child of it's parent, then we consume the next element of both the parent and current node's preliminary context and we assign to the next element of the current node's final alignment is the consumed current node's preliminary context element.
+  Because insertion events originate from the right subtree of a node, and this node is the right child of it's parent, this means that the current node's preliminary context element is the correct element for this index of the alignment.
+  If the same insertion event was encountered but the current node was the left child of it's parent, then the current node's preliminary context element would not be the correct element for this index of the alignment, because insertion events originate from the right subtree and the insertion event was encountered in the left subtree.
+  In the case that a insertion event is encountered in a left subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the node's sister subtree.
+  This is caught be Case 4.
+  
+  \item Case 4: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of the parent node's preliminary context and the next element of the current node's final alignment is ``\texttt{GAPPED}.''
+  This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a deletion or insertion event was encountered in the right or left subtree, respectively. 
+
+\end{itemize}
 
 %\begin{itemize}
 %
@@ -413,102 +438,84 @@ Hence, the worst case runtime of the implied alignment algorithm is $\mathcal{O}
 \begin{algorithm}
   \caption{Pre-order Traversal}\label{pre-order}
   \begin{algorithmic}[1]
-    \Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
-    \Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
-    \Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
-    \Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
-    \Function{pre-order}{$\textit{node}$}
+    \Require{      A binary tree decorated with node labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
+    \Ensure {$\;\,$ A binary tree decorated with node labels \enskip $finalString   \in \Sigma_{\Gamma}^{*}$}
+    \Function{PreOrder}{$\textit{node}$}
       \If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
-        \State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
-      \Else
+        \State $\textit{node.finalString} \gets \textit{node.prelimString}$
+      \Else  \Comment{Derive alignment for node}
         \State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
         \State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
         \State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
-        \If {isLeftChildOfParent($\textit{node}$)}
-          \ForEach {$\textit{context} \in \textit{parentPrelim}$}
-            \State \Call{reverseContext}{$\textit{context}$}
-          \EndFor
-        \EndIf
-        \State $\textit{v} \gets$ \Call{deriveAlignment}{$isLeaf ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
+        \State $\textit{v} \gets$ \Call{DeriveAlignment}{$isLeft ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
         \State $\textit{node.finalString} \gets \textit{v}$
       \EndIf
     \EndFunction
 
-    \Function{initializeRootString}{$\textit{rootString}$}
-      \ForEach {$\textit{context} \in \textit{rootString}$}
-        \Call{deletionToInsertion}{$\textit{context}$}
-      \EndFor
-    \EndFunction
-
-    \Function{reverseContext}{$\textit{context}$}
-      \Switch{$\textit{context}$}
-        \Case{    $\texttt{ALIGN} \quad \textit{x} \;\; \textit{y} \;\;$}
-          \Return $\texttt{ALIGN} \quad \textit{y} \;\; \textit{x} \;\;$
-        \EndCase
-        \Case{    $\texttt{DELETE} \;\; \textit{x} \;\;\quad$}
-          \Return $\texttt{INSERT} \;\; \quad           \textit{x} \;\;$
-        \EndCase
-        \Case{    $\texttt{INSERT} \;\; \quad \textit{y} \;\;$}
-          \Return $\texttt{DELETE} \;\;      \textit{y} \;\;$
-        \EndCase
-        \Case{    $\texttt{GAPPED} \;\; \quad \quad$}
-          \Return $\texttt{GAPPED}$
-        \EndCase
-      \EndSwitch
-    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}
   \label{Alg:pre-order}
-  \caption{Internal Node Alignment}\label{deriveAlignment}
+  \caption{Non-root Node Alignment}\label{deriveAlignment}
   \begin{algorithmic}[1]
-    \Function{deriveAlignment}{$\textit{isLeaf},\,  \textit{pAlignment},\, \textit{pContext},\, \textit{cContext}$}
-      \State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-      \State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-      \State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-      \For{$\textit{i} < \textit{len}$}
-        \If    {$\textit{k} \geq \textit{ccLen}$}
-          \State $\textit{result}_i \gets \texttt{GAPPED}$ \Comment{Case 0}
+    \Require{$isLeft \in \left\{ True,\, False \right\}$}
+    \Require{$\textit{pAlignment},\, \textit{pContext},\, \textit{cContext} \in \Sigma_{\Gamma}^*$}
+    \Ensure {$\;\;\,\Sigma_{\Gamma}^{*}$}
+    \Function{DeriveAlignment}{$\textit{isLeft},\,  \textit{pAlignment},\, \textit{pContext},\, \textit{cContext}$}
+      \State $\textit{paLen} \enskip \gets$ \Call{length}{$\textit{pAlignment}$}
+      \State $\textit{ccLen} \enskip\, \gets$ \Call{length}{$\textit{cContext}$}
+      \State $\left( \textit{i}, \textit{j}, \textit{k} \right) \;\gets \left( 0, 0, 0 \right)$
+      \For{$\textit{i} < \textit{paLen}$}
+        \If    {$\textit{k} \geq \textit{ccLen}$} \Comment{Case 0}
+          \State $\textit{result}_i \gets \texttt{GAPPED}$
         \Else
-          \Switch{$\textit{pAlignment}_i$}
-            
-            \Case{$\texttt{ALIGN}$} \Comment{Case 1}
+          \If {$\enskip \textit{pAlignment}_i = \texttt{ALIGN}$\Comment{Case 1}\par\hskip\algorithmicindent \quad\enskip
+          	$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{DELETE} \land \;\;\, isLeft \right)$\Comment{Case 2}\par\hskip\algorithmicindent\quad\enskip
+          	$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{INSERT} \land \neg   isLeft \right)$\Comment{Case 3}\par\hskip\algorithmicindent$\;\;\;$}  
             \State $\textit{result}_i \gets \textit{cContext}_k$
             \State $\textit{k} \gets \textit{k} + 1$
-            \EndCase
-            
-            
-            \Case{$\texttt{DELETE}}$
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\texttt{DELETE}$} \Comment{Case 2}
-                \State $\textit{result}_i \gets \texttt{GAPPED}$
-                \EndCase
-                \Default \Comment{Case 3}
-                \State $\textit{result}_i \gets \textit{cContext}_k$
-                \State $\textit{k} \gets \textit{k} + 1$
-                \EndDefault
-              \EndSwitch
-            \EndCase
-            
-            \Case{$\texttt{INSERT}$} 
-              \Switch{$\textit{pContext}_j$}
-                \Case{$\texttt{INSERT}$} \Comment{Case 4}
-                \State $\textit{result}_i \gets \textit{cContext}_k$
-                \State $\textit{k} \gets \textit{k} + 1$
-                \EndCase
-                \Default \Comment{Case 5}
-                \State $\textit{result}_i \gets \texttt{GAPPED}$
-                \EndDefault
-              \EndSwitch
-            \EndCase
-
-            \Case{$\texttt{GAPPED}$} \Comment{Case 6}
+          \Else \Comment{Case 4}
             \State $\textit{result}_i \gets \texttt{GAPPED}$
-            \EndCase
-
-          \EndSwitch
+          \EndIf
+          
+          
+%          \Switch{$\textit{pAlignment}_i$}
+%            
+%            \Case{$\texttt{ALIGN}$} \Comment{Case 1}
+%            \State $\textit{result}_i \gets \textit{cContext}_k$
+%            \State $\textit{k} \gets \textit{k} + 1$
+%            \EndCase
+%                      
+%            \Case{$\texttt{DELETE}}$
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\texttt{DELETE}$} \Comment{Case 2}
+%                \State $\textit{result}_i \gets \texttt{GAPPED}$
+%                \EndCase
+%                \Default \Comment{Case 3}
+%                \State $\textit{result}_i \gets \textit{cContext}_k$
+%                \State $\textit{k} \gets \textit{k} + 1$
+%                \EndDefault
+%              \EndSwitch
+%            \EndCase
+%            
+%            \Case{$\texttt{INSERT}$} 
+%              \Switch{$\textit{pContext}_j$}
+%                \Case{$\texttt{INSERT}$} \Comment{Case 4}
+%                \State $\textit{result}_i \gets \textit{cContext}_k$
+%                \State $\textit{k} \gets \textit{k} + 1$
+%                \EndCase
+%                \Default \Comment{Case 5}
+%                \State $\textit{result}_i \gets \texttt{GAPPED}$
+%                \EndDefault
+%              \EndSwitch
+%            \EndCase
+%
+%            \Case{$\texttt{GAPPED}$} \Comment{Case 6}
+%            \State $\textit{result}_i \gets \texttt{GAPPED}$
+%            \EndCase
+%
+%          \EndSwitch
           
           \State $\textit{j} \gets \textit{j} + 1$
         \EndIf
