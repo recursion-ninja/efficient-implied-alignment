@@ -45,6 +45,7 @@ data  AlignCell
     = Align
     | Delete
     | Insert
+    | Gapped
     | Spacing
     | Question
     deriving (Eq, Show)
@@ -54,6 +55,7 @@ toSymbol :: AlignCell -> Char
 toSymbol Align    = '𝗔' -- '𝓐'
 toSymbol Delete   = '𝗗' -- '𝓓'
 toSymbol Insert   = '𝗜' -- '𝓘'
+toSymbol Gapped   = '𝗚'
 toSymbol Spacing  = ' '
 toSymbol Question = '？'
 
@@ -141,7 +143,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
 cellText :: String -> Diagram B
 cellText = alignT . scale (5/3) . (<> phantom box) . bold . text
   where
-    box = square 0.65 :: Diagram B
+    box = square 0.25 :: Diagram B
 
 
 cellBox :: Diagram B
@@ -218,15 +220,15 @@ lPoints = map p2
 labels :: [Diagram B]
 labels =
     let lab = centerXY . scale 1.8 . pad 1.5 . bold . text
-    in  [ lab "Case 9"
-        , lab "Case 5"
-        , lab "Case 8"
+    in  [ lab "Case 1"
         , lab "Case 3"
         , lab "Case 4"
-        , lab "Case 7"
-        , lab "Case 6"
         , lab "Case 1"
-        , lab "Case 2"
+        , lab "Case 4"
+        , lab "Case 4"
+        , lab "Case 1"
+        , lab "Case 3"
+        , lab "Case 0"
         , lab "Case 0"
         , lab "Parent's final       alignment"--, lab "(preorder" , lab "result)"
         , lab "Parent's preliminary context"  --, lab "(postorder", lab "result)"
@@ -249,14 +251,14 @@ ijks =
     [ ( 0, 0, 0)
     , ( 1, 1, 1)
     , ( 2, 2, 2)
-    , ( 3, 3, 3)
+    , ( 3, 2, 2)
     , ( 4, 3, 3)
-    , ( 5, 4, 3)
-    , ( 6, 5, 4)
-    , ( 7, 6, 4)
-    , ( 8, 6, 4)
-    , ( 9, 7, 4)
-    , (10, 7, 4)
+    , ( 5, 3, 3)
+    , ( 6, 4, 4)
+    , ( 7, 5, 5)
+    , ( 8, 6, 5)
+    , ( 9, 6, 5)
+    , (10, 6, 5)
     ]
 
 
@@ -264,15 +266,14 @@ pAlign :: [AlignCell]
 pAlign =
     [ Align
     , Insert
+    , Gapped
     , Align
     , Delete
     , Insert
     , Align
     , Insert
-    , Delete
-    , Align
-    , Align
-    , Spacing
+    , Gapped
+    , Gapped
     ]
 
 
@@ -280,16 +281,14 @@ pContext :: [AlignCell]
 pContext =
     [ Align
     , Insert
-    , Insert
     , Spacing
-    , Delete
-    , Delete
-    , Align
-    , Spacing 
     , Insert
     , Spacing
     , Spacing
-    , Spacing    
+    , Delete
+    , Insert
+    , Delete
+    , Spacing
     ]
 
 
@@ -297,13 +296,12 @@ cContext :: [AlignCell]
 cContext =
     [ Align
     , Align
+    , Spacing
+    , Insert
+    , Spacing
+    , Spacing
+    , Delete
     , Align
-    , Spacing
-    , Spacing
-    , Spacing
-    , Align
-    , Spacing
-    , Spacing
     , Spacing
     , Spacing
     ]
@@ -313,13 +311,12 @@ cAlign :: [AlignCell]
 cAlign =
     [ Align
     , Align
+    , Gapped
+    , Insert
+    , Gapped
+    , Gapped
+    , Delete
     , Align
-    , Delete
-    , Delete
-    , Delete
-    , Align
-    , Delete
-    , Delete
-    , Delete
-    , Spacing
+    , Gapped
+    , Gapped
     ]
