@@ -1,4 +1,4 @@
------------------------------------------------------------------------------   
+-----------------------------------------------------------------------------
 -- |
 --
 -- An 'Alphabet' represents an /ordered/ list of unique symbols with constant
@@ -27,7 +27,7 @@
 -- > fromString "?"
 -- This symbol will be removed from the 'Alphabet'
 -- if it is present in the construction structure.
------------------------------------------------------------------------------   
+-----------------------------------------------------------------------------
 
 module Data.Alphabet
   ( Alphabet()
@@ -44,4 +44,4 @@ module Data.Alphabet
   , truncateAtMaxSymbol
   ) where
 
-import Data.Alphabet.Internal
+import           Data.Alphabet.Internal

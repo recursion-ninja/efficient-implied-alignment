@@ -10,11 +10,14 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Data.Decoration.Class where
 
-import Control.Lens
+import           Control.Lens
 
 
 class HasAlignedString s a | s -> a where

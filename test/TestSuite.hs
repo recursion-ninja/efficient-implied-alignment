@@ -7,7 +7,7 @@ import           Test.Tasty
 
 
 main :: IO ()
-main = defaultMain $ testGroup "Alignment Test Suite" 
+main = defaultMain $ testGroup "Alignment Test Suite"
     [ Pairwise.testSuite
     ]
 

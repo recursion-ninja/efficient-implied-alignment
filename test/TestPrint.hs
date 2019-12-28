@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Main where
 
@@ -10,17 +11,17 @@ import           Data.BTree
 import           Data.Char
 import           Data.Decoration
 import           Data.Foldable
-import           Data.Functor                 (($>))
+import           Data.Functor            (($>))
 import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..), intersperse)
-import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
-import           Data.Map                     (Map)
-import qualified Data.Map              as M
+import           Data.List.NonEmpty      (NonEmpty (..), intersperse)
+import qualified Data.List.NonEmpty      as NE
+import           Data.Map                (Map)
+import qualified Data.Map                as M
+import           Data.Matrix.ZeroIndexed (matrix)
 import           Data.Pointed
-import           Data.Semigroup               ((<>))
+import           Data.Semigroup          ((<>))
 import           Data.Semigroup.Foldable
-import           Data.Set                     (Set)
+import           Data.Set                (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
@@ -45,8 +46,8 @@ runAndReportDataSet :: Int -> Int -> (String, StringValues, TreeInput, Transitio
 runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
     let dataSetNumber = "Data Set Number: " <> show num
     let width'        = max width $ length dataSetNumber
-    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-" ]    
-    putStrLn $ mconcat [ "-=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=-" ]
+    putStrLn $ fold [ "-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-" ]
+    putStrLn $ fold [ "-=-=-=-=-=- ", centerWithin width' dataSetLabel , " -=-=-=-=-=-" ]
     putStrLn ""
     case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
       Left  errors -> mapM_ print $ toList errors
@@ -61,7 +62,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
           putStrLn "Output Alignment:"
           putStrLn ""
           let result = force . preorder' $ postorder' tree
-          putStrLn $ renderAlignment nodeRendererA leafRendererA result          
+          putStrLn $ renderAlignment nodeRendererA leafRendererA result
           putStrLn ""
 {--}
           putStrLn $ renderAlignment nodeRendererB leafRendererB result
@@ -70,7 +71,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
           putStrLn ""
 {--}
   where
-    centerWithin width x = mconcat
+    centerWithin width x = fold
         [ replicate pad ' '
         , x
         , replicate pad ' '
@@ -78,21 +79,21 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
       where
         (pad, extra) = (width - length x) `quotRem` 2
-    
+
     postorder' = postorder stringAligner
     preorder'  = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
 
     medianStateFinalizer = preorderInternalLogic -- (buildThreeWayCompare defaultAlphabet op)
-    
+
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
 
-    inputRenderer x i = mconcat
+    inputRenderer x i = fold
         [ i
         , ": "
         , renderSingleton defaultAlphabet $ x ^. preliminaryString
         ]
-    
-    leafRendererA x i = mconcat
+
+    leafRendererA x i = fold
         [ i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
@@ -102,7 +103,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
-    nodeRendererA x _ = mconcat
+    nodeRendererA x _ = fold
         [ "?: "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -111,7 +112,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
-    leafRendererB x i = mconcat
+    leafRendererB x i = fold
         [ i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
@@ -121,7 +122,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
-    nodeRendererB x _ = mconcat
+    nodeRendererB x _ = fold
         [ "?: "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -130,7 +131,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
-    leafRendererC x i = mconcat
+    leafRendererC x i = fold
         [ i
         , ": "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
@@ -140,7 +141,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
 --        , renderSingleton defaultAlphabet $ x ^. alignedString
         ]
 
-    nodeRendererC x _ = mconcat
+    nodeRendererC x _ = fold
         [ "?: "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString

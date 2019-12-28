@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Data.UserInput
   ( AlphabetType(..)
@@ -6,7 +7,7 @@ module Data.UserInput
   , ExampleFileRequest(..)
   ) where
 
-import Control.DeepSeq
+import           Control.DeepSeq
 
 
 data  UserInput

@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Text.Megaparsec.Custom
   ( (<:>)
@@ -8,10 +10,10 @@ module Text.Megaparsec.Custom
   , inlineSpace
   ) where
 
-import           Data.Char                         (isSpace)
-import           Data.Functor                      (($>))
-import           Data.List.NonEmpty                (NonEmpty(..), nonEmpty)
-import           Data.Maybe                        (mapMaybe)
+import           Data.Char                  (isSpace)
+import           Data.Functor               (($>))
+import           Data.List.NonEmpty         (NonEmpty (..), nonEmpty)
+import           Data.Maybe                 (mapMaybe)
 import qualified Data.Set                   as S
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
@@ -63,13 +65,13 @@ inlineSpaceChar = token captureToken errItems
       | otherwise       = Nothing
 
     errItems = S.singleton (Label ('I':|"line space character"))
-    
+
     isInlineSpace x = and $
         [ isSpace . enumCoerce
         , (newLineChar  /=)
         , (carriageChar /=)
         ] <*> [x]
-        
+
     newLineChar  = enumCoerce '\n'
     carriageChar = enumCoerce '\r'
 

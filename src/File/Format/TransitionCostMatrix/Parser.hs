@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Format.TransitionCostMatrix.Parser
   ( TCM(..)
@@ -6,16 +7,16 @@ module File.Format.TransitionCostMatrix.Parser
   ) where
 
 
-import           Data.Char                      (isSpace)
-import           Data.Foldable                  (toList)
+import           Data.Char               (isSpace)
+import           Data.Foldable           (fold, toList)
 import           Data.Key
-import           Data.List                      (elemIndex)
-import           Data.List.NonEmpty             (NonEmpty)
+import           Data.List               (elemIndex)
+import           Data.List.NonEmpty      (NonEmpty)
 import qualified Data.List.NonEmpty      as NE
-import           Data.List.Utility              (duplicates, mostCommon)
-import           Data.Matrix.ZeroIndexed        (Matrix, ncols, nrows)
+import           Data.List.Utility       (duplicates, mostCommon)
+import           Data.Matrix.ZeroIndexed (Matrix, ncols, nrows)
 import qualified Data.Matrix.ZeroIndexed as M
-import           Data.Maybe                     (catMaybes, fromJust)
+import           Data.Maybe              (catMaybes, fromJust)
 import           Data.Semigroup
 import           Prelude                 hiding (zip)
 import           Text.Megaparsec
@@ -25,7 +26,7 @@ import           Text.Megaparsec.Custom
 
 -- |
 --Intermediate parse result prior to consistancy validation
-data TCMParseResult 
+data TCMParseResult
    = TCMParseResult (NonEmpty Char) (Matrix Word) deriving (Show)
 
 
@@ -41,11 +42,11 @@ data TCMParseResult
 -- > (length . customAlphabet) tcm == (nrows . transitionCosts) tcm && (length . customAlphabet) tcm == (ncols . transitionCosts) tcm
 --
 -- Note that the 'transitionCosts` does not need to be a symetic matrix nor have identity values on the matrix diagonal.
-data TCM 
+data TCM
    = TCM
    { -- | The custom alphabet of 'Symbols' for which the TCM matrix is defined
      customAlphabet  :: NonEmpty Char
-     -- | The cost to transition between any two symbols, square but not necessarily symetric
+     -- | The cost to transition between any two symbols, square but not necessarily symmetric
    , transitionCosts :: Matrix Word -- n+1 X n+1 matrix where n = length customAlphabet
    } deriving (Show)
 
@@ -61,10 +62,10 @@ tcmStreamParser = validateTCMParseResult =<< tcmDefinition <* eof
 
 -- |
 -- Parses an intermediary result consisting of an Alphabet and a Matrix.
--- Both the Alphabet and Matrix have been validated independantly for
+-- Both the Alphabet and Matrix have been validated independently for
 -- consistencey, but no validation has been performed to ensure that the
--- dimensions of the Matrix and the length of the Alphabet are consistant
--- with each other. 
+-- dimensions of the Matrix and the length of the Alphabet are consistent
+-- with each other.
 tcmDefinition :: (MonadParsec e s m, Token s ~ Char) => m TCMParseResult
 tcmDefinition = do
     _        <- space
@@ -151,7 +152,7 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
                                     in  M.unsafeGet i' j' matrix
                      in  TCM permuted $ M.matrix rows cols g
 
-    
+
     size         = length alphabet + if '-' `elem` alphabet then 0 else 1
     rows         = nrows matrix
     cols         = ncols matrix
@@ -184,7 +185,7 @@ validateAlphabet :: MonadParsec e s m => NonEmpty Char -> m (NonEmpty Char)
 validateAlphabet alphabet
   | duplicatesExist = fail $ "The following symbols were listed multiple times in the custom alphabet: " <> show dupes
   | tooManySymbols  = fail   "The alphabet has more than 16 symbols (inluding gap). This is a technical limitation for efficiency."
-  | otherwise       = pure alphabet 
+  | otherwise       = pure alphabet
   where
     tooManySymbols  = if '-' `elem` alphabet then length alphabet > 16 else length alphabet > 15
     duplicatesExist = not $ null dupes
@@ -211,8 +212,8 @@ validateMatrix matrix
     rows               = length matrix
     cols               = fromJust . mostCommon $ length <$> matrix
     badCols            = foldr getBadCols [] $ zip [(1::Int)..] matrix
-    getBadCols (n,e) a = let x = length e in if x /= cols then (n,x):a else a  
-    colMsg (x,y)       = (:) (Just $ mconcat [ "Matrix row ", show x, " has ", show y, " columns but ", show cols, " columns were expected"])
+    getBadCols (n,e) a = let x = length e in if x /= cols then (n,x):a else a
+    colMsg (x,y)       = (:) (Just $ fold [ "Matrix row ", show x, " has ", show y, " columns but ", show cols, " columns were expected"])
     matrixErrors       = catMaybes $ badRowCount : badColCount <> negativeValues
     badColCount        = foldr colMsg [] badCols
     badRowCount        = if   rows == cols
@@ -230,7 +231,7 @@ validateMatrix matrix
         f i = foldMapWithKey g
           where
             g j v
-              | v < 0     = [ Just $ mconcat ["Cell (",show i,",",show j,") has negative value: ", show v] ]
+              | v < 0     = [ Just $ fold ["Cell (",show i,",",show j,") has negative value: ", show v] ]
               | otherwise = []
 
 

@@ -1,25 +1,27 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, NoMonoLocalBinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoMonoLocalBinds #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Main where
 
-import Alignment
-import Control.DeepSeq
-import Control.Lens
-import Control.Monad
-import Data.Alphabet
-import Data.BTree
-import Data.Decoration
-import Data.DecTree
-import Data.Key
-import Data.List.NonEmpty      (intersperse)
-import Data.Semigroup          ((<>))
-import Data.Semigroup.Foldable
-import Data.SymbolString
-import File.Input
-import File.Output
-import InputParser
-import System.IO
-import System.Timing
+import           Alignment
+import           Control.DeepSeq
+import           Control.Lens
+import           Control.Monad
+import           Data.Alphabet
+import           Data.BTree
+import           Data.Decoration
+import           Data.DecTree
+import           Data.Key
+import           Data.List.NonEmpty      (intersperse)
+import           Data.Semigroup          ((<>))
+import           Data.Semigroup.Foldable
+import           Data.SymbolString
+import           File.Input
+import           File.Output
+import           InputParser
+import           System.IO
+import           System.Timing
 
 
 main :: IO ()
@@ -109,8 +111,8 @@ runInput = do
                 , "  Postorder:   " <> padL dPad shownPostorder
                 , "  Preorder:    " <> padL dPad shownPreorder
                 ]
-          
-          writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts 
+
+          writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts
 
 
 padL :: Int -> String -> String

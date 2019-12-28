@@ -12,34 +12,35 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Pairwise.Test where
 
 
-import Alignment.Pairwise
+import           Alignment.Pairwise
 --import Alignment.Pairwise.Internal
 --import Alignment.Pairwise.NeedlemanWunsch
 --import Alignment.Pairwise.Ukkonen
-import Data.Alphabet
-import Data.Foldable
-import Data.List.NonEmpty          (NonEmpty(..))
+import           Data.Alphabet
+import           Data.Foldable
+import           Data.List.NonEmpty      (NonEmpty (..))
 --import Data.MonoTraversable
-import Data.Semigroup
-import Data.SymbolString    hiding (filterGaps)
-import Data.TCM
-import Data.Vector.NonEmpty hiding (filter, reverse)
-import Test.NucleotideSequence
-import Test.Tasty
-import Test.Tasty.QuickCheck
-import qualified Test.Tasty.SmallCheck as SC
+import           Data.Semigroup
+import           Data.SymbolString       hiding (filterGaps)
+import           Data.TCM
+import           Data.Vector.NonEmpty    hiding (filter, reverse)
+import           Test.NucleotideSequence
+import           Test.Tasty
+import           Test.Tasty.QuickCheck
+import qualified Test.Tasty.SmallCheck   as SC
 
 
 type ResultType = (Word, [SymbolAmbiguityGroup], [SymbolAmbiguityGroup], [SymbolAmbiguityGroup], [SymbolAmbiguityGroup])
 
 
 testSuite :: TestTree
-testSuite = testGroup "Pariwise alignment tests"
+testSuite = testGroup "Pairwise alignment tests"
     [ testSuiteNaiveDO
     , testSuiteMemoizedDO
     , testSuiteUkkonnenDO
@@ -191,9 +192,9 @@ isValidPairwiseAlignment label alignmentFunction = testGroup label
         filterGaps lhs' === filterGaps (medianList lhs) .&&. filterGaps rhs' === filterGaps (medianList rhs)
       where
         context = unlines
-          [ "lhs' = " <> show lhs' 
-          , "lhs  = " <> show lhs 
-          , "rhs' = " <> show rhs' 
+          [ "lhs' = " <> show lhs'
+          , "lhs  = " <> show lhs
+          , "rhs' = " <> show rhs'
           , "rhs  = " <> show rhs
           , unwords [ "filterGaps lhs' === filterGaps (medianList lhs) =", show (filterGaps lhs'), "===", show (filterGaps (medianList lhs)) ]
           , unwords [ "filterGaps rhs' === filterGaps (medianList rhs) =", show (filterGaps rhs'), "===", show (filterGaps (medianList rhs)) ]
@@ -212,7 +213,7 @@ medianList = fmap symbolAlignmentMedian . toList
 
 
 alphabet :: Alphabet String
-alphabet = fromSymbols ["A","C","G","T"] 
+alphabet = fromSymbols ["A","C","G","T"]
 
 
 gap :: SymbolAmbiguityGroup

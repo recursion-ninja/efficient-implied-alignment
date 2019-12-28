@@ -3,17 +3,17 @@ module Data.List.Utility
   , mostCommon
   ) where
 
-import Data.Foldable
-import Data.List          (sort, sortBy)
-import Data.Map           (assocs, empty, insertWith)
-import Data.Ord           (comparing)
+import           Data.Foldable
+import           Data.List     (sort, sortBy)
+import           Data.Map      (assocs, empty, insertWith)
+import           Data.Ord      (comparing)
 
 
 {-
 -- |
 -- \( \mathcal{O} \left( n * k \right) \)
 --
--- Takes two nested, linear-dimentional structures and transposes thier dimensions.
+-- Takes two nested, linear-dimensional structures and transposes their dimensions.
 -- It's like performing a matrix transpose operation, but more general.
 --
 -- ==_Example==
@@ -91,11 +91,11 @@ isSingleton = f . toList
 -- []
 duplicates :: (Foldable t, Ord a) => t a -> [a]
 duplicates = duplicates' . sort . toList
-  where 
+  where
     duplicates' []       = []
     duplicates' [_]      = []
     duplicates' (x:y:ys) = if   x == y
-                           then (x:) . duplicates $ dropWhile (==y) ys 
+                           then (x:) . duplicates $ dropWhile (==y) ys
                            else duplicates (y:ys)
 
 
@@ -114,7 +114,7 @@ duplicates = duplicates' . sort . toList
 mostCommon :: (Foldable t, Ord a) => t a -> Maybe a
 mostCommon xs
   | null xs   = Nothing
-  | otherwise = case occurances xs of
+  | otherwise = case occurrences xs of
                   []      -> Nothing
                   (x,_):_ -> Just x
 
@@ -125,27 +125,27 @@ mostCommon xs
 -- Returns a mapping of each unique element in the list paired with how often
 -- the element occurs in the list.
 --
--- The elements are in descending order of occurance.
+-- The elements are in descending order of occurrence.
 --
 -- ==_Example==
 --
--- >>> occurances "GATACACATCAGATT"
+-- >>> occurrences "GATACACATCAGATT"
 -- [('A',6),('T',4),('C',3),('G',2)]
 --
--- >>> occurances "AABCDDDEFGGT"
+-- >>> occurrences "AABCDDDEFGGT"
 -- [('D',3),('A',2),('G',2),('B',1),('C',1),('E',1),('F',1),('T',1)]
-occurances :: (Foldable t, Ord a) => t a -> [(a,Int)]
-occurances = collateOccuranceMap . buildOccuranceMap
+occurrences :: (Foldable t, Ord a) => t a -> [(a,Int)]
+occurrences = collateOccuranceMap . buildOccuranceMap
   where
-    buildOccuranceMap = foldr occurance empty 
+    buildOccuranceMap = foldr occurrence empty
       where
-        occurance e = insertWith (const succ) e 1
+        occurrence e = insertWith (const succ) e 1
     collateOccuranceMap = sortBy comparator . assocs
       where
         comparator x y = descending $ comparing snd x y
-        descending LT  = GT
-        descending GT  = LT
-        descending x   = x
+        descending LT = GT
+        descending GT = LT
+        descending x  = x
 
 
 {-
@@ -177,7 +177,7 @@ chunksOf n = chunksOf' . toList
 --
 -- ==_Example==
 --
--- >>> [  5 .. 10 ] `subsetOf` [ 1 .. 13 ] 
+-- >>> [  5 .. 10 ] `subsetOf` [ 1 .. 13 ]
 -- True
 --
 -- >>> [ 11 .. 15 ] `subsetOf` [ 1 .. 13 ]
@@ -185,8 +185,8 @@ chunksOf n = chunksOf' . toList
 subsetOf :: (Foldable t, Foldable c, Ord a) => t a -> c a -> Bool
 subsetOf xs ys = xs' `intersection` ys' == xs'
   where
-    xs' = foldr insert mempty xs 
-    ys' = foldr insert mempty ys 
+    xs' = foldr insert mempty xs
+    ys' = foldr insert mempty ys
 
 
 -- |
@@ -219,7 +219,7 @@ equalityOf f xs =
 -- If /every/ application of the transformation yields the same result value
 -- for each element of the structure then this function will return @Just v@
 -- where @v@ is the invariant value across the transformation.
--- If the transformation does not produce an invariant value accross the
+-- If the transformation does not produce an invariant value across the
 -- structure, or the structure is empty, this function returns @Nothing@.
 --
 -- See 'equalityOf' if you want to discard the @Just@ value.
@@ -252,7 +252,7 @@ invariantTransformation f xs =
 -- ==_Example==
 --
 -- >>> transitivePropertyHolds (\x y -> snd x >= fst y) [ (9,9), (8,7), (6,6), (6,5), (3,4), (3,0) ]
--- True 
+-- True
 transitivePropertyHolds :: Foldable f => (a -> a -> Bool) -> f a -> Bool
 transitivePropertyHolds p es =
     case toList es of

@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module SampleData
   ( LeafInput
@@ -19,21 +20,21 @@ import           Data.BTree
 import           Data.Char
 import           Data.Decoration
 import           Data.Foldable
-import           Data.Functor                 (($>))
+import           Data.Functor            (($>))
 import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..))
-import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
-import           Data.Map                     (Map)
-import qualified Data.Map              as M
+import           Data.List.NonEmpty      (NonEmpty (..))
+import qualified Data.List.NonEmpty      as NE
+import           Data.Map                (Map)
+import qualified Data.Map                as M
+import           Data.Matrix.ZeroIndexed (matrix)
 import           Data.Pointed
-import           Data.Semigroup               ((<>))
+import           Data.Semigroup          ((<>))
 import           Data.Semigroup.Foldable
-import           Data.Set                     (Set)
+import           Data.Set                (Set)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Validation
-import           Prelude               hiding (zip)
+import           Prelude                 hiding (zip)
 
 
 type LeafInput    = NonEmpty (NonEmpty Char)
@@ -66,9 +67,9 @@ sampleDataSets =
     , ("Deleted Insertions Appended After Group"                    , dataSetQ, topologyQ, discreteMetricTCM)
     , ("Two Adjacent Insertions Simultaneous Deletions"             , dataSetR, topologyR, discreteMetricTCM)
     , ("Two Non-adjacent Insertions Simultaneous Deletions"         , dataSetS, topologyS, discreteMetricTCM)
-    , ("Two Adjacent Insertions Seperate Deletions"                 , dataSetT, topologyT, discreteMetricTCM)
-    , ("Two Non-adjacent Symetric Insertions Seperate Deletions"    , dataSetU, topologyU, discreteMetricTCM)
-    , ("Two Non-adjacent Antisymetric Insertions Seperate Deletions", dataSetV, topologyV, discreteMetricTCM)
+    , ("Two Adjacent Insertions Separate Deletions"                 , dataSetT, topologyT, discreteMetricTCM)
+    , ("Two Non-adjacent Symmetric Insertions Separate Deletions"    , dataSetU, topologyU, discreteMetricTCM)
+    , ("Two Non-adjacent Antisymetric Insertions Separate Deletions", dataSetV, topologyV, discreteMetricTCM)
     , ("That Darn Truncation Issue"                                 , dataSetW, topologyW, discreteMetricTCM)
     , ("Deletion Before Above Insertion"                            , dataSetX, topologyX, discreteMetricTCM)
     , ("Deletion Before Below Insertion"                            , dataSetY, topologyY, discreteMetricTCM)
@@ -76,7 +77,7 @@ sampleDataSets =
     , ("Deletion After Below Insertion"                             , dataSet0, topology0, discreteMetricTCM)
     , ("Nested Insertions"                                          , dataSet1, topology1, discreteMetricTCM)
     , ("Branches With Adjacent Insertions"                          , dataSet2, topology2, discreteMetricTCM)
-    , ("Ambigous Resolution Consistency"                            , dataSet3, topology3, discreteMetricTCM)
+    , ("Ambiguous Resolution Consistency"                            , dataSet3, topology3, discreteMetricTCM)
     ]
 
 

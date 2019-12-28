@@ -10,7 +10,12 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, Strict, TypeFamilies, UnboxedSums #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE Strict                     #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UnboxedSums                #-}
 
 module Data.SymbolString
   ( SymbolAmbiguityGroup()
@@ -37,13 +42,13 @@ import           Data.Alphabet.IUPAC
 import           Data.Bits
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty       (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
+import           Data.List.NonEmpty      (NonEmpty (..))
+import qualified Data.List.NonEmpty      as NE
 import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
 import           Data.Word
 import           GHC.Generics
-import           Prelude hiding (filter)
+import           Prelude                 hiding (filter)
 
 
 type SymbolString = Vector SymbolContext
@@ -57,13 +62,14 @@ data  SymbolContext
     | Delete  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
     | Insert  {-# UNPACK #-} !SymbolAmbiguityGroup                                      {-# UNPACK #-} !SymbolAmbiguityGroup
     | Gapping {-# UNPACK #-} !SymbolAmbiguityGroup
-    deriving (Eq, Generic, Ord)
+    deriving stock (Eq, Generic, Ord)
 
 
 -- |
 -- A non-empty set of characters.
 newtype SymbolAmbiguityGroup = SAG Word16
-    deriving (Bits, Eq, FiniteBits, Enum, Generic, Ord)
+    deriving stock   (Generic)
+    deriving newtype (Bits, Eq, FiniteBits, Enum, Ord)
 
 
 encodeAmbiguityGroup :: (Eq a, Foldable1 f) => Alphabet a -> f a -> SymbolAmbiguityGroup
@@ -110,10 +116,10 @@ instance Show SymbolAmbiguityGroup where
 
 instance Show SymbolContext where
 
-    show (Align   m x y) = mconcat ["A|", showPad m, "|", showPad x, "|", showPad y, "|"]
-    show (Delete  m x  ) = mconcat ["D|", showPad m, "|", showPad x, "|",   "     ", "|"]
-    show (Insert  m   y) = mconcat ["I|", showPad m, "|",   "     ", "|", showPad y, "|"]
-    show (Gapping v    ) = mconcat ["G|", showPad v, "|",   "     ", "|",   "     ", "|"]
+    show (Align   m x y) = fold ["A|", showPad m, "|", showPad x, "|", showPad y, "|"]
+    show (Delete  m x  ) = fold ["D|", showPad m, "|", showPad x, "|",   "     ", "|"]
+    show (Insert  m   y) = fold ["I|", showPad m, "|",   "     ", "|", showPad y, "|"]
+    show (Gapping v    ) = fold ["G|", showPad v, "|",   "     ", "|",   "     ", "|"]
 
     showList [] str = str <> "[]"
     showList xs str = str <> "[" <> foldMap g xs <> "]"
@@ -127,11 +133,11 @@ instance Show SymbolContext where
         f (Delete m x  ) = maximum $ length <$> [show m, show x        ]
         f (Insert m   y) = maximum $ length <$> [show m,         show y]
         f (Gapping v   ) = length $ show v
-        
-        g (Align  m x y) = mconcat ["A:", pad m, ".", pad x, ".", pad y, "|"]
-        g (Delete m x  ) = mconcat ["D:", pad m, ".", pad x, ".", blank, "|"]
-        g (Insert m   y) = mconcat ["I:", pad m, ".", blank, ".", pad y, "|"]
-        g (Gapping v   ) = mconcat ["G:", pad v, ".", blank, ".", blank, "|"]
+
+        g (Align  m x y) = fold ["A:", pad m, ".", pad x, ".", pad y, "|"]
+        g (Delete m x  ) = fold ["D:", pad m, ".", pad x, ".", blank, "|"]
+        g (Insert m   y) = fold ["I:", pad m, ".", blank, ".", pad y, "|"]
+        g (Gapping v   ) = fold ["G:", pad v, ".", blank, ".", blank, "|"]
 
 
 -- We pad things to be exactly 5 characters long with leading space because a
@@ -139,7 +145,7 @@ instance Show SymbolContext where
 showPad :: SymbolAmbiguityGroup -> String
 showPad (SAG x) = replicate (5 - length shown) ' ' <> shown
   where
-    shown = show x 
+    shown = show x
 
 
 renderString :: Alphabet Char -> SymbolString -> String
@@ -149,16 +155,16 @@ renderString alphabet = foldMap renderGroup . toNonEmpty
     renderGroup grp =
       case decodeAmbiguityGroup alphabet $ symbolAlignmentMedian grp of
         x:|[] -> [x]
-        x:|xs -> mconcat ["[",[x],xs,"]"]
+        x:|xs -> fold ["[",[x],xs,"]"]
 
 
 renderSymbolString :: Alphabet Char -> SymbolString -> String
 renderSymbolString alphabet = (\s -> "[ "<>s<>" ]") . intercalate1 ", " . fmap renderContext . toNonEmpty
   where
-    renderContext (Align  x _ _) = mconcat ["α: ", renderGroup x ]
-    renderContext (Delete x _  ) = mconcat ["δ: ", renderGroup x ]
-    renderContext (Insert x   _) = mconcat ["ι: ", renderGroup x ]
-    renderContext (Gapping v   ) = mconcat ["—: ", renderGroup v ]
+    renderContext (Align  x _ _) = fold ["α: ", renderGroup x ]
+    renderContext (Delete x _  ) = fold ["δ: ", renderGroup x ]
+    renderContext (Insert x   _) = fold ["ι: ", renderGroup x ]
+    renderContext (Gapping v   ) = fold ["—: ", renderGroup v ]
 
     renderGroup = renderMonospacedGroup alphabet
 
@@ -220,11 +226,11 @@ reverseContext :: SymbolContext -> SymbolContext
 reverseContext (Align  med x y) = Align  med y x
 reverseContext (Delete med x  ) = Insert med   x
 reverseContext (Insert med   y) = Delete med y
-reverseContext x = x
+reverseContext x                = x
 
 
 filterGaps :: SymbolString -> SymbolString
-filterGaps = filter f 
+filterGaps = filter f
   where
     f Align   {} = True
     f Delete  {} = True

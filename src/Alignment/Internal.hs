@@ -10,7 +10,8 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Internal
   ( postorderLogic
@@ -192,7 +193,7 @@ deriveAlignment pAlignment pContext cContext = alignment
               case y of
                 Delete {} -> (Gapping v : acc, x:xs,   ys)
                 _         -> (        x : acc,   xs,   ys)
-          Insert _ v -> 
+          Insert _ v ->
               case y of
                 Insert {} -> (        x : acc,   xs,   ys)
                 _         -> (Gapping v : acc, x:xs,   ys)

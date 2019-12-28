@@ -1,6 +1,8 @@
-{-# LANGUAGE ApplicativeDo, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ApplicativeDo    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
-module File.Format.Fasta.Parser 
+module File.Format.Fasta.Parser
   ( CharacterSequence
   , FastaParseResult
   , FastaSequence(..)
@@ -13,12 +15,12 @@ module File.Format.Fasta.Parser
 
 
 import           Control.Monad.Combinators.NonEmpty
-import           Data.Char                   (isSpace)
-import           Data.List.NonEmpty          (NonEmpty, some1)
-import           Data.Semigroup
-import qualified Data.Vector.NonEmpty as V
+import           Data.Char                          (isSpace)
+import           Data.List.NonEmpty                 (NonEmpty, some1)
+import           Data.Semigroup.Foldable
+import qualified Data.Vector.NonEmpty               as V
 import           File.Format.Fasta.Internal
-import           Text.Megaparsec      hiding (some, someTill)
+import           Text.Megaparsec                    hiding (some, someTill)
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Custom
 
@@ -56,11 +58,11 @@ fastaTaxonSequenceDefinition = do
 
 -- |
 -- Parses a sequence of 'Symbol's represneted by a 'CharacterSequence'.
--- Symbols can be multi-character and are assumed to be seperated by whitespace.
+-- Symbols can be multi-character and are assumed to be separated by whitespace.
 fastaSymbolSequence :: (MonadParsec e s m, Token s ~ Char) => m CharacterSequence
 fastaSymbolSequence = V.fromNonEmpty <$> (space *> fullSequence)
   where
-    fullSequence = sconcat <$> some1 (inlineSpace *> sequenceLine)
+    fullSequence = fold1 <$> some1 (inlineSpace *> sequenceLine)
     sequenceLine = symbolGroup `someTill` endOfLine
 
 
@@ -88,6 +90,6 @@ validSymbol :: (MonadParsec e s m, Token s ~ Char) => m Char
 validSymbol = validChar <* inlineSpace
   where
     validChar = satisfy $ \x -> x /= '>' -- need to be able to match new taxa lines
-                             && x /= '[' -- need to be able to start an ambiguity list 
-                             && x /= ']' -- need to be able to close an ambiguity list 
+                             && x /= '[' -- need to be able to start an ambiguity list
+                             && x /= ']' -- need to be able to close an ambiguity list
                              && (not . isSpace) x

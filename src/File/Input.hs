@@ -1,4 +1,6 @@
-{-# LANGUAGE BangPatterns, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Input
   ( FileInput(..)
@@ -16,27 +18,27 @@ import           Data.BTree
 import           Data.Char
 import           Data.Decoration
 import           Data.Foldable
-import           Data.Functor                 (($>))
+import           Data.Functor                     (($>))
 import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..), intersperse)
-import qualified Data.List.NonEmpty    as NE
+import           Data.List.NonEmpty               (NonEmpty (..), intersperse)
+import qualified Data.List.NonEmpty               as NE
+import           Data.Map                         (Map)
+import qualified Data.Map                         as M
+import           Data.Matrix.ZeroIndexed          (Matrix)
 import           Data.Maybe
-import           Data.Map                     (Map)
-import qualified Data.Map              as M
-import           Data.Matrix.ZeroIndexed      (Matrix)
 import           Data.Pointed
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
-import           Data.Set                     (Set)
+import           Data.Set                         (Set)
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Validation
 import           Data.UserInput
+import           Data.Validation
 import           Data.Void
 import           File.Format.Fasta
 import           File.Format.Newick
 import           File.Format.TransitionCostMatrix
-import           Prelude               hiding (lookup)
+import           Prelude                          hiding (lookup)
 import           System.Timing
 import           Text.Megaparsec
 
@@ -137,12 +139,12 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
           x:xs -> [preamble <> unlines (x:xs)]
       where
         preamble = "For leaf " <> i <> ", the following symbols were found but not specified in the alphabet: "
-        
+
         g :: Int -> NonEmpty Char -> Maybe String
         g k v =
           case NE.filter (`notElem` symbolSet) v of
             []   -> Nothing
-            x:xs -> Just $ mconcat
+            x:xs -> Just $ fold
                 [ "  at index "
                 , show k
                 , " unrecognized symbols: { "
@@ -169,7 +171,7 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
     leafTaggedTree = setLeafLabels genericTree
     leafTagSet :: Set String
     leafTagSet    = foldMap point leafTaggedTree
-    
+
     validatedDataSet = traverse f dataSetKeys
       where
         f :: String -> Validation (NonEmpty UnificationError) ()

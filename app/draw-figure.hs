@@ -1,12 +1,12 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies              #-}
 
-import Data.Data
-import Data.Key
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Prelude hiding (trace)
-import Prelude hiding (zip)
+import           Data.Data
+import           Data.Key
+import           Diagrams.Backend.SVG.CmdLine
+import           Diagrams.Prelude             hiding (trace)
+import           Prelude                      hiding (zip)
 
 
 main :: IO ()
@@ -35,7 +35,7 @@ arrowLine = with & shaftStyle %~ lw 3
 
 arrowBent :: (Typeable n, RealFloat n) => ArrowOpts n
 arrowBent =
-    let shaft = trailFromVertices $ map p2 [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
+    let shaft = trailFromVertices $ p2 <$> [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
     in  with & arrowShaft .~ shaft
              & headLength .~ 12
              & shaftStyle %~ lw 3
@@ -66,7 +66,7 @@ frames = f <#$> ijks
     f k = (# named ("frame " <> show k)) . pad 1.4 . (<>box) . centerXY . makeAlignments
     box = phantom (rect 28 11 :: Diagram B) :: Diagram B
 
-  
+
 makeAlignments :: (Word, Word, Word) -> Diagram B
 makeAlignments (i,j,k) = stackVertical
     [ makeIndexLabel "i" i ||| alignmentAt i pAlign
@@ -112,7 +112,7 @@ underneath = beside (r2 (0, 180))
 
 
 alignmentAt :: Word -> [AlignCell] -> Diagram B
-alignmentAt i xs = foldlWithKey makeCell mempty cells 
+alignmentAt i xs = foldlWithKey makeCell mempty cells
   where
     (h,t) = splitAt (fromEnum i) xs
     cells
@@ -121,7 +121,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
 
     cursorStop :: Word
     cursorStop = toEnum . length . dropWhile (==Spacing) $ reverse cells
-    
+
     makeCell :: Diagram B -> Int -> AlignCell -> Diagram B
     makeCell a k e
       | atCursorStop = a ||| (stp <> sqr)
@@ -130,7 +130,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
       where
         atCursorStop = e == Spacing && k' == cursorStop
         k'  = toEnum k
-        txt = cellText $ [toSymbol e]
+        txt = cellText [toSymbol e]
         sqr = clr cellBox
         clr | atCursorStop = lineColor (sRGB 196 0 0)
             | e == Spacing = lineColor (sRGB   0 0 0)
@@ -151,16 +151,16 @@ cellBox = lineWidth 2 . pad 1.2 $ square 2
 
 
 derivedAt :: Word -> [AlignCell] -> Diagram B
-derivedAt i xs = foldl makeCell mempty cells 
+derivedAt i xs = foldl makeCell mempty cells
   where
     cells = take (fromEnum i) xs <> [Question]
-    
+
     makeCell :: Diagram B -> AlignCell -> Diagram B
     makeCell a e
       | i == 10 && e == Question = a ||| (stp <> sqr)
       | otherwise                = a ||| (txt <> sqr)
       where
-        txt = cellText $ [toSymbol e]
+        txt = cellText [toSymbol e]
         sqr = clr cellBox
         clr | e == Question = redLine
             | e == Spacing  = redLine
@@ -177,13 +177,13 @@ grnLine = lineColor (sRGB   0 128   0)
 stp :: Diagram B
 stp = upper <> lower
   where
-    upper  = mkLine [origin, (sqrt 2) ^& sqrt 2]
-    lower  = mkLine [0 ^& (sqrt 2), sqrt 2 ^& 0]
+    upper  = mkLine [origin, sqrt 2 ^& sqrt 2]
+    lower  = mkLine [0 ^& sqrt 2, sqrt 2 ^& 0]
     mkLine = centerXY . lineWidth 2 . strokeLine . lineFromVertices
 
 
 fPoints :: [P2 Double]
-fPoints = map p2 
+fPoints = p2 <$>
     [  ( 0, 90)
     ,  (40, 90)
     ,  ( 0, 72)
@@ -199,7 +199,7 @@ fPoints = map p2
 
 
 lPoints :: [P2 Double]
-lPoints = map p2
+lPoints = p2 <$>
     [ (20,  92 )
     , (20,  84 )
     , (20,  74 )

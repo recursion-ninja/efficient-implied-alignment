@@ -8,7 +8,8 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Test.NucleotideSequence
   ( NucleotideBase(..)
@@ -16,14 +17,14 @@ module Test.NucleotideSequence
   ) where
 
 import           Data.Alphabet.IUPAC
-import           Data.Bimap                (elems)
+import           Data.Bimap             (elems)
 import           Data.Foldable
 import           Data.List
-import           Data.List.NonEmpty        (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
+import           Data.List.NonEmpty     (NonEmpty (..))
+import qualified Data.List.NonEmpty     as NE
 import           Data.SymbolString
-import           Data.Vector.NonEmpty
-import           Test.QuickCheck    hiding (generate)
+import           Data.Vector.NonEmpty   hiding (generate)
+import           Test.QuickCheck        hiding (generate)
 import           Test.SmallCheck.Series
 
 
@@ -66,12 +67,12 @@ instance Monad m => Serial m NucleotideBase where
 
     series = generate $ const (NB . encodeAmbiguityGroup alphabet <$> validSpace)
       where
-        validSpace = fmap NE.fromList $ [] `delete` powerSet (toList alphabet) 
+        validSpace = fmap NE.fromList $ [] `delete` powerSet (toList alphabet)
         powerSet :: [a] -> [[a]]
-        powerSet [] = [[]]
+        powerSet []     = [[]]
         powerSet (x:xs) = [x:ps | ps <- powerSet xs] <> powerSet xs
 
-      
+
 instance Show NucleotideBase where
 
     show (NB x ) = toList . NE.head . encodeIUPAC iupacToDna . (:|[]) $ decodeAmbiguityGroup alphabet x
@@ -83,4 +84,4 @@ instance Show NucleotideSequence where
 
 
 alphabet :: Alphabet Char
-alphabet = fromSymbols ['A','C','G','T'] 
+alphabet = fromSymbols ['A','C','G','T']

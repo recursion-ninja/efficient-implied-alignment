@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Format.Fasta
   ( CharacterSequence
@@ -10,4 +11,4 @@ module File.Format.Fasta
   ) where
 
 
-import File.Format.Fasta.Parser
+import           File.Format.Fasta.Parser

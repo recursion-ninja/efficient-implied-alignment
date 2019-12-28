@@ -27,7 +27,7 @@ module Data.Decoration
   , subtreeCost
   ) where
 
-import Data.Decoration.Class
-import Data.Decoration.Internal
-import Data.Decoration.Leaf
-import Data.Decoration.Node
+import           Data.Decoration.Class
+import           Data.Decoration.Internal
+import           Data.Decoration.Leaf
+import           Data.Decoration.Node

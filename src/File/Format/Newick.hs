@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Format.Newick
   ( NewickNode(branchLength, descendants, newickLabel)
@@ -9,10 +10,10 @@ module File.Format.Newick
   ) where
 
 
-import Data.BTree
-import File.Format.Newick.Internal
-import File.Format.Newick.Parser
-import Text.Megaparsec
+import           Data.BTree
+import           File.Format.Newick.Internal
+import           File.Format.Newick.Parser
+import           Text.Megaparsec
 
 
 -- |

@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Format.Fasta.Internal
   ( CharacterSequence
@@ -7,16 +8,16 @@ module File.Format.Fasta.Internal
   , identifierLine
   ) where
 
-import Data.Char              (isSpace)
-import Data.List.NonEmpty
-import Data.Vector.NonEmpty   (Vector)
-import Text.Megaparsec
-import Text.Megaparsec.Char
-import Text.Megaparsec.Custom
+import           Data.Char              (isSpace)
+import           Data.List.NonEmpty
+import           Data.Vector.NonEmpty   (Vector)
+import           Text.Megaparsec
+import           Text.Megaparsec.Char
+import           Text.Megaparsec.Custom
 
 
 -- |
--- Unique identifier for a taxa 
+-- Unique identifier for a taxa
 type Identifier        = String
 
 
@@ -37,7 +38,7 @@ identifierLine :: (MonadParsec e s m, Token s ~ Char) => m Identifier
 identifierLine = do
     _ <- char '>'
     _ <- inlineSpace
-    x <- identifier 
+    x <- identifier
     _ <- inlineSpace
     _ <- optional (try commentBody <?> commentMessage x)
     _ <- endOfLine <?> lineEndMessage x

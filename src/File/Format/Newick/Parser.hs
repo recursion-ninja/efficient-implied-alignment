@@ -1,21 +1,23 @@
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module File.Format.Newick.Parser
   ( newickStandardDefinition
   ) where
 
-import Control.Monad.Combinators.NonEmpty
-import Data.BTree
-import Data.Char                   (isSpace)
-import Data.Foldable
-import Data.Functor                (void)
-import Data.List.NonEmpty          (NonEmpty(..), some1)
-import Data.Maybe                  (fromMaybe)
-import Data.Proxy
-import Text.Megaparsec      hiding (sepBy1)
-import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer  (skipBlockCommentNested)
-import Text.Megaparsec.Custom
+import           Control.Monad.Combinators.NonEmpty
+import           Data.BTree
+import           Data.Char                          (isSpace)
+import           Data.Foldable
+import           Data.Functor                       (void)
+import           Data.List.NonEmpty                 (NonEmpty (..), some1)
+import           Data.Maybe                         (fromMaybe)
+import           Data.Proxy
+import           Text.Megaparsec                    hiding (sepBy1)
+import           Text.Megaparsec.Char
+import           Text.Megaparsec.Char.Lexer         (skipBlockCommentNested)
+import           Text.Megaparsec.Custom
 
 
 -- |
@@ -71,7 +73,7 @@ newickLabelDefinition = (quotedLabel <|> unquotedLabel) <* whitespace
 
 -- |
 -- We use a recursive parsing technique to handle the quoted escape sequence
--- of two single quotes ("''") to denote an escaped quotation character 
+-- of two single quotes ("''") to denote an escaped quotation character
 -- in the quoted label rather than signifying the end of the quoted label
 quotedLabel :: (MonadParsec e s m, Token s ~ Char) => m String
 quotedLabel = do
@@ -80,7 +82,7 @@ quotedLabel = do
     case filter (not.isSpace) x of
       [] -> fail $ "Blank quoted identifier found. The identifier '"<>x<>"' is not valid"
       _  -> pure x
-  where 
+  where
     quotedLabelData = do
       prefix <- many (noneOf $ '\'':invalidQuotedLabelChars)
       _      <- char '\''
@@ -94,8 +96,8 @@ quotedLabel = do
 -- |
 -- The following characters are not allowed in a newick unquoted label:
 -- " \r\n\t\v\b':;,()[]<>"
--- We disallow the '<' & '>' characters in unquoted labels in all newick 
--- file formats because they would interfere with the parsing of Foreset 
+-- We disallow the '<' & '>' characters in unquoted labels in all newick
+-- file formats because they would interfere with the parsing of Foreset
 -- Extended Newick file types. The '<' & '>' characters are technically
 -- allowed in an unquoted newick label according to the Gary Olsen
 -- interpretation of the standard Newick format and the Extended Newick

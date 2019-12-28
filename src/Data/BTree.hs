@@ -1,18 +1,19 @@
-{-# LANGUAGE DeriveFunctor, TypeFamilies #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE TypeFamilies  #-}
 
 module Data.BTree where
 
-import Control.Arrow             ((&&&))
-import Control.Applicative
-import Control.DeepSeq
-import Data.Bifunctor
-import Data.Bifoldable
-import Data.Bitraversable
-import Data.Foldable
-import Data.Key
-import Data.List.NonEmpty hiding (length, takeWhile)
-import Data.Semigroup
-import Prelude            hiding (head)
+import           Control.Applicative
+import           Control.Arrow           ((&&&))
+import           Control.DeepSeq
+import           Data.Bifoldable
+import           Data.Bifunctor
+import           Data.Bitraversable
+import           Data.Foldable
+import           Data.Key
+import           Data.List.NonEmpty      hiding (length, takeWhile)
+import           Data.Semigroup.Foldable
+import           Prelude                 hiding (head)
 
 
 
@@ -40,7 +41,7 @@ instance Bifunctor BTree where
     first f   (Internal x lhs rhs) = Internal (f <$> x) (first f lhs) (first f rhs)
     first _   (Leaf     x        ) = Leaf x
 
-    second = fmap 
+    second = fmap
 
 
 instance Bifoldable BTree where
@@ -110,7 +111,7 @@ treeZipWith _ g (Leaf     x          ) (Leaf     y          ) = Leaf $ liftA2 g 
 
 
 getNodeDatum :: BTree a a -> a
-getNodeDatum (Leaf     (NodeDatum _ x)) = x
+getNodeDatum (Leaf     (NodeDatum _ x))     = x
 getNodeDatum (Internal (NodeDatum _ x) _ _) = x
 
 
@@ -180,10 +181,10 @@ toBinaryRenderingTree
   -> (a -> String -> String)
   -> BTree b a
   -> BinaryRenderingTree
-toBinaryRenderingTree f g tree = 
+toBinaryRenderingTree f g tree =
     case tree of
       Leaf     (NodeDatum i a)         -> Terminal $ g a i
-      Internal (NodeDatum i b) lhs rhs -> 
+      Internal (NodeDatum i b) lhs rhs ->
           let lhs'    = toBinaryRenderingTree f g lhs
               rhs'    = toBinaryRenderingTree f g rhs
               subSize = subtreeSize lhs' + subtreeSize rhs'
@@ -213,10 +214,10 @@ horizontalRendering = fold . intersperse "\n" . go
   where
     go :: BinaryRenderingTree -> NonEmpty String
     go (Terminal label) = pure $ "─ " <> label
-    go (Branch   label _ labelMay kids) = sconcat paddedSubtrees
+    go (Branch   label _ labelMay kids) = fold1 paddedSubtrees
       where
         paddedSubtrees   = maybe prefixedSubtrees (`applyPadding` prefixedSubtrees) labelMay
-        
+
         prefixedSubtrees :: NonEmpty (NonEmpty String)
         prefixedSubtrees = applyPrefixes medianLabel alignedSubtrees
 
@@ -245,7 +246,7 @@ horizontalRendering = fold . intersperse "\n" . go
     applyPrefixes :: String -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
     applyPrefixes medianLabel = run True
       where
-        run :: Bool -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String) 
+        run :: Bool -> NonEmpty (NonEmpty String) -> NonEmpty (NonEmpty String)
         run True  (v:|[])     = pure $ applyAtCenter "─" " " " " v
         run False (v:|[])     = pure $ applyAtCenter "└" "│" " " v
         run True  (v:|(x:xs)) = applyPrefixAndGlue v "┤" "┌" " " "│" (x:|xs)

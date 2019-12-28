@@ -1,67 +1,94 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, DeriveTraversable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving, TypeFamilies #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Data.Vector.NonEmpty
+-- Copyright   :  (c) 2015-2015 Ward Wheeler
+-- License     :  BSD-style
+--
+-- Maintainer  :  wheeler@amnh.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-----------------------------------------------------------------------------
+
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveTraversable          #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+
+
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 module Data.Vector.NonEmpty
-  ( Vector()
+  ( Vector(..)
+  -- * Construction
   , fromNonEmpty
+  , generate
   , singleton
+  , unfoldr
+  -- * Conversion
+  , toVector
+  , fromVector
+  , unsafeFromVector
+  -- * Deconstruction
+  , uncons
   -- * Useful stuff
   , filter
   , reverse
-  , uncons
-  , unfoldr
   ) where
 
 
-import           Control.DeepSeq
+import           Control.DeepSeq            hiding (force)
+import           Data.Coerce
 import           Data.Data
 import           Data.Foldable
 import           Data.Functor.Alt
-import           Data.Functor.Classes
 import           Data.Functor.Bind
+import           Data.Functor.Classes
 import           Data.Functor.Extend
 import           Data.Hashable
 import           Data.Key
 import qualified Data.List.NonEmpty         as NE
-import           Data.Semigroup
+import           Data.Pointed
 import           Data.Semigroup.Foldable
 import           Data.Semigroup.Traversable
 import qualified Data.Vector                as V
-import           Data.Vector.Instances             ()
-import           Test.QuickCheck
+import           Data.Vector.Instances      ()
 import           Prelude                    hiding (filter, reverse)
+import           Test.QuickCheck            hiding (generate)
+
 
 -- |
 -- A sequence of values that are repeated multiple times in contiguous blocks.
 newtype Vector a = NEV { unwrap :: V.Vector a }
-   deriving ( Adjustable
-            , Applicative
-            , Apply
-            , Bind
-            , Data
-            , Eq
-            , Eq1
-            , Extend
-            , Foldable
-            , FoldableWithKey
-            , Functor
-            , Hashable
-            , Indexable
-            , Keyed
-            , Lookup
-            , Monad
-            , NFData
-            , Ord
-            , Ord1
-            , Semigroup
-            , Traversable
-            , Zip
-            , ZipWithKey
-            )
+  deriving stock   (Data, Eq, Functor, Ord, Foldable, Traversable)
+  deriving newtype ( Adjustable
+                   , Applicative
+                   , Apply
+                   , Bind
+                   , Eq1
+                   , Extend
+                   , FoldableWithKey
+                   , Hashable
+                   , Indexable
+                   , Keyed
+                   , Lookup
+                   , Monad
+                   , NFData
+                   , Ord1
+                   , Pointed
+                   , Semigroup
+                   , Zip
+                   , ZipWithKey
+                   )
 
 
 -- |
--- Generation biases towards medium length
+-- Generation biases towards medium length.
 instance Arbitrary a => Arbitrary (Vector a) where
 
     arbitrary = do
@@ -79,10 +106,13 @@ instance Alt Vector where
 
 instance Foldable1 Vector where
 
+    {-# INLINE fold1 #-}
     fold1 = fold1 . toNonEmpty
 
+    {-# INLINE foldMap1 #-}
     foldMap1 f = foldMap1 f . toNonEmpty
 
+    {-# INLINE toNonEmpty #-}
     toNonEmpty = NE.fromList . toList . unwrap
 
 
@@ -96,18 +126,21 @@ type instance Key Vector = Int
 
 instance Traversable1 Vector where
 
+    {-# INLINE traverse1 #-}
     traverse1 f = fmap fromNonEmpty . traverse1 f . toNonEmpty
 
 
 instance TraversableWithKey Vector where
 
+    {-# INLINE traverseWithKey #-}
     traverseWithKey f = fmap NEV . traverseWithKey f . unwrap
-  
+
 
 instance TraversableWithKey1 Vector where
 
+    {-# INLINE traverseWithKey1 #-}
     traverseWithKey1 f = fmap fromNonEmpty . traverseWithKey1 f . toNonEmpty
-  
+
 
 instance Show a => Show (Vector a) where
 
@@ -124,19 +157,19 @@ singleton = NEV . V.singleton
 
 
 -- |
--- /O(n)/ Drop elements that do not satisfy the predicate
-{-# INLINE filter #-}
-filter :: (a -> Bool) -> Vector a -> Vector a
-filter f =  NEV . V.filter f . unwrap
-
-
--- |
--- /On)/
+-- /O(n)/
 --
 -- Construct a 'Vector' from a non-empty structure.
 {-# INLINE fromNonEmpty #-}
 fromNonEmpty :: Foldable1 f => f a -> Vector a
-fromNonEmpty = NEV . V.fromList . toList . toNonEmpty
+fromNonEmpty = NEV . V.fromList . NE.toList . toNonEmpty
+
+
+-- |
+-- /O(n)/ Drop elements that do not satisfy the predicate
+{-# INLINE filter #-}
+filter :: (a -> Bool) -> Vector a -> Vector a
+filter f =  NEV . V.filter f . unwrap
 
 
 -- |
@@ -148,22 +181,70 @@ reverse :: Vector a -> Vector a
 reverse = NEV . V.reverse . unwrap
 
 
--- | /O(n)/
+-- |
+-- /O(n)/
 --
--- Construct a vector by repeatedly applying the generator function
--- to a seed. The generator function yields 'Just' the next element and the
--- new seed or 'Nothing' if there are no more elements.
+-- Construct a vector by repeatedly applying the generator function to a seed.
+-- The generator function always yields the next element and either @ Just @ the
+-- new seed or 'Nothing' if there are no more elements to be generated.
 --
--- > unfoldr (\n -> if n == 0 then Nothing else Just (n,n-1)) 10
+-- > unfoldr (\n -> (n, if n == 0 then Nothing else Just (n-1))) 10
 -- >  = <10,9,8,7,6,5,4,3,2,1>
 {-# INLINE unfoldr #-}
 unfoldr :: (b -> (a, Maybe b)) -> b -> Vector a
-unfoldr f = NEV . V.unfoldr (sequenceA . f)
+unfoldr f = NEV . uncurry V.fromListN . go 0
+  where
+--  go :: Int -> b -> (Int, [a])
+    go n b =
+         let (v, mb) = f b
+         in  (v:) <$> maybe (n, []) (go (n+1)) mb
+
+
+-- |
+-- /O(n)/
+--
+-- Construct a vector of the given length by applying the function to each index
+generate :: Int -> (Int -> a) -> Vector a
+generate n f
+  | n < 1     = error $ "Called Vector.Nonempty.generate on a non-positive dimension " <> show n
+  | otherwise = NEV $ V.generate n f
+
+
+-- |
+-- /O(1)/
+--
+-- Get the underlying 'V.Vector'.
+toVector :: Vector a -> V.Vector a
+toVector = unwrap
+
+
+-- |
+-- /O(1)/
+--
+-- Attempt to convert a 'V.Vector' to a non-empty 'Vector'.
+fromVector :: V.Vector a -> Maybe (Vector a)
+fromVector v
+  | V.null v  = Nothing
+  | otherwise = Just $ NEV v
+
+
+-- |
+-- /O(1)/
+--
+-- Attempt to convert a 'V.Vector' to a non-empty 'Vector' throwing an
+-- error if the vector received is empty.
+unsafeFromVector :: V.Vector a -> Vector a
+unsafeFromVector v
+  | V.null v  = error "NonEmpty.unsafeFromVector: empty vector"
+  | otherwise = NEV v
+
+
 
 
 -- | /O(n)/
 --
--- 'uncons' produces the first element of the 'Vector', and a 'Vector' of the remaining elements, if any.
+-- 'uncons' produces both the first element of the 'Vector' and a
+-- 'Vector' of the remaining elements, if any.
 uncons :: Vector a -> (a, Maybe (Vector a))
 uncons (NEV v) = (first, stream)
   where

@@ -2,17 +2,11 @@
 
 module Data.DecTree where
 
-import Data.Decoration
-  ( PreliminaryNode(..)
-  , FinalizedNode(..)
-  )
-import Data.BTree (BTree, preorder, postorder)
-import Alignment
-  (postorderLogic
-  , preorderInternalLogic
-  , preorderLeafLogic
-  , preorderRootLogic
-  , PairwiseAlignment)
+import           Alignment       (PairwiseAlignment, postorderLogic,
+                                  preorderInternalLogic, preorderLeafLogic,
+                                  preorderRootLogic)
+import           Data.BTree      (BTree, postorder, preorder)
+import           Data.Decoration (FinalizedNode (..), PreliminaryNode (..))
 
 
 type family NodeDec i

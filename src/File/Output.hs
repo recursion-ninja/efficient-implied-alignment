@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module File.Output
   ( writeFastaFile
@@ -9,10 +10,10 @@ import           Data.Alphabet
 import           Data.BTree
 import           Data.Decoration
 import           Data.Key
-import           Data.Map                     (Map)
-import qualified Data.Map              as M
+import           Data.Map          (Map)
+import qualified Data.Map          as M
 import           Data.SymbolString
-import           Data.UserInput               (AlphabetType(..))
+import           Data.UserInput    (AlphabetType (..))
 
 
 writeFastaFile
