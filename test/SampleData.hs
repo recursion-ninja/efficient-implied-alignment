@@ -1,5 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module SampleData
   ( LeafInput
@@ -20,28 +21,32 @@ import           Data.BTree
 import           Data.Char
 import           Data.Decoration
 import           Data.Foldable
-import           Data.Functor            (($>))
+import           Data.Functor                 (($>))
 import           Data.Key
-import           Data.List.NonEmpty      (NonEmpty (..))
-import qualified Data.List.NonEmpty      as NE
-import           Data.Map                (Map)
-import qualified Data.Map                as M
-import           Data.Matrix.ZeroIndexed (matrix)
+import           Data.List.NonEmpty           (NonEmpty (..))
+import qualified Data.List.NonEmpty           as NE
+import           Data.Map                     (Map)
+import qualified Data.Map                     as M
+import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Pointed
-import           Data.Semigroup          ((<>))
+import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
-import           Data.Set                (Set)
+import           Data.Set                     (Set)
+import           Data.String                  (IsString (..))
 import           Data.SymbolString
 import           Data.TCM
+import           Data.Text.Short              (ShortText)
 import           Data.Validation
-import           Prelude                 hiding (zip)
+import           Data.Vector.Unboxed.NonEmpty (Vector)
+import qualified Data.Vector.Unboxed.NonEmpty as V
+import           Prelude                      hiding (zip)
 
 
-type LeafInput    = NonEmpty (NonEmpty Char)
+type LeafInput    = NonEmpty (Vector Char)
 
 type LeafOutputs  = NonEmpty LeafInput
 
-type StringValues = Map String (LeafInput, LeafOutputs)
+type StringValues = Map ShortText (LeafInput, LeafOutputs)
 
 type TreeInput    = BTree () ()
 
@@ -82,7 +87,7 @@ sampleDataSets =
 
 
 defaultAlphabet :: Alphabet Char
-defaultAlphabet = fromSymbols "ACGT-"
+defaultAlphabet = fromSymbols ("ACGT-" :: String)
 
 
 {-
@@ -117,20 +122,21 @@ blank :: NodeDatum ()
 blank = NodeDatum "" ()
 
 
-toNonEmpties :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
-toNonEmpties = foldMap1 (pure . pure) . NE.fromList . toList
+toNonEmpties :: Foldable f => f Char -> NonEmpty (Vector Char)
+toNonEmpties = foldMap1 (pure . V.fromNonEmpty . (:|[])) . NE.fromList . toList
 
 
-toNonEmptyInputs :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
+toNonEmptyInputs :: Foldable f => f Char -> NonEmpty (Vector Char)
 toNonEmptyInputs = toNonEmpties
 
 
-toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpty (NonEmpty Char))
+toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpty (Vector Char))
 toNonEmptyOutputs = fmap toNonEmpties . NE.fromList . toList
 
 
-convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
-convertToValues = fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (pure <$> ['A'..])
+--convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
+convertToValues :: [(NonEmpty Char, [String])] -> StringValues
+convertToValues = fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (fromString . pure <$> ['A'..])
 
 
 dataSetA :: StringValues

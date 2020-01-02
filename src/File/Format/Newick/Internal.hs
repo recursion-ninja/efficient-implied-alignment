@@ -1,17 +1,50 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  File.Format.Newick.Internal
+-- Copyright   :  (c) 2015-2015 Ward Wheeler
+-- License     :  BSD-style
+--
+-- Maintainer  :  wheeler@amnh.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- Utility functions and types for parsing Newick tree files into a topological tree structure.
+--
+-----------------------------------------------------------------------------
+
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module File.Format.Newick.Internal
   ( NewickForest
   , NewickNode(..)
+  -- * Queries
+  , branchLength
+  , descendants
+  , newickLabel
   , isLeaf
+  -- * Other
+  , mapLeafLabels
   , newickNode
   , renderNewickForest
   ) where
 
 
-import           Data.List.NonEmpty (NonEmpty, toList)
-import           Data.Maybe
+import           Control.DeepSeq    (NFData)
+import           Data.Data
+import           Data.Foldable
+import           Data.List.NonEmpty (NonEmpty (..))
+import           Data.String        (IsString (fromString))
+import           Data.Text          (Text)
+import           Data.Text.Short    (ShortText, toString)
+import qualified Data.Text.Short    as T
 import           Data.Tree
+import           Data.Vector        (Vector, fromList, fromListN)
+import           GHC.Generics       (Generic)
 
 
 {----
@@ -27,9 +60,9 @@ import           Data.Tree
   - This allowed for easy manual annotating of phylogentic trees.
   -
   - Another half decade later, the Forest Extended Newick was proposed by
-  - Ward Wheeler to model collections of disjoint phylogenetic trees. This new
-  - format allowed grouping many Extended Newick trees into a  forest to be
-  - analyzed collectively.
+  - Professor Wheeler to model collections of disjoint phylogenetic trees.
+  - This new format allowed grouping many Extended Newick trees into a
+  - forest to be analyzed collectively.
   -
   - This parser correctly parses both Newick file formats, and the super set
   - Extended Newick filed format.
@@ -43,54 +76,93 @@ type NewickForest = NonEmpty NewickNode
 
 -- |
 -- A node in a "Phylogenetic Forest"
-data NewickNode
-   = NewickNode
-   { descendants  :: [NewickNode] -- leaf nodes are empty lists
-   , newickLabel  :: Maybe String -- leaf nodes will always be Just
-   , branchLength :: Maybe Double
-   } deriving (Eq,Ord)
+data  NewickNode
+    = NewickNode
+    { childNodes     :: {-# UNPACK #-} !(Vector NewickNode)
+    , internalName   :: {-# UNPACK #-} !ShortText
+    , internalLength :: !(Maybe Double)
+    }
+    deriving stock    (Data, Eq, Generic, Ord, Typeable)
+    deriving anyclass (NFData)
 
 
-instance Show NewickNode where
+-- |
+-- Apply a transformation over the leaf labels of a 'newickNode'.
+mapLeafLabels :: (ShortText -> ShortText) -> NewickNode -> NewickNode
+mapLeafLabels f (NewickNode d x y) = NewickNode (mapLeafLabels f <$> d) x y
 
-    show (NewickNode d n b) = name <> len <> " " <> show d
-      where
-        name = maybe "Node" show n
-        len  = maybe "" (\x -> ':' : show x) b
+
+-- |
+-- Retrieve the direct descendants of the 'NewickNode'.
+{-# INLINE descendants #-}
+descendants :: NewickNode -> [NewickNode]
+descendants (NewickNode x _ _) = toList x
+
+
+-- |
+-- Retrieve the label (if any) of the 'NewickNode'.
+--
+-- Will always return a @Just@ value for a leaf node.
+--
+-- > isLeaf ==> isJust . newickLabel
+{-# INLINE newickLabel #-}
+newickLabel :: NewickNode -> Maybe ShortText
+newickLabel (NewickNode _ x _)
+  | T.null x  = Nothing
+  | otherwise = Just x
+
+
+-- |
+-- Retrieve the branch length (if any) of the 'NewickNode'.
+{-# INLINE branchLength #-}
+branchLength :: NewickNode -> Maybe Double
+branchLength (NewickNode _ _ x) = x
 
 
 instance Semigroup NewickNode where
 
+    {-# INLINEABLE (<>) #-}
     lhs <> rhs =
         NewickNode
-        { descendants  = [lhs,rhs]
-        , newickLabel  = Nothing
-        , branchLength = Nothing
+        { childNodes     = fromListN 2 [lhs, rhs]
+        , internalName   = ""
+        , internalLength = Nothing
         }
+
+
+instance Show NewickNode where
+
+    show (NewickNode d n b) = fold [name, len, " ", show d]
+      where
+        name = (\x -> if null x then "Node" else x) $ toString n
+        len  = maybe "" (\x -> ':' : show x) b
 
 
 -- |
 -- Renders the 'NewickForest' to a 'String'. If the forest contains a DAG with
 -- in-degree  greater than one, then the shared subtree in a DAG will be rendered
 -- multiple times.
-renderNewickForest :: NewickForest -> String
-renderNewickForest = drawForest . unfoldForest f . toList
+{-# INLINEABLE renderNewickForest #-}
+renderNewickForest :: NewickForest -> Text
+renderNewickForest = fromString . drawForest . unfoldForest f . toList
   where
-    f = (,) <$> fromMaybe "X" . newickLabel <*> descendants
+    f = (,) <$> maybe "X" toString . newickLabel <*> descendants
 
 
 -- |
 -- Smart constructor for a 'NewickNode' preseriving the invariant:
 --
 -- > null nodes ==> isJust . label
-newickNode :: [NewickNode] -> Maybe String -> Maybe Double -> Maybe NewickNode
-newickNode nodes label length'
-  | null nodes && isNothing label = Nothing
-  | otherwise = Just $ NewickNode nodes label length'
+{-# INLINEABLE newickNode #-}
+newickNode :: [NewickNode] -> Maybe ShortText -> Maybe Double -> Maybe NewickNode
+newickNode nodes label length' =
+  case (nodes, label) of
+    (  [], Nothing) -> Nothing
+    _               -> Just $ NewickNode (fromList nodes) (fold label) length'
 
 
 -- |
 -- Determines whether a given 'NewickNode' is a leaf node in the tree.
+{-# INLINEABLE isLeaf #-}
 isLeaf :: NewickNode -> Bool
-isLeaf node = (null . descendants) node && (isJust . newickLabel) node
-
+isLeaf (NewickNode x y _) = null x && not (T.null y)

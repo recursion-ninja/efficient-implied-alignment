@@ -11,23 +11,26 @@ import           Data.BTree
 import           Data.Char
 import           Data.Decoration
 import           Data.Foldable
-import           Data.Functor            (($>))
+import           Data.Functor                 (($>))
 import           Data.Key
-import           Data.List.NonEmpty      (NonEmpty (..), intersperse)
-import qualified Data.List.NonEmpty      as NE
-import           Data.Map                (Map)
-import qualified Data.Map                as M
-import           Data.Matrix.ZeroIndexed (matrix)
+import           Data.List.NonEmpty           (NonEmpty (..), intersperse)
+import qualified Data.List.NonEmpty           as NE
+import           Data.Map                     (Map)
+import qualified Data.Map                     as M
+import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Ord
 import           Data.Pointed
-import           Data.Semigroup          ((<>))
+import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
-import           Data.Set                (Set)
+import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
+import           Data.Text.Short              (ShortText, toString)
 import           Data.Validation
+import qualified Data.Vector.NonEmpty         as V
+import           Data.Vector.Unboxed.NonEmpty (Vector)
 import           File.Input
-import           Prelude                 hiding (zip)
+import           Prelude                      hiding (zip)
 import           SampleData
 import           System.IO
 import           Test.Tasty
@@ -41,7 +44,15 @@ main = runTests
 runTests :: IO ()
 runTests = defaultMain . testGroup "Test Trees" $ runTest <$> sampleDataSets
 
-
+runTest
+  :: ( TestName
+     , Map ShortText (           NonEmpty (Vector Char)
+                     , NonEmpty (NonEmpty (Vector Char))
+                     )
+     , BTree b a
+     , SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word)
+     )
+  -> TestTree
 runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
     inputTree   <- case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
                      Left  errors -> assertFailure . unlines $ show <$> toList errors
@@ -76,9 +87,14 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
         f z = unifyInput defaultAlphabet z y
 
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
-    leafRendererA x i = fold [ i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
-    nodeRendererA x _ = fold [ "?: "  , renderSingleton defaultAlphabet $ x ^. alignedString ]
-    inputRenderer x i = fold [ i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
+    leafRendererA :: FinalizedNode -> ShortText -> String
+    leafRendererA x i = fold [ toString i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
+
+    nodeRendererA :: HasAlignedString s (V.Vector SymbolContext) => s -> p -> String
+    nodeRendererA x _ = fold [            "?: ", renderSingleton defaultAlphabet $ x ^. alignedString ]
+
+    inputRenderer :: PreliminaryNode -> ShortText -> String
+    inputRenderer x i = fold [ toString i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
 
     strDistance :: Eq a => [a] -> [a] -> Int
     strDistance x y = length . filter (uncurry (/=)) $ zip x y

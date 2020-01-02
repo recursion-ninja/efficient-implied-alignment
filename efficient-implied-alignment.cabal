@@ -93,21 +93,25 @@ library
   build-depends:
       base >=4.7 && <5
     , bimap
+    , case-insensitive          
     -- >=0.5.8 Required for Data.Map.restrictKeys
-    , containers       >=0.5.8
+    , containers         >=0.5.8
     , deepseq
     , hashable
     , integer-gmp
     , keys
     , lens
     , matrix
-    , megaparsec         >=6.3
+    , megaparsec         >=8.0
     , mtl
-    , parser-combinators >=0.4
+    , parser-combinators >=1.2
     , pointed
     , QuickCheck
+    , scientific
     , semigroupoids
     , semigroups
+    , text               >=1.2
+    , text-short
     , transformers
     , validation
     , vector
@@ -127,6 +131,7 @@ library
       Data.TCM
       Data.UserInput
       Data.Vector.NonEmpty
+      Data.Vector.Unboxed.NonEmpty
       File.Format.Fasta
       File.Format.Newick
       File.Format.TransitionCostMatrix
@@ -181,6 +186,7 @@ executable tree-align
     , lens
     , optparse-applicative
     , semigroupoids
+    , text-short
 
   other-modules:
       Paths_efficient_implied_alignment
@@ -282,7 +288,7 @@ executable draw-figure
     , keys
     , lens
     , megaparsec         >=7.0
-    , MissingH          
+    , MissingH
     , optparse-applicative
     , process          
     , scientific          
@@ -344,6 +350,7 @@ test-suite test-align
     , lens
     , pointed
     , semigroupoids
+    , text-short
     , validation
 
   other-modules:
@@ -376,6 +383,7 @@ test-suite test-trees
     , semigroupoids
     , tasty
     , tasty-hunit
+    , text-short
     , validation
 
   other-modules:
@@ -413,6 +421,7 @@ test-suite test-suite
     , tasty-hunit
     , tasty-quickcheck
     , tasty-smallcheck
+    , text-short
     , validation
 
   other-modules:

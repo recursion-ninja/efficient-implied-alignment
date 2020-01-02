@@ -13,6 +13,7 @@ import           Data.Key
 import           Data.Map          (Map)
 import qualified Data.Map          as M
 import           Data.SymbolString
+import           Data.Text.Short   (ShortText, toString)
 import           Data.UserInput    (AlphabetType (..))
 
 
@@ -30,15 +31,15 @@ writeFastaFile alphabetType alphabet tree path =
 collectLeafAlignments
   :: HasAlignedString a SymbolString
   => BTree b a
-  -> Map String SymbolString
+  -> Map ShortText SymbolString
 collectLeafAlignments = foldMapWithKey (\k v -> M.singleton k $ v ^. alignedString)
 
 
-renderAlignments :: AlphabetType -> Alphabet Char -> Map String SymbolString -> String
+renderAlignments :: AlphabetType -> Alphabet Char -> Map ShortText SymbolString -> String
 renderAlignments alphabetType alphabet = foldMapWithKey f
   where
     f k v = unlines
-        [ "> " <> k
+        [ "> " <> toString k
         , g v
         , ""
         ]

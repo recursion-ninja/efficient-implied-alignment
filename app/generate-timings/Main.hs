@@ -22,7 +22,6 @@ import qualified Data.List.NonEmpty         as NE
 import           Data.Map                   (Map, insertWith)
 import           Data.Maybe                 (fromJust)
 import           Data.Ord
-import           Data.Semigroup             ((<>))
 import           Data.Semigroup.Foldable
 import           Data.Void
 import           GHC.Generics               (Generic)

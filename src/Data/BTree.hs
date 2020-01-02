@@ -13,6 +13,7 @@ import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty      hiding (length, takeWhile)
 import           Data.Semigroup.Foldable
+import           Data.Text.Short         (ShortText)
 import           Prelude                 hiding (head)
 
 
@@ -25,12 +26,12 @@ data BTree b a
 
 data NodeDatum a
    = NodeDatum
-   { identifier :: !String
+   { identifier :: !ShortText
    , nodeDatum  :: !a
    } deriving (Eq, Functor)
 
 
-type instance Key (BTree b) = String
+type instance Key (BTree b) = ShortText
 
 
 instance Bifunctor BTree where
@@ -95,7 +96,7 @@ instance Applicative NodeDatum where
     (<*>) (NodeDatum _ f) (NodeDatum s x) = NodeDatum s $ f x
 
     pure x = NodeDatum
-      { identifier = ""
+      { identifier = mempty
       , nodeDatum  = x
       }
 
@@ -115,7 +116,7 @@ getNodeDatum (Leaf     (NodeDatum _ x))     = x
 getNodeDatum (Internal (NodeDatum _ x) _ _) = x
 
 
-setLeafLabels :: BTree b a -> BTree b String
+setLeafLabels :: BTree b a -> BTree b ShortText
 setLeafLabels (Leaf     (NodeDatum i _)) = Leaf $ NodeDatum i i
 setLeafLabels (Internal n lhs rhs) = Internal n (setLeafLabels lhs) $ setLeafLabels rhs
 
@@ -163,22 +164,22 @@ preorder rootTransformation internalTransformation leafTransformation rootNode =
 
 
 renderPhylogeny
-  :: (a -> String -> String)
+  :: (a -> ShortText -> String)
   -> BTree b a
   -> String
 renderPhylogeny f = horizontalRendering . toBinaryRenderingTree (const (const "")) f
 
 
 renderAlignment
-  :: (b -> String ->String)
-  -> (a -> String -> String)
+  :: (b -> ShortText -> String)
+  -> (a -> ShortText -> String)
   -> BTree b a -> String
 renderAlignment f g = horizontalRendering . toBinaryRenderingTree f g
 
 
 toBinaryRenderingTree
-  :: (b -> String -> String)
-  -> (a -> String -> String)
+  :: (b -> ShortText -> String)
+  -> (a -> ShortText -> String)
   -> BTree b a
   -> BinaryRenderingTree
 toBinaryRenderingTree f g tree =

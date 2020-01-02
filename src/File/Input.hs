@@ -21,7 +21,6 @@ import           Data.Foldable
 import           Data.Functor                     (($>))
 import           Data.Key
 import           Data.List.NonEmpty               (NonEmpty (..), intersperse)
-import qualified Data.List.NonEmpty               as NE
 import           Data.Map                         (Map)
 import qualified Data.Map                         as M
 import           Data.Matrix.ZeroIndexed          (Matrix)
@@ -32,8 +31,11 @@ import           Data.Semigroup.Foldable
 import           Data.Set                         (Set)
 import           Data.SymbolString
 import           Data.TCM
+import           Data.Text.Short                  (ShortText, toString)
 import           Data.UserInput
 import           Data.Validation
+import qualified Data.Vector.NonEmpty             as V
+import qualified Data.Vector.Unboxed.NonEmpty     as VU
 import           Data.Void
 import           File.Format.Fasta
 import           File.Format.Newick
@@ -41,6 +43,9 @@ import           File.Format.TransitionCostMatrix
 import           Prelude                          hiding (lookup)
 import           System.Timing
 import           Text.Megaparsec
+
+
+type CharacterSequence = V.Vector (VU.Vector Char)
 
 
 data  FileInput
@@ -52,6 +57,12 @@ data  FileInput
     , unifyTime      :: CPUTime
     , precomputeTime :: CPUTime
     }
+
+
+data  UnificationError
+    = LeafLabelMissingInDataSet String
+    | DataLabelMissingInLeafSet String
+    deriving (Eq, Show)
 
 
 parseFileInput
@@ -102,12 +113,13 @@ runUnification
   -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b PreliminaryNode))
 runUnification alphaType (dataVal, treeVal, tcmVal) = timeOp $ do
     let TCM symbolList matrix = tcmVal
-        alphabet    = fromSymbols symbolList
+        alphabet    = fromSymbols $ VU.toList symbolList
         alphaChange = case alphaType of
                         Standard -> id
                         DNA      -> decodeIUPAC iupacToDna
                         RNA      -> decodeIUPAC iupacToRna
-        leafDataMap = alphaChange <$> fastaToMap dataVal
+        leafDataMap :: Map ShortText CharacterSequence
+        leafDataMap = fmap VU.fromNonEmpty . alphaChange <$> fastaToMap dataVal
         badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
         badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
     pure $ (\x -> (alphabet, matrix, x)) <$> (badLinking <* badSymbols)
@@ -119,8 +131,13 @@ precomputeTCM alphabet matrix = timeOp $ do
     pure . force $ buildTransitionCostMatrix alphabet scm
 
 
-fastaToMap :: FastaParseResult -> Map String CharacterSequence
-fastaToMap = foldMap (M.singleton <$> fastaLabel <*> fastaSymbols)
+fastaToMap :: FastaParseResult -> Map ShortText (V.Vector (NonEmpty Char))
+fastaToMap = foldMap (M.singleton <$> fastaLabel <*> reformSequence . fastaSymbols)
+  where
+    reformSequence v =
+      let g :: Int -> NonEmpty Char
+          g i = (v VU.! i) :| []
+      in  V.generate (VU.length v) g
 
 
 validateSymbolsAndAlphabet :: TCM -> Map Identifier CharacterSequence -> Validation (NonEmpty String) ()
@@ -130,7 +147,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
       x:xs -> Left $ x:|xs
   where
     symbolSet :: Set Char
-    symbolSet = foldMap point symbolList
+    symbolSet = foldMap point $ VU.toList symbolList
 
     f :: Identifier -> CharacterSequence -> [String]
     f i s =
@@ -138,11 +155,11 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
           []   -> []
           x:xs -> [preamble <> unlines (x:xs)]
       where
-        preamble = "For leaf " <> i <> ", the following symbols were found but not specified in the alphabet: "
+        preamble = "For leaf " <> toString i <> ", the following symbols were found but not specified in the alphabet: "
 
-        g :: Int -> NonEmpty Char -> Maybe String
+        g :: Int -> VU.Vector Char -> Maybe String
         g k v =
-          case NE.filter (`notElem` symbolSet) v of
+          case filter (`notElem` symbolSet) $ VU.toList v of
             []   -> Nothing
             x:xs -> Just $ fold
                 [ "  at index "
@@ -155,29 +172,28 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
 
 unifyInput
   :: ( Foldable1 f
-     , Foldable1 t
-     , Key c ~ String
+     , Key c ~ ShortText
      , Keyed c
      , Lookup c
      , Traversable c
      )
   => Alphabet Char
-  -> c (f (t Char))
+  -> c (f (VU.Vector Char))
   -> BTree b a
   -> Validation (NonEmpty UnificationError) (BTree b PreliminaryNode)
 unifyInput alphabet dataCollection genericTree = validatedDataSet *> initializedTree
   where
-    dataSetKeys   = mapWithKey const dataCollection
+    leafTagSet :: Set ShortText
+    leafTagSet     = foldMap point leafTaggedTree
+    dataSetKeys    = mapWithKey const dataCollection
     leafTaggedTree = setLeafLabels genericTree
-    leafTagSet :: Set String
-    leafTagSet    = foldMap point leafTaggedTree
 
     validatedDataSet = traverse f dataSetKeys
       where
-        f :: String -> Validation (NonEmpty UnificationError) ()
+        f :: ShortText -> Validation (NonEmpty UnificationError) ()
         f k = validate err isInLeafSet k $> ()
           where
-            err = pure $ DataLabelMissingInLeafSet k
+            err = pure . DataLabelMissingInLeafSet $ toString k
 
             isInLeafSet x
               | x `elem` leafTagSet = Just x
@@ -185,20 +201,14 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
 
     initializedTree = traverse f leafTaggedTree
       where
-        f :: String -> Validation (NonEmpty UnificationError) PreliminaryNode
+        f :: ShortText -> Validation (NonEmpty UnificationError) PreliminaryNode
         f k = validationNel $
             case k `lookup` dataCollection of
-              Nothing -> Left $ LeafLabelMissingInDataSet k
+              Nothing -> Left . LeafLabelMissingInDataSet $ toString k
               Just xs -> let !ss = buildSymbolString xs
                          in  Right $ PreliminaryNode 0 0 ss
           where
             buildSymbolString = foldMap1 (pure . buildAmbiguityGroup)
             buildAmbiguityGroup x =
-                let !y = encodeAmbiguityGroup alphabet x
+                let !y = encodeAmbiguityGroup alphabet $ VU.toNonEmpty x
                 in  Align y y y
-
-
-data  UnificationError
-    = LeafLabelMissingInDataSet String
-    | DataLabelMissingInLeafSet String
-    deriving (Eq, Show)

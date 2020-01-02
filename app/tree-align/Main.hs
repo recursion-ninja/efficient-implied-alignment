@@ -14,9 +14,9 @@ import           Data.Decoration
 import           Data.DecTree
 import           Data.Key
 import           Data.List.NonEmpty      (intersperse)
-import           Data.Semigroup          ((<>))
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
+import           Data.Text.Short         (ShortText, toString)
 import           File.Input
 import           File.Output
 import           InputParser
@@ -40,10 +40,16 @@ runInput = do
             tcm      = inputTCM      fileInput
             tree     = inputTree     fileInput
 
-            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
-            inputRenderer  x i = unwords [ padR maxLabelLen (i<> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
+            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length $ toString k]) tree
+
+            inputRenderer :: PreliminaryNode -> ShortText -> String
+            inputRenderer  x i = unwords [ padR maxLabelLen (toString i <> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
 --            prelimRenderer x _ = mconcat [ padR maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
-            leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+
+            leafRenderer :: FinalizedNode -> ShortText -> String
+            leafRenderer   x i = unwords [ padR maxLabelLen (toString i <> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+
+            nodeRenderer :: FinalizedNode -> p -> String
             nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
 --            nodeDiffer     x _ = unwords [ padR maxLabelLen     "?:" , {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet x ]
 

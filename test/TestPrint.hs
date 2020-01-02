@@ -24,6 +24,7 @@ import           Data.Semigroup.Foldable
 import           Data.Set                (Set)
 import           Data.SymbolString
 import           Data.TCM
+import           Data.Text.Short         (ShortText, toString)
 import           Data.Validation
 import           File.Input
 import           SampleData
@@ -88,13 +89,13 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
 
     inputRenderer x i = fold
-        [ i
+        [ toString i
         , ": "
         , renderSingleton defaultAlphabet $ x ^. preliminaryString
         ]
 
     leafRendererA x i = fold
-        [ i
+        [ toString i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -113,7 +114,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
 
     leafRendererB x i = fold
-        [ i
+        [ toString i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -132,7 +133,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
 
     leafRendererC x i = fold
-        [ i
+        [ toString i
         , ": "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -156,4 +157,4 @@ pad i str = str <> replicate (i - length str) ' '
 
 
 renderAlphabet :: Alphabet Char -> String
-renderAlphabet = (\x -> "Alphabet: { "<>x<>" }") . fold1 . intersperse ", " . fmap pure . toNonEmpty
+renderAlphabet = (\x -> "Alphabet: { " <> x <> " }") . fold1 . intersperse ", " . fmap pure . toNonEmpty

@@ -8,7 +8,6 @@ module InputParser
 
 import           Data.Char
 import           Data.Foldable
-import           Data.Semigroup               ((<>))
 import           Options.Applicative
 import           Text.PrettyPrint.ANSI.Leijen (string)
 import           TimingParameters
