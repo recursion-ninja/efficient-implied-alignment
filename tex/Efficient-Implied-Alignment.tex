@@ -211,7 +211,7 @@ Both of these constraints with be discussed later.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
 
 
-\section{Overview of Implied Alignment the Algorithm}
+\section*{Overview of Implied Alignment the Algorithm}
 
 The IA algorithm provides a MSA for a binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string with symbols in $\Sigma$ and of length at most $k$.
 To do so, we will traverse $\mathcal{T}$ twice.
@@ -807,246 +807,7 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 		\end{minipage}
 	\end{figure}
 	
-	\section*{Algorithms}
-	
-	
-	\begin{algorithm}
-		\caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
-		\begin{algorithmic}[1]
-			\Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
-			\Ensure{$\;\;\,\Sigma_{\Gamma}^{*}$}
-			\Function{$\otimes$}{$\textit{lhs},\, \textit{rhs}$}
-			\newline
-			\Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
-			\If    {$\textit{lhs} = \textit{rhs}$}
-			\State \Return $\textit{lhs}$
-			\ElsIf {$\textit{lhs} < \textit{rhs}$}
-			\State \Return $\Call{MatrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
-			\Else
-			\State \Return $\Call{MatrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
-			\EndIf
-			\EndFunction
-		\end{algorithmic}
-	\end{algorithm}
-	
-	\begin{algorithm}
-		\caption{Post-order Traversal}\label{post-order}
-		\begin{algorithmic}[1]
-			\Require{A binary tree decorated with leaf $\;$ labels $\;\;\, inputString \in \Sigma^{*}$ }
-			\Ensure{$\;\,$ A binary tree decorated with node labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
-			%    \Procedure{post-order(n)}{}
-			\Function{PostOrder}{$\textit{node}$}
-			\If   {isLeaf ( $\textit{node}$ )} \Comment{Lift leaf label into preliminary context}
-			\State $\textit{node.cost} \gets 0$
-			\State $\textit{node.prelimString} \gets \Call{InitializeString}{\textit{node.inputString}}$
-			%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
-			%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
-			%sy        \EndIf
-			\Else \Comment{Recursively combine preliminary contexts}
-			\State $\textit{lhs}\,  \gets \Call{PostOrder}{\textit{node.children.first}}$
-			\State $\textit{rhs}  \gets \Call{PostOrder}{\textit{node.children.second}}$
-			\State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
-			\State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
-			\State $\textit{node.prelimString} \gets \textit{alignContext}$
-			\EndIf
-			\EndFunction
-		\end{algorithmic}
-	\end{algorithm}
-	
-	\begin{algorithm}
-		\caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
-		\begin{algorithmic}[1]
-			\Require{$lesser,\, longer \in \Sigma_{\Gamma}^{*}$}
-			\Require{$\sigma \colon \left(( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-			\Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
-			\Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
-			\Ensure{$\;\;\,(\NonNegReals$, $\mathbf{Arrow})$}
-			\Function{MatrixDefinition}{$\textit{lesser},\, \textit{longer},\, \sigma,\, i,\, j$}
-			\If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
-			\State \Return $\left( \infty, \nwarrow \right)$
-			\ElsIf{$i = 0 \land j = 0$} \Comment{Handle the origin}
-			\State \Return $\left( 0, \nwarrow \right)$
-			\ElsIf{$j \neq 0 \land \textit{longer}_{j-1}      = \textbf{--}$} \Comment{Preserve input gap}
-			\State $\left(\textit{leftCost}, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
-			\State \Return $\left( \textit{leftCost}, \leftarrow \right)$
-			\ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
-			\State $\left(\textit{aboveCost}, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
-			\State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
-			\Else \Comment{General recursive case}
-			\State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
-			\State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
-			\State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
-			\State $\left( minCost, minDir \right) \gets \Call{GetMinimal}{x, y, z}$
-			\If {$\left( \textit{minDir}, \textit{minDir} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
-			\State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
-			\Else
-			\State \Return $\left( minCost, minDir \right)$
-			\EndIf
-			\EndIf
-			\EndFunction
-		\end{algorithmic}
-	\end{algorithm}
-	
-	\begin{algorithm}
-		\caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{Alg:matrixTraceback}
-		\begin{algorithmic}[1]
-			\Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
-			\Require{$\sigma \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-			\Ensure{$\;\;\,(\NonNegReals$, $\Sigma_{\Gamma}^{*})$}
-			
-			\Function{MatrixTraceback}{$\textit{lesser},\, \textit{longer}$}
-			\State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
-			\State \Return $\left( alignedCost, \_ \right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
-			\State $alignedStr \gets \left[ \,\right]$
-			\While{$\left( i, j \right) > \left( 0, 0 \right)$}
-			\State $\left( \_, dirArrow\right) \gets \Call{MatrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
-			\Switch{$\textit{dirArrow}$}
-			\Case{$\leftarrow$}
-			\State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
-			\State $nextElement \gets \textbf{\texttt{DELETE}}\;\; \textit{longer}_{j-1}$
-			\EndCase
-			\Case{$\uparrow$}
-			\State $\left( i, j\right) \gets \left( i - 1      , j \quad\;\; \right)$
-			\State $nextElement \gets \textbf{\texttt{INSERT}} \hspace{1.9cm} \textit{lesser}_{i-1}$
-			\EndCase
-			\Case{$\nwarrow$}
-			\State $\left( i, j\right) \gets \left( i - 1      , j - 1       \right)$
-			\State $nextElement \gets \textbf{\texttt{ALIGN}} \quad \textit{longer}_{j-1} \;\; \textit{lesser}_{i-1}$
-			\EndCase
-			\EndSwitch
-			\State $alignedStr \gets nextElement + alignedStr$
-			\EndWhile
-			\State \Return $\left(alignedCost, alignedStr \right)$
-			\EndFunction
-		\end{algorithmic}
-	\end{algorithm}
-	
-	\begin{algorithm}
-		\caption{Get the minimal directional matrix context from the $3$ inputs}\label{Alg:getMinimal}
-		\begin{algorithmic}[1]
-			\Require{$diagCost, \; rightCost, \; downCost \in \NonNegReals$}
-			\Require{Total ordering over $\mathbf{Arrow}$ defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
-			\Ensure{$\;\;\,\left(\NonNegReals, \mathbf{Arrow} \right)$}
-			\Function{GetMinimal}{$diagCost,\, rightCost,\, downCost$}
-			\State \Return $minimumBy \; \left(\lambda \left(c, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
-			$[\, \left(\;\;diagCost, \;      \nwarrow    \right)$\newline\hspace*{3.85cm}
-			$,\, \left(\, rightCost, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
-			$,\, \left(    downCost, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
-			$]$
-			\EndFunction
-		\end{algorithmic}
-	\end{algorithm}
-
-    \begin{algorithm}
-    	\caption{String Initialization}\label{string-initialization}
-    	\begin{algorithmic}[1]
-    		\Require{$inputString \in \Sigma^{*}$ }
-    		\Ensure{$\;\;\,\Sigma_{\Gamma}^{*}$ }
-    		\Function{InitializeString}{$\textit{inputString}$}
-    		\State $i \gets \vert\textit{inputString} \;\vert - 1,$
-    		\While{$i \geq 0$}
-    		\State $\textit{inputString}_i \gets \textbf{\texttt{ALIGN}} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
-    		\EndWhile
-    		\Return $\textit{inputString}$
-    		\EndFunction
-    	\end{algorithmic}
-    \end{algorithm}
-
-
-    \begin{algorithm}
-    	\caption{Pre-order Traversal}\label{pre-order}
-    	\begin{algorithmic}[1]
-    		\Require{      A binary tree decorated with node labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
-    		\Ensure {$\;\,$ A binary tree decorated with node labels \enskip $finalString   \in \Sigma_{\Gamma}^{*}$}
-    		\Function{PreOrder}{$\textit{node}$}
-    		\If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
-    		\State $\textit{node.finalString} \gets \textit{node.prelimString}$
-    		\Else  \Comment{Derive alignment for node}
-    		\State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
-    		\State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
-    		\State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
-    		\State $\textit{v} \gets$ \Call{DeriveAlignment}{$isLeft ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
-    		\State $\textit{node.finalString} \gets \textit{v}$
-    		\EndIf
-    		\EndFunction
-    		
-    	\end{algorithmic}
-    \end{algorithm}
-    
-    \begin{algorithm}
-    	\label{Alg:pre-order}
-    	\caption{Non-root Node Alignment}\label{deriveAlignment}
-    	\begin{algorithmic}[1]
-    		\Require{$isLeft \in \left\{ True,\, False \right\}$}
-    		\Require{$\textit{pAlignment},\, \textit{pContext},\, \textit{cContext} \in \Sigma_{\Gamma}^*$}
-    		\Ensure {$\;\;\,\Sigma_{\Gamma}^{*}$}
-    		\Function{DeriveAlignment}{$\textit{isLeft},\,  \textit{pAlignment},\, \textit{pContext},\, \textit{cContext}$}
-    		\State $\textit{paLen} \enskip \gets$ \Call{length}{$\textit{pAlignment}$}
-    		\State $\textit{ccLen} \enskip\, \gets$ \Call{length}{$\textit{cContext}$}
-    		\State $\left( \textit{i}, \textit{j}, \textit{k} \right) \;\gets \left( 0, 0, 0 \right)$
-    		\For{$\textit{i} < \textit{paLen}$}
-    		\If    {$\textit{k} \geq \textit{ccLen}$} \Comment{Case 0}
-    		\State $\textit{result}_i \gets \texttt{GAPPED}$
-    		\Else
-    		\If {$\enskip \textit{pAlignment}_i = \texttt{ALIGN}$\Comment{Case 1}\par\hskip\algorithmicindent \quad\enskip
-    			$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{DELETE} \land \;\;\, isLeft \right)$\Comment{Case 2}\par\hskip\algorithmicindent\quad\enskip
-    			$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{INSERT} \land \neg   isLeft \right)$\Comment{Case 3}\par\hskip\algorithmicindent$\;\;\;$}  
-    		\State $\textit{result}_i \gets \textit{cContext}_k$
-    		\State $\textit{k} \gets \textit{k} + 1$
-    		\Else \Comment{Case 4}
-    		\State $\textit{result}_i \gets \texttt{GAPPED}$
-    		\EndIf
-    		
-    		
-    		%          \Switch{$\textit{pAlignment}_i$}
-    		%            
-    		%            \Case{$\texttt{ALIGN}$} \Comment{Case 1}
-    		%            \State $\textit{result}_i \gets \textit{cContext}_k$
-    		%            \State $\textit{k} \gets \textit{k} + 1$
-    		%            \EndCase
-    		%                      
-    		%            \Case{$\texttt{DELETE}}$
-    		%              \Switch{$\textit{pContext}_j$}
-    		%                \Case{$\texttt{DELETE}$} \Comment{Case 2}
-    		%                \State $\textit{result}_i \gets \texttt{GAPPED}$
-    		%                \EndCase
-    		%                \Default \Comment{Case 3}
-    		%                \State $\textit{result}_i \gets \textit{cContext}_k$
-    		%                \State $\textit{k} \gets \textit{k} + 1$
-    		%                \EndDefault
-    		%              \EndSwitch
-    		%            \EndCase
-    		%            
-    		%            \Case{$\texttt{INSERT}$} 
-    		%              \Switch{$\textit{pContext}_j$}
-    		%                \Case{$\texttt{INSERT}$} \Comment{Case 4}
-    		%                \State $\textit{result}_i \gets \textit{cContext}_k$
-    		%                \State $\textit{k} \gets \textit{k} + 1$
-    		%                \EndCase
-    		%                \Default \Comment{Case 5}
-    		%                \State $\textit{result}_i \gets \texttt{GAPPED}$
-    		%                \EndDefault
-    		%              \EndSwitch
-    		%            \EndCase
-    		%
-    		%            \Case{$\texttt{GAPPED}$} \Comment{Case 6}
-    		%            \State $\textit{result}_i \gets \texttt{GAPPED}$
-    		%            \EndCase
-    		%
-    		%          \EndSwitch
-    		
-    		\State $\textit{j} \gets \textit{j} + 1$
-    		\EndIf
-    		\State $\textit{i} \gets \textit{i} + 1$
-    		\EndFor
-    		\Return $\textit{result}$
-    		\EndFunction
-    	\end{algorithmic}
-    \end{algorithm}
-
-
-	%%%%
-	
+	\section*{Algorithms}	
 	
 	\begin{algorithm}
 		\caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
@@ -1188,144 +949,95 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 		\end{algorithmic}
 	\end{algorithm}
 
-\begin{algorithm}
-	\caption{Pre-order Traversal}\label{pre-order}
-	\begin{algorithmic}[1]
-		\Require{      A binary tree decorated with leaf     labels $inputString   \in \Sigma_{\Gamma}^{*}$}
-		\Require{      A binary tree decorated with internal labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
-		\Ensure {$\;\;$A binary tree decorated with leaf     labels $alignedString \in \Sigma_{\Gamma}^{*}$}
-		\Ensure {$\;\;$A binary tree decorated with internal labels $finalString   \in \Sigma_{\Gamma}^{*}$}
-		\Function{pre-order}{$\textit{node}$}
-		\If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
-		\State $\textit{node.finalString} \gets \Call{initializeRootString}{\textit{node.prelimString}}$
-		\Else
-		\State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
-		\State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
-		\State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
-		\If {isLeftChildOfParent($\textit{node}$)}
-		\ForEach {$\textit{context} \in \textit{parentPrelim}$}
-		\State \Call{reverseContext}{$\textit{context}$}
-		\EndFor
-		\EndIf
-		\State $\textit{v} \gets$ \Call{deriveAlignment}{$isLeaf ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
-		\State $\textit{node.finalString} \gets \textit{v}$
-		\EndIf
-		\EndFunction
-		
-		\Function{initializeRootString}{$\textit{rootString}$}
-		\ForEach {$\textit{context} \in \textit{rootString}$}
-		\Call{deletionToInsertion}{$\textit{context}$}
-		\EndFor
-		\EndFunction
-		
-		\Function{deletionToInsertion}{$\textit{context}$}
-		\Switch{$\textit{context}$}
-		\Case{$\textbf{DELETE} \;\; \textit{m} \;\; \textit{x} \;\;$}
-		\Return $\textbf{INSERT} \;\; \textit{m} \;\; \textit{x} \;\;$
-		\EndCase
-		\Case{$\textit{v} \;\;$}
-		\Return $\textit{v}$
-		\EndCase
-		\EndSwitch
-		\EndFunction
-		
-		\Function{reverseContext}{$\textit{context}$}
-		\Switch{$\textit{context}$}
-		\Case{    $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$}
-		\Return $\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{y} \;\; \textit{x} \;\;$
-		\EndCase
-		\Case{    $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$}
-		\Return $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{x} \;\;$
-		\EndCase
-		\Case{    $\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$}
-		\Return $\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{y} \;\;$
-		\EndCase
-		\EndSwitch
-		\EndFunction
-	\end{algorithmic}
-\end{algorithm}
+    \begin{algorithm}
+		\caption{Pre-order Traversal}\label{pre-order}
+		\begin{algorithmic}[1]
+			\Require{      A binary tree decorated with node labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
+			\Ensure {$\;\,$ A binary tree decorated with node labels \enskip $finalString   \in \Sigma_{\Gamma}^{*}$}
+			\Function{PreOrder}{$\textit{node}$}
+			\If    {isRoot ( $\textit{node}$ )} \Comment{Initialize the root node}
+			\State $\textit{node.finalString} \gets \textit{node.prelimString}$
+			\Else  \Comment{Derive alignment for node}
+			\State $\textit{parentFinal} \;\;\; \gets \textit{node.parent.finalString}$
+			\State $\textit{parentPrelim}    \, \gets \textit{node.parent.prelimString}$
+			\State $\textit{childPrelim} \;\;\;\, \gets \textit{node.prelimString}$
+			\State $\textit{v} \gets$ \Call{DeriveAlignment}{$isLeft ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
+			\State $\textit{node.finalString} \gets \textit{v}$
+			\EndIf
+			\EndFunction
+			
+		\end{algorithmic}
+    \end{algorithm}
 
-
-\newgeometry{top=1mm, bottom=1mm}
-
-\begin{algorithm}
-	\label{Alg:pre-order}
-	\caption{Internal Node Alignment}\label{deriveAlignment}
-	\begin{algorithmic}[1]
-		\Function{deriveAlignment}{$\textit{isLeaf}, \textit{pAlignment}, \textit{pContext}, \textit{cContext}$}
-		\State $\textit{del}   \;\;\quad \gets \textbf{DELETE}$ -- --
-		\State $\textit{len}   \;\;\quad \gets$ \Call{length}{$\textit{pAlignment}$}
-		\State $\textit{pcLen} \;        \gets$ \Call{length}{$\textit{pContext}$}
-		\State $\textit{ccLen} \;        \gets$ \Call{length}{$\textit{cContext}$}
-		\State $\left( \textit{i}, \textit{j}, \textit{k} \right) \gets \left( 0, 0, 0 \right)$
-		\For{$\textit{i} < \textit{len}$}
-		\If    {$\textit{j} \geq \textit{pcLen} \land \textit{k} \geq \textit{ccLen}$}
-		\State $\textit{result}_i \gets \textit{del}$ \Comment{Case 0}
-		\ElsIf {$\textit{k} \geq \textit{ccLen}$}
-		\Switch{$\textit{pAlignment}_i$}
-		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 1}
-		\State $\textit{result}_i \gets \textit{del}$
-		\EndCase
-		\Default{} \Comment{Case 2}
-		\State $\textit{result}_i \gets \textit{del}$
-		\State $\textit{j} \gets \textit{j} + 1$
-		\EndDefault
-		\EndSwitch
-		\Else
-		\Switch{$\textit{pAlignment}_i$}
-		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 3}
-		\State $\textit{result}_i \gets \textit{del}$
-		\EndCase
-		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} 
-		\Switch{$\textit{pContext}_j$}
-		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 4}
-		\State $\textit{result}_i \gets \textit{del}$
-		\EndCase
-		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 5}
-		\If {$\textit{isLeaf} \land y \neq \;$\Call{getMedian}{$\textit{cContext}_k$}}
-		\State $\textit{result}_i \gets \textit{del}$
-		\Else
-		\State $\textit{result}_i \gets$ \Call{deletionToInsertion}{$\textit{cContext}_k$}
-		\State $\textit{k} \gets \textit{k} + 1$
-		\EndIf
-		\EndCase
-		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 6}
-		\State $\textit{result}_i \gets \textit{cContext}_k$
-		\State $\textit{k} \gets \textit{k} + 1$
-		\EndCase
-		\EndSwitch
-		\State $\textit{j} \gets \textit{j} + 1$
-		\EndCase
-		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} 
-		\Switch{$\textit{pContext}_j$}
-		\Case{$\textbf{DELETE} \;\;   \textit{m} \;\;      \textit{x} \;\;\quad$} \Comment{Case 7}
-		\State $\textit{result}_i \gets \textit{del}$
-		\EndCase
-		\Case{$\textbf{INSERT} \;\;\; \textit{m} \;\;\quad \textit{y} \;\;$} \Comment{Case 8}
-		\State $\textit{result}_i \gets \textit{cContext}_k$
-		\State $\textit{k} \gets \textit{k} + 1$
-		\EndCase
-		\Case{$\textbf{ALIGN} \quad\; \textit{m} \;\;      \textit{x} \;\; \textit{y} \;\;$} \Comment{Case 9}
-		\If {$\textit{isLeaf}$}
-		\State $\textit{result}_i \gets \textit{cContext}_k$
-		\Else
-		\State $\textit{result}_i \gets \textit{pContext}_j$
-		\EndIf
-		\State $\textit{k} \gets \textit{k} + 1$
-		\EndCase
-		\EndSwitch
-		\State $\textit{j} \gets \textit{j} + 1$
-		\EndCase
-		\EndSwitch
-		\EndIf
-		\State $\textit{i} \gets \textit{i} + 1$
-		\EndFor
-		\Return $\textit{result}$
-		\EndFunction
-	\end{algorithmic}
-\end{algorithm}
-
-\restoregeometry
+    \begin{algorithm}
+		\label{Alg:pre-order}
+		\caption{Non-root Node Alignment}\label{deriveAlignment}
+		\begin{algorithmic}[1]
+			\Require{$isLeft \in \left\{ True,\, False \right\}$}
+			\Require{$\textit{pAlignment},\, \textit{pContext},\, \textit{cContext} \in \Sigma_{\Gamma}^*$}
+			\Ensure {$\;\;\,\Sigma_{\Gamma}^{*}$}
+			\Function{DeriveAlignment}{$\textit{isLeft},\,  \textit{pAlignment},\, \textit{pContext},\, \textit{cContext}$}
+			\State $\textit{paLen} \enskip \gets$ \Call{length}{$\textit{pAlignment}$}
+			\State $\textit{ccLen} \enskip\, \gets$ \Call{length}{$\textit{cContext}$}
+			\State $\left( \textit{i}, \textit{j}, \textit{k} \right) \;\gets \left( 0, 0, 0 \right)$
+			\For{$\textit{i} < \textit{paLen}$}
+			\If    {$\textit{k} \geq \textit{ccLen}$} \Comment{Case 0}
+			\State $\textit{result}_i \gets \texttt{GAPPED}$
+			\Else
+			\If {$\enskip \textit{pAlignment}_i = \texttt{ALIGN}$\Comment{Case 1}\par\hskip\algorithmicindent \quad\enskip
+				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{DELETE} \land \;\;\, isLeft \right)$\Comment{Case 2}\par\hskip\algorithmicindent\quad\enskip
+				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{INSERT} \land \neg   isLeft \right)$\Comment{Case 3}\par\hskip\algorithmicindent$\;\;\;$}  
+			\State $\textit{result}_i \gets \textit{cContext}_k$
+			\State $\textit{k} \gets \textit{k} + 1$
+			\Else \Comment{Case 4}
+			\State $\textit{result}_i \gets \texttt{GAPPED}$
+			\EndIf
+					
+			%          \Switch{$\textit{pAlignment}_i$}
+			%            
+			%            \Case{$\texttt{ALIGN}$} \Comment{Case 1}
+			%            \State $\textit{result}_i \gets \textit{cContext}_k$
+			%            \State $\textit{k} \gets \textit{k} + 1$
+			%            \EndCase
+			%                      
+			%            \Case{$\texttt{DELETE}}$
+			%              \Switch{$\textit{pContext}_j$}
+			%                \Case{$\texttt{DELETE}$} \Comment{Case 2}
+			%                \State $\textit{result}_i \gets \texttt{GAPPED}$
+			%                \EndCase
+			%                \Default \Comment{Case 3}
+			%                \State $\textit{result}_i \gets \textit{cContext}_k$
+			%                \State $\textit{k} \gets \textit{k} + 1$
+			%                \EndDefault
+			%              \EndSwitch
+			%            \EndCase
+			%            
+			%            \Case{$\texttt{INSERT}$} 
+			%              \Switch{$\textit{pContext}_j$}
+			%                \Case{$\texttt{INSERT}$} \Comment{Case 4}
+			%                \State $\textit{result}_i \gets \textit{cContext}_k$
+			%                \State $\textit{k} \gets \textit{k} + 1$
+			%                \EndCase
+			%                \Default \Comment{Case 5}
+			%                \State $\textit{result}_i \gets \texttt{GAPPED}$
+			%                \EndDefault
+			%              \EndSwitch
+			%            \EndCase
+			%
+			%            \Case{$\texttt{GAPPED}$} \Comment{Case 6}
+			%            \State $\textit{result}_i \gets \texttt{GAPPED}$
+			%            \EndCase
+			%
+			%          \EndSwitch
+			
+			\State $\textit{j} \gets \textit{j} + 1$
+			\EndIf
+			\State $\textit{i} \gets \textit{i} + 1$
+			\EndFor
+			\Return $\textit{result}$
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
 
 \end{backmatter}
 
