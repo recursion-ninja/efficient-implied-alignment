@@ -9,11 +9,13 @@
 -- Portability :  portable
 --
 -- Direct optimization pairwise alignment using the Needleman-Wunsch algorithm.
--- These funtions will allocate an M * N matrix.
+-- These functions will allocate an M * N matrix.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ConstraintKinds, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Pairwise.NeedlemanWunsch
   ( naiveDO
@@ -21,14 +23,14 @@ module Alignment.Pairwise.NeedlemanWunsch
   , naiveDOMemo
   ) where
 
-import Alignment.Pairwise.Internal
-import Data.Alphabet
-import Data.List.NonEmpty      (NonEmpty(..))
-import Data.Key
-import Data.Matrix.ZeroIndexed (matrix)
-import Data.SymbolString
-import Data.TCM
-import Data.Vector.NonEmpty
+import           Alignment.Pairwise.Internal
+import           Data.Alphabet
+import           Data.Key
+import           Data.List.NonEmpty          (NonEmpty (..))
+import           Data.Matrix.ZeroIndexed     (matrix)
+import           Data.SymbolString
+import           Data.TCM
+import           Data.Vector.NonEmpty
 
 
 -- |

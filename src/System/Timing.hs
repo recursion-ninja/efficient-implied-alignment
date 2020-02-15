@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns, Strict #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE Strict       #-}
 
 module System.Timing
   ( CPUTime()
@@ -12,10 +13,11 @@ module System.Timing
   ) where
 
 
-import Control.DeepSeq
-import Control.Monad.IO.Class
-import Numeric.Natural
-import System.CPUTime
+import           Control.DeepSeq
+import           Control.Monad.IO.Class
+import           Data.Foldable
+import           Numeric.Natural
+import           System.CPUTime
 
 
 -- | CPU time with picosecond resolution
@@ -30,14 +32,14 @@ instance NFData CPUTime where
 instance Show CPUTime where
 
     show (CPUTime x)
-      | x < nSecond = let (q,_) = x `quotRem` 1       in mconcat [show q, ".", "???"                       , "ps" ]
-      | x < μSecond = let (q,r) = x `quotRem` nSecond in mconcat [show q, ".", zeroPad 3 (r `div` 1       ), "ns" ]
-      | x < mSecond = let (q,r) = x `quotRem` μSecond in mconcat [show q, ".", zeroPad 3 (r `div` nSecond ), "μs" ]
-      | x <  second = let (q,r) = x `quotRem` mSecond in mconcat [show q, ".", zeroPad 3 (r `div` μSecond ), "ms" ]
-      | x <  minute = let (q,r) = x `quotRem`  second in mconcat [show q, ".", zeroPad 3 (r `div` mSecond ), "s " ]
-      | x <    hour = let (q,r) = x `quotRem`  minute in mconcat [show q, "m", zeroPad 2 (r `div`  second ), "sec"]
-      | x <     day = let (q,r) = x `quotRem`    hour in mconcat [show q, "h", zeroPad 2 (r `div`  minute ), "min"]
-      | otherwise   = let (q,r) = x `quotRem`     day in mconcat [show q, "d", zeroPad 2 (r `div`    hour ), "hrs"]
+      | x < nSecond = let (q,_) = x `quotRem` 1       in fold [show q, ".", "???"                       , "ps" ]
+      | x < μSecond = let (q,r) = x `quotRem` nSecond in fold [show q, ".", zeroPad 3 (r `div` 1       ), "ns" ]
+      | x < mSecond = let (q,r) = x `quotRem` μSecond in fold [show q, ".", zeroPad 3 (r `div` nSecond ), "μs" ]
+      | x <  second = let (q,r) = x `quotRem` mSecond in fold [show q, ".", zeroPad 3 (r `div` μSecond ), "ms" ]
+      | x <  minute = let (q,r) = x `quotRem`  second in fold [show q, ".", zeroPad 3 (r `div` mSecond ), "s " ]
+      | x <    hour = let (q,r) = x `quotRem`  minute in fold [show q, "m", zeroPad 2 (r `div`  second ), "sec"]
+      | x <     day = let (q,r) = x `quotRem`    hour in fold [show q, "h", zeroPad 2 (r `div`  minute ), "min"]
+      | otherwise   = let (q,r) = x `quotRem`     day in fold [show q, "d", zeroPad 2 (r `div`    hour ), "hrs"]
       where
         nSecond = 1000
         μSecond = 1000 * nSecond

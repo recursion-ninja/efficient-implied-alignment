@@ -1,13 +1,14 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module TimingParameters
   ( TimingParameters(..)
   , validateTimingParameters
   ) where
 
-import Control.DeepSeq
-import Data.Maybe
-import System.Exit
+import           Control.DeepSeq
+import           Data.Maybe
+import           System.Exit
 
 
 data  TimingParameters
@@ -43,7 +44,7 @@ validateTimingParameters tp =
       , stringLengthsEmpty
       , stringLengthsOutOfRange
       ]
-      
+
     dataFileEmpty
       | null $ dataFile tp = Just "The data file path was empty"
       | otherwise          = Nothing

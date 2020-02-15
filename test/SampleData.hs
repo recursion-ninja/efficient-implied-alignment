@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies      #-}
 
 module SampleData
   ( LeafInput
@@ -21,26 +23,30 @@ import           Data.Decoration
 import           Data.Foldable
 import           Data.Functor                 (($>))
 import           Data.Key
-import           Data.List.NonEmpty           (NonEmpty(..))
-import qualified Data.List.NonEmpty    as NE
-import           Data.Matrix.ZeroIndexed      (matrix)
+import           Data.List.NonEmpty           (NonEmpty (..))
+import qualified Data.List.NonEmpty           as NE
 import           Data.Map                     (Map)
-import qualified Data.Map              as M
+import qualified Data.Map                     as M
+import           Data.Matrix.ZeroIndexed      (matrix)
 import           Data.Pointed
 import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
 import           Data.Set                     (Set)
+import           Data.String                  (IsString (..))
 import           Data.SymbolString
 import           Data.TCM
+import           Data.Text.Short              (ShortText)
 import           Data.Validation
-import           Prelude               hiding (zip)
+import           Data.Vector.Unboxed.NonEmpty (Vector)
+import qualified Data.Vector.Unboxed.NonEmpty as V
+import           Prelude                      hiding (zip)
 
 
-type LeafInput    = NonEmpty (NonEmpty Char)
+type LeafInput    = NonEmpty (Vector Char)
 
 type LeafOutputs  = NonEmpty LeafInput
 
-type StringValues = Map String (LeafInput, LeafOutputs)
+type StringValues = Map ShortText (LeafInput, LeafOutputs)
 
 type TreeInput    = BTree () ()
 
@@ -66,9 +72,9 @@ sampleDataSets =
     , ("Deleted Insertions Appended After Group"                    , dataSetQ, topologyQ, discreteMetricTCM)
     , ("Two Adjacent Insertions Simultaneous Deletions"             , dataSetR, topologyR, discreteMetricTCM)
     , ("Two Non-adjacent Insertions Simultaneous Deletions"         , dataSetS, topologyS, discreteMetricTCM)
-    , ("Two Adjacent Insertions Seperate Deletions"                 , dataSetT, topologyT, discreteMetricTCM)
-    , ("Two Non-adjacent Symetric Insertions Seperate Deletions"    , dataSetU, topologyU, discreteMetricTCM)
-    , ("Two Non-adjacent Antisymetric Insertions Seperate Deletions", dataSetV, topologyV, discreteMetricTCM)
+    , ("Two Adjacent Insertions Separate Deletions"                 , dataSetT, topologyT, discreteMetricTCM)
+    , ("Two Non-adjacent Symmetric Insertions Separate Deletions"    , dataSetU, topologyU, discreteMetricTCM)
+    , ("Two Non-adjacent Antisymetric Insertions Separate Deletions", dataSetV, topologyV, discreteMetricTCM)
     , ("That Darn Truncation Issue"                                 , dataSetW, topologyW, discreteMetricTCM)
     , ("Deletion Before Above Insertion"                            , dataSetX, topologyX, discreteMetricTCM)
     , ("Deletion Before Below Insertion"                            , dataSetY, topologyY, discreteMetricTCM)
@@ -76,12 +82,12 @@ sampleDataSets =
     , ("Deletion After Below Insertion"                             , dataSet0, topology0, discreteMetricTCM)
     , ("Nested Insertions"                                          , dataSet1, topology1, discreteMetricTCM)
     , ("Branches With Adjacent Insertions"                          , dataSet2, topology2, discreteMetricTCM)
-    , ("Ambigous Resolution Consistency"                            , dataSet3, topology3, discreteMetricTCM)
+    , ("Ambiguous Resolution Consistency"                            , dataSet3, topology3, discreteMetricTCM)
     ]
 
 
 defaultAlphabet :: Alphabet Char
-defaultAlphabet = fromSymbols "ACGT-"
+defaultAlphabet = fromSymbols ("ACGT-" :: String)
 
 
 {-
@@ -116,20 +122,21 @@ blank :: NodeDatum ()
 blank = NodeDatum "" ()
 
 
-toNonEmpties :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
-toNonEmpties = foldMap1 (pure . pure) . NE.fromList . toList
+toNonEmpties :: Foldable f => f Char -> NonEmpty (Vector Char)
+toNonEmpties = foldMap1 (pure . V.fromNonEmpty . (:|[])) . NE.fromList . toList
 
 
-toNonEmptyInputs :: Foldable f => f Char -> NonEmpty (NonEmpty Char)
+toNonEmptyInputs :: Foldable f => f Char -> NonEmpty (Vector Char)
 toNonEmptyInputs = toNonEmpties
 
 
-toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpty (NonEmpty Char))
+toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpty (Vector Char))
 toNonEmptyOutputs = fmap toNonEmpties . NE.fromList . toList
 
 
-convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
-convertToValues = fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (pure <$> ['A'..])
+--convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
+convertToValues :: [(NonEmpty Char, [String])] -> StringValues
+convertToValues = fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (fromString . pure <$> ['A'..])
 
 
 dataSetA :: StringValues

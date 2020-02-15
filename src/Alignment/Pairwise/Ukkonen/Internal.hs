@@ -15,27 +15,28 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ConstraintKinds, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Pairwise.Ukkonen.Internal
   ( ukkonenDO
   ) where
 
 import           Alignment.Pairwise.Internal
-import           Alignment.Pairwise.NeedlemanWunsch          (naiveDOMemo)
+import           Alignment.Pairwise.NeedlemanWunsch (naiveDOMemo)
 import           Alignment.Pairwise.Ukkonen.Matrix
-import qualified Alignment.Pairwise.Ukkonen.Ribbon as Ribbon
+import qualified Alignment.Pairwise.Ukkonen.Ribbon  as Ribbon
 import           Data.Alphabet
 import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty       (NonEmpty(..))
-import           Data.Maybe               (isJust)
+import           Data.List.NonEmpty                 (NonEmpty (..))
+import           Data.Maybe                         (isJust)
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Vector.Instances    ()
-import           Data.Vector.NonEmpty hiding (filter)
+import           Data.Vector.Instances              ()
+import           Data.Vector.NonEmpty               hiding (filter)
 import           Numeric.Extended.Natural
-import           Prelude              hiding (lookup)
 
 
 -- |
@@ -74,7 +75,7 @@ ukkonenDO alphabet overlapFunction lhs rhs
     -- initial barrier will be set adjacent to or beyond the lower left and
     -- upper right corners.
     --
-    -- Lastly, a threshhold coeffcient is computed as the minimal indel cost from
+    -- Lastly, a threshold coeffcient is computed as the minimal indel cost from
     -- any symbol in the alphabet to gap. However, if the indel cost for any
     -- symbol is zero, the algorithm will hang, and a naive approach must be taken.
     --
@@ -117,7 +118,7 @@ ukkonenDO alphabet overlapFunction lhs rhs
 -- Generates an /optimal/, partially-filled-in matrix using Ukkonen's string
 -- edit distance algorithm.
 --
--- Note that the threshhold value is lowered more than described in Ukkonen's
+-- Note that the threshold value is lowered more than described in Ukkonen's
 -- paper. This is to handle input elements that contain a gap. In Ukkonen's
 -- original description of the algorithm, there was a subtle assumption that
 -- input did not contain any gap symbols.
@@ -149,7 +150,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
     startOffset = 2
 
     -- If we are filling up 3/4 of the matrix, quit Ukkonen method and just do standard Neeleman-Wunsch.
-    stopOffset  = ((3 * lesserLen - 1) `div` 4)
+    stopOffset  = (3 * lesserLen - 1) `div` 4
 
     -- The largest value the offset can be, logically.
     maximumOffset = lesserLen
@@ -165,7 +166,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
     --
     -- If one or more of the aligned character elements contained a gap, diagonal
     -- directions in the matrix have an "indel" cost. 'gapsPresentInInputs' is
-    -- necessary in order to decrement the threshhold value to account for this.
+    -- necessary in order to decrement the threshold value to account for this.
     -- This was not described in Ukkonen's original paper, as the inputs were
     -- assumed not to contain any gaps.
     gapsPresentInInputs = longerGaps + lesserGaps
@@ -173,23 +174,24 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         longerGaps  = countGaps longerTop
         lesserGaps  = countGaps lesserLeft
         countGaps   = length . filter containsGap . toList
-        containsGap = isJust . (/\ gapGroup) . symbolAlignmentMedian
+        containsGap Gapping{} = True
+        containsGap x         = isJust . (/\ gapGroup) $ symbolAlignmentMedian x
 
     gapGroup = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :|[]
 
     ukkonenUntilOptimal inOffset
       | inOffset   >= stopOffset    = ukkonenMatrix
-      | threshhold <= alignmentCost = ukkonenUntilOptimal $ 2 * offset
+      | threshold <= alignmentCost = ukkonenUntilOptimal $ 2 * offset
       | otherwise                   = ukkonenMatrix
       where
         offset | quasiDiagonalWidth + inOffset >= lesserLen = maximumOffset
                | otherwise = inOffset
-               
+
         ukkonenMatrix      = Ribbon.generate rows cols generatingFunction $ toEnum offset
 
         generatingFunction = needlemanWunschDefinition gapGroup overlapFunction longerTop lesserLeft ukkonenMatrix
-        
+
         ~(cost, _, _)      = ukkonenMatrix ! (lesserLen, longerLen)
         alignmentCost      = unsafeToFinite cost
         computedValue      = coefficient * (quasiDiagonalWidth + offset - gapsPresentInInputs)
-        threshhold         = toEnum $ max 0 computedValue -- The threshhold value must be non-negative
+        threshold         = toEnum $ max 0 computedValue -- The threshold value must be non-negative

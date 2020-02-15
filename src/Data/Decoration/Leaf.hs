@@ -10,15 +10,18 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Decoration.Leaf where
 
-import Control.DeepSeq
-import Control.Lens
-import Data.Decoration.Class
-import Data.SymbolString
-import GHC.Generics
+import           Control.DeepSeq
+import           Control.Lens
+import           Data.Decoration.Class
+import           Data.SymbolString
+import           GHC.Generics
 
 
 data InitialLeaf

@@ -24,5 +24,5 @@ module Alignment
   ) where
 
 
-import Alignment.Internal
-import Alignment.Pairwise
+import           Alignment.Internal
+import           Alignment.Pairwise

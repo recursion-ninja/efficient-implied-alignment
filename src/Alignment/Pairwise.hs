@@ -19,5 +19,5 @@ module Alignment.Pairwise
   ) where
 
 
-import Alignment.Pairwise.NeedlemanWunsch
-import Alignment.Pairwise.Ukkonen
+import           Alignment.Pairwise.NeedlemanWunsch
+import           Alignment.Pairwise.Ukkonen

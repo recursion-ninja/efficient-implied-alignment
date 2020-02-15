@@ -15,10 +15,11 @@ module Data.TCM
 import           Control.DeepSeq
 import           Data.Alphabet
 import           Data.Bits
+import           Data.Foldable
 import           Data.Key
-import           Data.List.NonEmpty            (NonEmpty(..))
+import           Data.List.NonEmpty      (NonEmpty (..))
 import qualified Data.List.NonEmpty      as NE
-import           Data.Matrix.ZeroIndexed       (Matrix, unsafeGet)
+import           Data.Matrix.ZeroIndexed (Matrix, unsafeGet)
 import qualified Data.Matrix.ZeroIndexed as M
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
@@ -66,8 +67,8 @@ renderTCM alphabet tcm = unlines . (headerRow:) $ fmap (foldMap render) listOfRo
     len          = 1 `shiftL` length alphabet
     m            = M.matrix (len-1) (len-1) g
     listOfRows   = M.toLists m
-    headerRow    = foldMap (\x -> mconcat ["|", renderMonospacedGroup alphabet (toEnum x),"|   "]) [1..len-1]
-    render (x,y) = mconcat ["(", renderMonospacedGroup alphabet x, ",", show y,") "]
+    headerRow    = foldMap (\x -> fold ["|", renderMonospacedGroup alphabet (toEnum x),"|   "]) [1..len-1]
+    render (x,y) = fold ["(", renderMonospacedGroup alphabet x, ",", show y,") "]
 
 
 -- |
@@ -90,13 +91,13 @@ buildTransitionCostMatrix alphabet scm =
 
 -- |
 -- Takes two 'SymbolAmbiguityGroup's and a symbol change cost function and
--- returns a tuple of a 'SymbolAmbiguityGroup', along with the cost of 
+-- returns a tuple of a 'SymbolAmbiguityGroup', along with the cost of
 -- obtaining that 'SymbolAmbiguityGroup'. The return 'SymbolAmbiguityGroup'
 -- may be (or is even likely to be) ambiguous. Will attempt to intersect the
--- two 'SymbolAmbiguityGroup', but will union them if that is not possible, 
+-- two 'SymbolAmbiguityGroup', but will union them if that is not possible,
 -- based on the symbol change cost function.
 --
--- To clarify, the return 'SymbolAmbiguityGroup' is an intersection of all 
+-- To clarify, the return 'SymbolAmbiguityGroup' is an intersection of all
 -- possible least-costly combinations, so for instance, if @ char1 == A,T @ and
 -- @ char2 == G,C @, and the two (non-overlapping) least cost pairs are @ A,C @
 -- and @ T,G @, then the return value is @ A,C,G,T @sy.
@@ -118,7 +119,7 @@ overlap allSymbols costStruct lhs rhs
 
 
 -- |
--- Given a structure of unambiguous symbols and costs, calculates the least 
+-- Given a structure of unambiguous symbols and costs, calculates the least
 -- costly intersection of unambiguous character elements and the cost of that
 -- intersection.
 {-# INLINE     minimalChoice #-}
@@ -138,7 +139,7 @@ minimalChoice = foldl1 f
 -- Finds the cost between all unambiguous symbols and two 'SymbolAmbiguityGroup'
 -- (ambiguity groups of symbols).
 --
--- Takes in a symbol change cost function and two ambiguous symbol sets and 
+-- Takes in a symbol change cost function and two ambiguous symbol sets and
 -- returns a list of tuples of all possible unambiguous pairings, along with the
 -- cost of each pairing. The resulting elements each have exactly two symbols.
 symbolDistances

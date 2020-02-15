@@ -1,41 +1,43 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE FlexibleContexts, TypeFamilies #-}
-{-# LANGUAGE Strict            #-}
+{-# LANGUAGE DeriveAnyClass   #-}
+{-# LANGUAGE DeriveGeneric    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE Strict           #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Main where
 
-import Control.Applicative
-import Control.Arrow ((&&&), (***))
-import Control.DeepSeq
-import Control.Monad
-import Data.Bifunctor (first)
-import Data.Decimal
-import Data.Either
-import Data.Foldable
-import Data.IORef
-import Data.Key
-import Data.List               (elemIndex, intercalate, nub, sort)
-import Data.List.NonEmpty      (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
-import Data.Map                (Map, insertWith)
-import Data.Maybe (fromJust)
-import Data.Ord
-import Data.Semigroup          ((<>))
-import Data.Semigroup.Foldable
-import Data.Void
-import InputParser
-import GHC.Natural
-import GHC.Generics (Generic)
-import System.Directory
-import System.Exit
-import System.FilePath.Posix
-import System.Process
-import System.Timing
-import TimingParameters
-import Text.Megaparsec (Parsec, anySingleBut, choice, errorBundlePretty, lookAhead, parse, single, try)
-import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer hiding (space)
+import           Control.Applicative
+import           Control.Arrow              ((&&&), (***))
+import           Control.DeepSeq
+import           Control.Monad
+import           Data.Bifunctor             (first)
+import           Data.Decimal
+import           Data.Either
+import           Data.Foldable
+import           Data.IORef
+import           Data.Key
+import           Data.List                  (elemIndex, intercalate, nub, sort)
+import           Data.List.NonEmpty         (NonEmpty (..))
+import qualified Data.List.NonEmpty         as NE
+import           Data.Map                   (Map, insertWith)
+import           Data.Maybe                 (fromJust)
+import           Data.Ord
+import           Data.Semigroup.Foldable
+import           Data.Void
+import           GHC.Generics               (Generic)
+import           GHC.Natural
+import           InputParser
+import           System.Directory
+import           System.Exit
+import           System.FilePath.Posix
+import           System.Process
+import           System.Timing
+import           Text.Megaparsec            (Parsec, anySingleBut, choice,
+                                             errorBundlePretty, lookAhead,
+                                             parse, single, try)
+import           Text.Megaparsec.Char
+import           Text.Megaparsec.Char.Lexer hiding (space)
+import           TimingParameters
 
 
 data  DataFileReceipt
@@ -67,7 +69,7 @@ instance Ord FilePoint where
 main :: IO ()
 main = do
     opts <- force <$> parseTimingParameters >>= validateTimingParameters
-    
+
     let alignedFile = dataFile      opts
         newick      = treeFile      opts
 
@@ -86,7 +88,7 @@ main = do
     createDirectoryIfMissing True replicationTreeDirectory
     createDirectoryIfMissing True replicationOutputDirectory
     createDirectoryIfMissing True replicationImageDirectory
-    
+
     counter <- newIORef (0, toEnum $ length strLens * length taxaSizes)
 
     putStrLn $ fold ["Generating results for the '", getFileName alignedFile, "' data-set"]
@@ -103,8 +105,8 @@ main = do
       writeIORef counter (0, toEnum $ length taxaSizes)
       let reduceNewickFile = generateTruncatedTreeFile taxaNumPad newick counter
       putStrLn "Creating reduced Newick files with the following taxa counts:"
-      NE.sort . foldl1 (<>) <$> traverseWithKey reduceNewickFile receiptMap  
-    
+      NE.sort . foldl1 (<>) <$> traverseWithKey reduceNewickFile receiptMap
+
     writeIORef counter (0, toEnum $ length filePoints)
     let timeFile = timeFilePoint taxaNumPad strLenPad counter (tcmFile opts)
     putStrLn "Timing alignment postorder & preorder with the following taxa counts and string lengths:"
@@ -147,7 +149,7 @@ getFilePoints filePath taxaCounts strFractions = do
         taxaNum <- taxaCounts
         strLen  <- fst <$> strFractions
         pure $ getFilePoint taxaNum strLen
-        
+
     collectErrors
       :: NonEmpty (Either (NonEmpty FilePath) FilePoint)
       -> Either (NonEmpty FilePath) (NonEmpty FilePoint)
@@ -157,7 +159,7 @@ getFilePoints filePath taxaCounts strFractions = do
           (xs,  _) -> Left  . fold1   $ NE.fromList xs
 
     getFilePoint :: Word -> Word -> IO (Either (NonEmpty FilePath) FilePoint)
-    getFilePoint taxaSize strLength = do 
+    getFilePoint taxaSize strLength = do
         let onlyFileName = getFileName filePath
             treeFilePath = replicationTreeDirectory </> onlyFileName <.> show taxaSize <.> "tree"
             dataFilePath = replicationDataDirectory </> onlyFileName <.> show taxaSize <.> show strLength <.> "fasta"
@@ -176,13 +178,13 @@ getFilePoints filePath taxaCounts strFractions = do
 
 
 printCounter :: IORef (Word, Word) -> IO ()
-printCounter counter = do 
+printCounter counter = do
     modifyIORef counter (first succ)
     (count, total) <- readIORef counter
     let sTotal = show total
         sCount = show count
         pCount = replicate (length sTotal - length sCount) ' ' <> sCount
-    putStr $ mconcat ["[", pCount, "/", sTotal, "] "]
+    putStr $ fold ["[", pCount, "/", sTotal, "] "]
 
 
 deleteFileIfExists :: FilePath -> IO ()
@@ -207,11 +209,11 @@ colatePoints
 colatePoints xs ys = foldMap1 f
   where
     f (x, y, z1, z2) =
-      let x' = x `indexIn` xs
-          y' = y `indexIn` ys
+      let x' = x `indexing` xs
+          y' = y `indexing` ys
       in  (pure (x', y', x, y, timeToWord z1), pure (x', y', x, y, timeToWord z2))
 
-    indexIn e es = toEnum . fromJust . elemIndex e $ toList es
+    indexing e es = toEnum . fromJust . elemIndex e $ toList es
 
     timeToWord = naturalToWord . toMicroseconds
 
@@ -228,9 +230,9 @@ traversalRuntimes = (,) <$> postT <*> preT
   where
     postT = space *> (lookAhead postorderRuntime <|> (many (anySingleBut '\n') *> postT))
     preT  = space *> (lookAhead  preorderRuntime <|> (many (anySingleBut '\n') *>  preT))
-      
-    postorderRuntime = string' "postorder:" *> space *> parseCPUTime 
-    preorderRuntime  = string' "preorder:"  *> space *> parseCPUTime 
+
+    postorderRuntime = string' "postorder:" *> space *> parseCPUTime
+    preorderRuntime  = string' "preorder:"  *> space *> parseCPUTime
 
 
 parseCPUTime :: Parsec Void String CPUTime
@@ -299,31 +301,15 @@ generateTruncatedDataFile taxaNumPadder strLenPadder filePath counter taxaSize (
     _ <- deleteFileIfExists taxaFilePath
     _ <- deleteFileIfExists lessFilePath
 
-    let p = CreateProcess
-            { cmdspec            = ShellCommand commandStr
-            , cwd                = Nothing
-            , env                = Nothing
-            , std_in             = NoStream
-            , std_out            = Inherit
-            , std_err            = NoStream
-            , close_fds          = True
-            , create_group       = False
-            , delegate_ctlc      = False
-            , detach_console     = False
-            , create_new_console = False
-            , new_session        = False
-            , child_group        = Nothing
-            , child_user         = Nothing
-            , use_process_jobs   = False
-            }
+    let p = makeProcessFromCommand commandStr
 
-    printCounter counter 
+    printCounter counter
     putStrLn $ unwords [ taxaNumPadder taxaSize, strLenPadder strLength ]
 
     (_exitCode, stdOut, _stdErr) <- readCreateProcessWithExitCode p ""
 
     writeFile lessFilePath stdOut
-    
+
     pure . force $ DataFileReceipt
         { receiptOfFilePath     = lessFilePath
         , receiptOfDeletedTaxa  = taxaFilePath
@@ -355,25 +341,9 @@ generateTruncatedTreeFile taxaNumPadder filePath counter (taxaSize, taxaFilePath
 
     _ <- deleteFileIfExists lessFilePath
 
-    let p = CreateProcess
-            { cmdspec            = ShellCommand commandStr
-            , cwd                = Nothing
-            , env                = Nothing
-            , std_in             = NoStream
-            , std_out            = Inherit
-            , std_err            = NoStream
-            , close_fds          = True
-            , create_group       = False
-            , delegate_ctlc      = False
-            , detach_console     = False
-            , create_new_console = False
-            , new_session        = False
-            , child_group        = Nothing
-            , child_user         = Nothing
-            , use_process_jobs   = False
-            }
+    let p = makeProcessFromCommand commandStr
 
-    printCounter counter 
+    printCounter counter
     putStrLn $ taxaNumPadder taxaSize
 
     (_exitCode, stdOut, _stdErr) <- readCreateProcessWithExitCode p ""
@@ -386,7 +356,7 @@ generateTruncatedTreeFile taxaNumPadder filePath counter (taxaSize, taxaFilePath
           , taxaCount    = taxaSize
           , stringLength = receiptOfStringLength dfr
           }
-    
+
     pure $ makeFilePoint <$> receipts
 
 
@@ -418,23 +388,7 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
             , "/dev/null"
             ]
 
-    let p = CreateProcess
-            { cmdspec            = ShellCommand commandStr
-            , cwd                = Nothing
-            , env                = Nothing
-            , std_in             = NoStream
-            , std_out            = Inherit
-            , std_err            = NoStream
-            , close_fds          = True
-            , create_group       = False
-            , delegate_ctlc      = False
-            , detach_console     = False
-            , create_new_console = False
-            , new_session        = False
-            , child_group        = Nothing
-            , child_user         = Nothing
-            , use_process_jobs   = False
-            }
+    let p = makeProcessFromCommand commandStr
 
     printCounter counter
 --    putStrLn $ fileDataPath fp
@@ -446,4 +400,26 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
 
     let (postOrder, preOrder) = parseRuntimes stdOut
     pure $ force (taxaCount fp, stringLength fp, postOrder, preOrder)
+
+
+makeProcessFromCommand :: String -> CreateProcess
+makeProcessFromCommand commandStr =
+    CreateProcess
+    { cmdspec            = ShellCommand commandStr
+    , cwd                = Nothing
+    , env                = Nothing
+    , std_in             = NoStream
+    , std_out            = Inherit
+    , std_err            = NoStream
+    , close_fds          = True
+    , create_group       = False
+    , delegate_ctlc      = False
+    , detach_console     = False
+    , create_new_console = False
+    , new_session        = False
+    , child_group        = Nothing
+    , child_user         = Nothing
+    , use_process_jobs   = False
+    }
+
 

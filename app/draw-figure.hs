@@ -1,12 +1,12 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies              #-}
 
-import Data.Data
-import Data.Key
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Prelude hiding (trace)
-import Prelude hiding (zip)
+import           Data.Data
+import           Data.Key
+import           Diagrams.Backend.SVG.CmdLine
+import           Diagrams.Prelude             hiding (trace)
+import           Prelude                      hiding (zip)
 
 
 main :: IO ()
@@ -35,7 +35,7 @@ arrowLine = with & shaftStyle %~ lw 3
 
 arrowBent :: (Typeable n, RealFloat n) => ArrowOpts n
 arrowBent =
-    let shaft = trailFromVertices $ map p2 [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
+    let shaft = trailFromVertices $ p2 <$> [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
     in  with & arrowShaft .~ shaft
              & headLength .~ 12
              & shaftStyle %~ lw 3
@@ -45,6 +45,7 @@ data  AlignCell
     = Align
     | Delete
     | Insert
+    | Gapped
     | Spacing
     | Question
     deriving (Eq, Show)
@@ -54,6 +55,7 @@ toSymbol :: AlignCell -> Char
 toSymbol Align    = '𝗔' -- '𝓐'
 toSymbol Delete   = '𝗗' -- '𝓓'
 toSymbol Insert   = '𝗜' -- '𝓘'
+toSymbol Gapped   = '𝗚'
 toSymbol Spacing  = ' '
 toSymbol Question = '？'
 
@@ -64,7 +66,7 @@ frames = f <#$> ijks
     f k = (# named ("frame " <> show k)) . pad 1.4 . (<>box) . centerXY . makeAlignments
     box = phantom (rect 28 11 :: Diagram B) :: Diagram B
 
-  
+
 makeAlignments :: (Word, Word, Word) -> Diagram B
 makeAlignments (i,j,k) = stackVertical
     [ makeIndexLabel "i" i ||| alignmentAt i pAlign
@@ -110,7 +112,7 @@ underneath = beside (r2 (0, 180))
 
 
 alignmentAt :: Word -> [AlignCell] -> Diagram B
-alignmentAt i xs = foldlWithKey makeCell mempty cells 
+alignmentAt i xs = foldlWithKey makeCell mempty cells
   where
     (h,t) = splitAt (fromEnum i) xs
     cells
@@ -119,7 +121,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
 
     cursorStop :: Word
     cursorStop = toEnum . length . dropWhile (==Spacing) $ reverse cells
-    
+
     makeCell :: Diagram B -> Int -> AlignCell -> Diagram B
     makeCell a k e
       | atCursorStop = a ||| (stp <> sqr)
@@ -128,7 +130,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
       where
         atCursorStop = e == Spacing && k' == cursorStop
         k'  = toEnum k
-        txt = cellText $ [toSymbol e]
+        txt = cellText [toSymbol e]
         sqr = clr cellBox
         clr | atCursorStop = lineColor (sRGB 196 0 0)
             | e == Spacing = lineColor (sRGB   0 0 0)
@@ -141,7 +143,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
 cellText :: String -> Diagram B
 cellText = alignT . scale (5/3) . (<> phantom box) . bold . text
   where
-    box = square 0.65 :: Diagram B
+    box = square 0.25 :: Diagram B
 
 
 cellBox :: Diagram B
@@ -149,16 +151,16 @@ cellBox = lineWidth 2 . pad 1.2 $ square 2
 
 
 derivedAt :: Word -> [AlignCell] -> Diagram B
-derivedAt i xs = foldl makeCell mempty cells 
+derivedAt i xs = foldl makeCell mempty cells
   where
     cells = take (fromEnum i) xs <> [Question]
-    
+
     makeCell :: Diagram B -> AlignCell -> Diagram B
     makeCell a e
       | i == 10 && e == Question = a ||| (stp <> sqr)
       | otherwise                = a ||| (txt <> sqr)
       where
-        txt = cellText $ [toSymbol e]
+        txt = cellText [toSymbol e]
         sqr = clr cellBox
         clr | e == Question = redLine
             | e == Spacing  = redLine
@@ -175,13 +177,13 @@ grnLine = lineColor (sRGB   0 128   0)
 stp :: Diagram B
 stp = upper <> lower
   where
-    upper  = mkLine [origin, (sqrt 2) ^& sqrt 2]
-    lower  = mkLine [0 ^& (sqrt 2), sqrt 2 ^& 0]
+    upper  = mkLine [origin, sqrt 2 ^& sqrt 2]
+    lower  = mkLine [0 ^& sqrt 2, sqrt 2 ^& 0]
     mkLine = centerXY . lineWidth 2 . strokeLine . lineFromVertices
 
 
 fPoints :: [P2 Double]
-fPoints = map p2 
+fPoints = p2 <$>
     [  ( 0, 90)
     ,  (40, 90)
     ,  ( 0, 72)
@@ -197,7 +199,7 @@ fPoints = map p2
 
 
 lPoints :: [P2 Double]
-lPoints = map p2
+lPoints = p2 <$>
     [ (20,  92 )
     , (20,  84 )
     , (20,  74 )
@@ -218,15 +220,15 @@ lPoints = map p2
 labels :: [Diagram B]
 labels =
     let lab = centerXY . scale 1.8 . pad 1.5 . bold . text
-    in  [ lab "Case 9"
-        , lab "Case 5"
-        , lab "Case 8"
+    in  [ lab "Case 1"
         , lab "Case 3"
         , lab "Case 4"
-        , lab "Case 7"
-        , lab "Case 6"
         , lab "Case 1"
-        , lab "Case 2"
+        , lab "Case 4"
+        , lab "Case 4"
+        , lab "Case 1"
+        , lab "Case 3"
+        , lab "Case 0"
         , lab "Case 0"
         , lab "Parent's final       alignment"--, lab "(preorder" , lab "result)"
         , lab "Parent's preliminary context"  --, lab "(postorder", lab "result)"
@@ -249,14 +251,14 @@ ijks =
     [ ( 0, 0, 0)
     , ( 1, 1, 1)
     , ( 2, 2, 2)
-    , ( 3, 3, 3)
+    , ( 3, 2, 2)
     , ( 4, 3, 3)
-    , ( 5, 4, 3)
-    , ( 6, 5, 4)
-    , ( 7, 6, 4)
-    , ( 8, 6, 4)
-    , ( 9, 7, 4)
-    , (10, 7, 4)
+    , ( 5, 3, 3)
+    , ( 6, 4, 4)
+    , ( 7, 5, 5)
+    , ( 8, 6, 5)
+    , ( 9, 6, 5)
+    , (10, 6, 5)
     ]
 
 
@@ -264,15 +266,14 @@ pAlign :: [AlignCell]
 pAlign =
     [ Align
     , Insert
+    , Gapped
     , Align
     , Delete
     , Insert
     , Align
     , Insert
-    , Delete
-    , Align
-    , Align
-    , Spacing
+    , Gapped
+    , Gapped
     ]
 
 
@@ -280,16 +281,14 @@ pContext :: [AlignCell]
 pContext =
     [ Align
     , Insert
-    , Insert
     , Spacing
-    , Delete
-    , Delete
-    , Align
-    , Spacing 
     , Insert
     , Spacing
     , Spacing
-    , Spacing    
+    , Delete
+    , Insert
+    , Delete
+    , Spacing
     ]
 
 
@@ -297,13 +296,12 @@ cContext :: [AlignCell]
 cContext =
     [ Align
     , Align
+    , Spacing
+    , Insert
+    , Spacing
+    , Spacing
+    , Delete
     , Align
-    , Spacing
-    , Spacing
-    , Spacing
-    , Align
-    , Spacing
-    , Spacing
     , Spacing
     , Spacing
     ]
@@ -313,13 +311,12 @@ cAlign :: [AlignCell]
 cAlign =
     [ Align
     , Align
+    , Gapped
+    , Insert
+    , Gapped
+    , Gapped
+    , Delete
     , Align
-    , Delete
-    , Delete
-    , Delete
-    , Align
-    , Delete
-    , Delete
-    , Delete
-    , Spacing
+    , Gapped
+    , Gapped
     ]

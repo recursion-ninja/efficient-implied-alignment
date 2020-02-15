@@ -1,8 +1,29 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Data.Alphabet.Internal
+-- Copyright   :  (c) 2015-2015 Ward Wheeler
+-- License     :  BSD-style
+--
+-- Maintainer  :  wheeler@amnh.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- We must ensure that missing and gap are appropriately
+-- code as "-" & "?", respectively, before this module is used, i.e., as output
+-- from either parsers or in unification step.
+--
+-----------------------------------------------------------------------------
 
 -- We do this because we added an orphan instanc IsString Char
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE TypeFamilies       #-}
 
 module Data.Alphabet.Internal
   ( Alphabet()
@@ -16,22 +37,23 @@ module Data.Alphabet.Internal
   , truncateAtMaxSymbol
   ) where
 
-import           Control.DeepSeq              (NFData)
+import           Control.DeepSeq            (NFData)
 import           Control.Monad.State.Strict
-import           Data.Bifunctor               (bimap)
+import           Data.Bifunctor             (bimap)
+import           Data.Data
 import           Data.Foldable
 import           Data.Key
-import           Data.List                    (elemIndex, intercalate, sort)
-import           Data.List.NonEmpty           (NonEmpty(..), unzip)
+import           Data.List                  (elemIndex, intercalate, sort)
+import           Data.List.NonEmpty         (NonEmpty (..), unzip)
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Semigroup.Foldable
-import qualified Data.Set              as Set
+import qualified Data.Set                   as Set
 import           Data.String
-import           Data.Vector.NonEmpty         (Vector)
-import qualified Data.Vector.NonEmpty  as NEV
-import           GHC.Generics                 (Generic)
-import           Prelude               hiding (lookup, unzip, zip)
+import           Data.Vector.NonEmpty       (Vector)
+import qualified Data.Vector.NonEmpty       as NEV
+import           GHC.Generics               (Generic)
+import           Prelude                    hiding (lookup, unzip, zip)
 import           Test.QuickCheck
 
 
@@ -44,17 +66,20 @@ type AmbiguityGroup a = NonEmpty a
 -- A collection of symbols and optional corresponding state names.
 data Alphabet a =
      Alphabet
-     { symbolVector      :: {-# UNPACK #-} !(Vector a)
-     , stateNames        :: ![a]
-     } deriving (Generic)
+     { symbolVector :: {-# UNPACK #-} !(Vector a)
+     , stateNames   :: [a]
+     }
+     deriving stock (Data, Generic, Functor, Typeable)
 
 
 type instance Key Alphabet = Int
 
 
 -- Newtypes for corecing and consolidation of alphabet input processing logic
-newtype AlphabetInputSingle a = ASI  { toSingle ::  a    } deriving (Eq, Ord)
-newtype AlphabetInputTuple  a = ASNI { toTuple  :: (a,a) } deriving (Eq, Ord)
+newtype AlphabetInputSingle a = ASI  { toSingle ::  a    }
+    deriving stock (Eq, Ord)
+newtype AlphabetInputTuple  a = ASNI { toTuple  :: (a,a) }
+    deriving stock (Eq, Ord)
 
 
 -- |
@@ -63,15 +88,17 @@ newtype AlphabetInputTuple  a = ASNI { toTuple  :: (a,a) } deriving (Eq, Ord)
 -- -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 --
 
-newtype UnnamedSymbol a = Unnamed  a  deriving (Generic)
-newtype NamedSymbol   a = Named (a,a) deriving (Generic)
+newtype UnnamedSymbol a = Unnamed  a
+    deriving stock (Generic)
+newtype NamedSymbol   a = Named (a,a)
+    deriving stock (Generic)
 
 
 class InternalClass a where
 
-    gapSymbol'        :: a
-    isGapSymboled     :: a -> Bool
-    isMissingSymboled :: a -> Bool
+  gapSymbol'        :: a
+  isGapSymboled     :: a -> Bool
+  isMissingSymboled :: a -> Bool
 
 
 -- |
@@ -98,9 +125,9 @@ alphabetPreprocessing = appendGapSymbol . sort . removeSpecialSymbolsAndDuplicat
 -- |
 -- \( \mathcal{O} \left( n \right) \)
 --
--- Retreives the state names for the symbols of the 'Alphabet'.
+-- Retrieves the state names for the symbols of the 'Alphabet'.
 --
--- If there the symbols of the 'Alphabet' were not given state names during
+-- If the symbols of the 'Alphabet' were not given state names during
 -- construction then an empty list is returned.
 alphabetStateNames :: Alphabet a -> [a]
 alphabetStateNames = stateNames
@@ -109,7 +136,7 @@ alphabetStateNames = stateNames
 -- |
 -- \( \mathcal{O} \left( n \right) \)
 --
--- Retreives the symbols of the 'Alphabet'. Synonym for 'toList'.
+-- Retrieves the symbols of the 'Alphabet'. Synonym for 'toList'.
 alphabetSymbols :: Alphabet a -> [a]
 alphabetSymbols = toList
 
@@ -133,7 +160,7 @@ fromSymbols inputSymbols = Alphabet symbols []
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
 --
 -- Constructs an 'Alphabet' from a 'Foldable' structure of symbols and
--- coresponding state names, both of which a are 'IsString' values.
+-- corresponding state names, both of which are 'IsString' values.
 --
 -- The input ordering is preserved.
 fromSymbolsWithStateNames :: (Ord a, IsString a, Foldable t) => t (a,a) -> Alphabet a
@@ -149,7 +176,7 @@ fromTuple  = ASNI
 -- |
 -- \( \mathcal{O} \left( 1 \right) \)
 --
--- Retreives the "gap character" from the alphabet.
+-- Retrieves the "gap character" from the alphabet.
 gapSymbol :: Alphabet a -> a
 gapSymbol alphabet = alphabet ! (length alphabet - 1)
 
@@ -157,11 +184,13 @@ gapSymbol alphabet = alphabet ! (length alphabet - 1)
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
 --
--- Attempts to find the symbol in the Alphabet.
--- If the symbol exists, returns an alphabet with all the symbols occuring
--- before the supplied symbol included and all symbols occuring after the
--- supplied symbol excluded. The gap character is preserved in the alphabet
+-- Attempts to find the symbol in the 'Alphabet'.
+-- If the symbol exists, returns an alphabet that includes all symbols occurring
+-- before the supplied symbol and excludes all symbols occurring after the
+-- supplied symbol. The gap character is preserved in the alphabet
 -- regardless of the supplied symbol.
+--
+-- The resulting alphabet /includes/ the input symbol.
 truncateAtSymbol :: (Ord a, IsString a) => a -> Alphabet a -> Alphabet a
 truncateAtSymbol symbol alphabet =
     case elemIndex symbol $ toList alphabet of
@@ -177,9 +206,11 @@ truncateAtSymbol symbol alphabet =
 --
 -- Attempts to find the maximum provided symbol in the Alphabet.
 -- If the any of the provided symbols exists, returns an alphabet including all
--- the symbols occuring before the maximum provided symbol and all symbols
--- occuring after the maximum supplied symbol excluded. The gap character is
+-- the symbols occurring before the maximum provided symbol and excluding all symbols
+-- occurring after the maximum supplied symbol. The gap character is
 -- preserved in the alphabet regardless of the supplied symbol.
+--
+-- The resulting alphabet /includes/ the input symbol.
 truncateAtMaxSymbol :: (Foldable t, Ord a, IsString a) => t a -> Alphabet a -> Alphabet a
 truncateAtMaxSymbol symbols alphabet =
     case maxIndex of
@@ -272,7 +303,7 @@ instance Indexable Alphabet where
     {-# INLINE index #-}
     index a i = fromMaybe raiseError $ i `lookup` a
       where
-        raiseError = error $ mconcat
+        raiseError = error $ fold
             ["Error indexing Alphabet at location "
             , show i
             , ", valid inclusive index range is [0, "
@@ -284,21 +315,25 @@ instance Indexable Alphabet where
 instance (Eq a, IsString a) => InternalClass (AlphabetInputSingle a) where
 
     gapSymbol'        = ASI $ fromString "-"
+
     isGapSymboled     = (gapSymbol' ==)
+
     isMissingSymboled = (ASI (fromString "?") ==)
 
 
 instance (Eq a, IsString a) => InternalClass (AlphabetInputTuple a) where
 
     gapSymbol'                     = ASNI (fromString "-", fromString "-")
+
     isGapSymboled     (ASNI (x,_)) = x == fromString "-"
+
     isMissingSymboled (ASNI (x,_)) = x == fromString "?"
 
 
 instance IsString Char where
 
     fromString = head
-  
+
 
 instance Lookup Alphabet where
 
@@ -317,7 +352,7 @@ instance NFData a => NFData (  NamedSymbol a)
 
 instance Show a => Show (Alphabet a) where
 
-    show x = mconcat
+    show x = fold
         [ "Alphabet: {"
         , intercalate ", " $ show <$> toList x
         , "}"

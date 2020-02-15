@@ -1,26 +1,27 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, NoMonoLocalBinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoMonoLocalBinds #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Main where
 
-import Alignment
-import Control.DeepSeq
-import Control.Lens
-import Control.Monad
-import Data.Alphabet
-import Data.BTree
-import Data.Decoration
-import Data.DecTree
-import Data.Key
-import Data.List.NonEmpty      (intersperse)
-import Data.Semigroup          ((<>))
-import Data.Semigroup.Foldable
-import Data.SymbolString
-import File.Input
-import File.Output
-import InputParser
-import Prelude hiding (zipWith)
-import System.IO
-import System.Timing
+import           Alignment
+import           Control.DeepSeq
+import           Control.Lens
+import           Control.Monad
+import           Data.Alphabet
+import           Data.BTree
+import           Data.Decoration
+import           Data.DecTree
+import           Data.Key
+import           Data.List.NonEmpty      (intersperse)
+import           Data.Semigroup.Foldable
+import           Data.SymbolString
+import           Data.Text.Short         (ShortText, toString)
+import           File.Input
+import           File.Output
+import           InputParser
+import           System.IO
+import           System.Timing
 
 
 main :: IO ()
@@ -39,10 +40,16 @@ runInput = do
             tcm      = inputTCM      fileInput
             tree     = inputTree     fileInput
 
-            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length k]) tree
-            inputRenderer  x i = unwords [ padR maxLabelLen (i<> ":"), renderSingleton alphabet $ x ^. preliminaryString ]
+            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length $ toString k]) tree
+
+            inputRenderer :: PreliminaryNode -> ShortText -> String
+            inputRenderer  x i = unwords [ padR maxLabelLen (toString i <> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
 --            prelimRenderer x _ = mconcat [ padR maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
-            leafRenderer   x i = unwords [ padR maxLabelLen (i<> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+
+            leafRenderer :: FinalizedNode -> ShortText -> String
+            leafRenderer   x i = unwords [ padR maxLabelLen (toString i <> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+
+            nodeRenderer :: FinalizedNode -> p -> String
             nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
 --            nodeDiffer     x _ = unwords [ padR maxLabelLen     "?:" , {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet x ]
 
@@ -66,32 +73,34 @@ runInput = do
                                                   pure x
 
           let alignmentCost = getNodeDatum postorderResult ^. subtreeCost
+          putStrLn $ renderAlignment inputRenderer inputRenderer postorderResult
+          putStrLn ""
+          putStrLn $ "Alignment Cost: " <> show alignmentCost
+
 
           ( preorderTime,  preorderResult) <- timeOp $ do
                                                   let x = force $ preorder' postorderResult
                                                   pure x
 
-          when (verbose opts) $ do
+          when (verbose opts) $
+              mapM_ putStrLn
+                [ "Output Alignment:"
+                , ""
+--                , renderPhylogeny inputRenderer postorderResult
+--                , ""
+                , renderAlignment nodeRenderer leafRenderer preorderResult
+--                , renderAlignment nodeDiffer nodeDiffer diffTree
+                , ""
+                , "Alignment Cost: " <> show alignmentCost
+                , ""
+                ]
+
+          when (timing opts || verbose opts) $ do
               let shownParseTime  = show $ parseTime      fileInput
                   shownUnifyTime  = show $ unifyTime      fileInput
                   shownPreCompute = show $ precomputeTime fileInput
                   shownPostorder  = show postorderTime
                   shownPreorder   = show preorderTime
-{-
-                  getStr1         = (^. preliminaryString)
-                  getStr2         = (^.     alignedString)
-                  strZip      x y = zipWith f x $ filterGaps y
-                  diffTree        = treeZipWith id strZip
-                                      (bimap getStr1 getStr1 postorderResult)
-                                      (bimap getStr2 getStr2  preorderResult)
-                  f x y = let x'  = symbolAlignmentMedian x
-                              y'  = symbolAlignmentMedian y
-                              gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
-                          in  if x' == y'
-                              then Align x'  x' x'
-                              else Align gap x' y'
--}
-
                   dPad = maximum $ length <$>
                       [ shownParseTime
                       , shownUnifyTime
@@ -101,37 +110,6 @@ runInput = do
                       ]
 
               mapM_ putStrLn
-                [ "Output Alignment:"
-                , ""
---                , renderPhylogeny inputRenderer postorderResult
-                , renderAlignment nodeRenderer leafRenderer preorderResult
---                , renderAlignment nodeDiffer nodeDiffer diffTree
-                , ""
-                , "Alignment Cost: " <> show alignmentCost
-                , ""
-                , "Diagnostics:"
-                , "  Parse Files: " <> padL dPad shownParseTime
-                , "  Unify Input: " <> padL dPad shownUnifyTime
-                , "  Setup TCM:   " <> padL dPad shownPreCompute
-                , "  Postorder:   " <> padL dPad shownPostorder
-                , "  Preorder:    " <> padL dPad shownPreorder
-                ]
-
-          when (timing opts && not (verbose opts)) $ do
-              let shownParseTime  = show $ parseTime      fileInput
-                  shownUnifyTime  = show $ unifyTime      fileInput
-                  shownPreCompute = show $ precomputeTime fileInput
-                  shownPostorder  = show postorderTime
-                  shownPreorder   = show preorderTime
-                  dPad = maximum $ length <$>
-                      [ shownParseTime
-                      , shownUnifyTime
-                      , shownPreCompute
-                      , shownPostorder
-                      , shownPreorder
-                      ]
-
-              putStrLn $ unlines
                 [ "Diagnostics:"
                 , "  Parse Files: " <> padL dPad shownParseTime
                 , "  Unify Input: " <> padL dPad shownUnifyTime
@@ -139,9 +117,8 @@ runInput = do
                 , "  Postorder:   " <> padL dPad shownPostorder
                 , "  Preorder:    " <> padL dPad shownPreorder
                 ]
-            
-          
-          writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts 
+
+          writeFastaFile (alphabetType opts) alphabet preorderResult $ outputFile opts
 
 
 padL :: Int -> String -> String

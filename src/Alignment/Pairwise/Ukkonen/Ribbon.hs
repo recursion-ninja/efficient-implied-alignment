@@ -12,7 +12,10 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE DeriveFoldable   #-}
+{-# LANGUAGE DeriveFunctor    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Pairwise.Ukkonen.Ribbon
   ( Ribbon()
@@ -22,11 +25,11 @@ module Alignment.Pairwise.Ukkonen.Ribbon
 
 import           Data.Foldable
 import           Data.Key
-import           Data.Maybe               (fromMaybe)
-import           Data.Vector              (Vector)
-import qualified Data.Vector       as V
-import           Data.Vector.Instances    ()
-import           Prelude           hiding (lookup)
+import           Data.Maybe            (fromMaybe)
+import           Data.Vector           (Vector)
+import qualified Data.Vector           as V
+import           Data.Vector.Instances ()
+import           Prelude               hiding (lookup)
 
 
 -- |
@@ -51,7 +54,7 @@ instance Indexable Ribbon where
 
     index r k = fromMaybe (error msg) $ k `lookup` r
       where
-       msg = mconcat
+       msg = fold
            [ "Error indexing Ribbon at "
            , show k
            , ".\nThe key is outside the range [ (i,j) | i <- [0 .. "
@@ -71,7 +74,7 @@ instance Lookup Ribbon where
 
 instance Show (Ribbon a) where
 
-    show (Ribbon h w d a v) = mconcat
+    show (Ribbon h w d a v) = fold
         [ "Ribbon { height = "
         , show h
         , ", width = "

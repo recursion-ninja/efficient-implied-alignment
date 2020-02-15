@@ -37,39 +37,49 @@ source-repository head
 -- pitfalls, future compatibility issues, or coding conventions.
 common ghc-flags
 
-  ghc-options:      -O2
---                    -g
-                    -- Sanity check warnings
-                    -Wall
-                    -Wcompat
-                    -Wdodgy-foreign-imports
-                    -Wduplicate-exports
-                    -Wempty-enumerations
-                    -Widentities
-                    -Wincomplete-patterns
-                    -Wincomplete-record-updates
-                    -Wincomplete-uni-patterns
-                    -Wmissing-fields
-                    -Wmissing-home-modules
-                    -Wmissing-monadfail-instances
-                    -Wmissing-monadfail-instances
-                    -Wmissing-signatures
-                    -Wnoncanonical-monadfail-instances
-                    -Wnoncanonical-monad-instances
-                    -Wnoncanonical-monoid-instances
-                    -Woverflowed-literals
-                    -Woverlapping-patterns
-                    -Wredundant-constraints
-                    -Wsemigroup
-                    -Wtabs
-                    -Wunrecognised-warning-flags
-                    -Wunrecognised-warning-flags
-                    -Wunused-binds
-                    -Wunused-do-bind
-                    -Wunused-foralls
-                    -Wunused-imports
-                    -Wunused-matches
-                    -Wwrong-do-bind
+  ghc-options:
+    -- Optimization flags
+    -O2
+    -fexcess-precision
+    -fexpose-all-unfoldings
+    -flate-specialise
+    -foptimal-applicative-do
+    -fspecialize-aggressively
+    -fstatic-argument-transformation
+    -- Usability flags
+    -fdiagnostics-color=always
+    -fhide-source-paths
+    -j
+    -- Sanity check warnings
+    -Wall
+    -Wcompat
+    -Wdodgy-foreign-imports
+    -Wduplicate-exports
+    -Wempty-enumerations
+    -Widentities
+    -Wincomplete-patterns
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+--    -Wmissing-deriving-strategies          
+    -Wmissing-fields
+    -Wmissing-home-modules
+    -Wmissing-monadfail-instances
+    -Wmissing-signatures
+    -Wnoncanonical-monad-instances
+    -Wnoncanonical-monoid-instances
+    -Woverflowed-literals
+    -Woverlapping-patterns
+    -Wredundant-constraints
+    -Wsemigroup
+    -Wtabs
+    -Wunrecognised-warning-flags
+    -Wunused-binds
+    -Wunused-do-bind
+    -Wunused-foralls
+    -Wunused-imports
+    -Wunused-matches
+    -Wwrong-do-bind
+
 
 
 library
@@ -83,21 +93,25 @@ library
   build-depends:
       base >=4.7 && <5
     , bimap
+    , case-insensitive          
     -- >=0.5.8 Required for Data.Map.restrictKeys
-    , containers       >=0.5.8
+    , containers         >=0.5.8
     , deepseq
     , hashable
     , integer-gmp
     , keys
     , lens
     , matrix
-    , megaparsec         >=6.3
+    , megaparsec         >=8.0
     , mtl
-    , parser-combinators >=0.4
+    , parser-combinators >=1.2
     , pointed
     , QuickCheck
+    , scientific
     , semigroupoids
     , semigroups
+    , text               >=1.2
+    , text-short
     , transformers
     , validation
     , vector
@@ -117,6 +131,7 @@ library
       Data.TCM
       Data.UserInput
       Data.Vector.NonEmpty
+      Data.Vector.Unboxed.NonEmpty
       File.Format.Fasta
       File.Format.Newick
       File.Format.TransitionCostMatrix
@@ -171,6 +186,7 @@ executable tree-align
     , lens
     , optparse-applicative
     , semigroupoids
+    , text-short
 
   other-modules:
       Paths_efficient_implied_alignment
@@ -272,7 +288,7 @@ executable draw-figure
     , keys
     , lens
     , megaparsec         >=7.0
-    , MissingH          
+    , MissingH
     , optparse-applicative
     , process          
     , scientific          
@@ -334,6 +350,7 @@ test-suite test-align
     , lens
     , pointed
     , semigroupoids
+    , text-short
     , validation
 
   other-modules:
@@ -355,9 +372,9 @@ test-suite test-trees
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
   build-depends:
-      commutative-multi-string-alignment
+      efficient-implied-alignment
     , base       >=4.7 && <5
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -366,6 +383,7 @@ test-suite test-trees
     , semigroupoids
     , tasty
     , tasty-hunit
+    , text-short
     , validation
 
   other-modules:
@@ -387,10 +405,10 @@ test-suite test-suite
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
 
   build-depends:
-      commutative-multi-string-alignment
+      efficient-implied-alignment
     , base       >=4.7 && <5
     , bimap
-    , commutative-multi-string-alignment
+    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -403,6 +421,7 @@ test-suite test-suite
     , tasty-hunit
     , tasty-quickcheck
     , tasty-smallcheck
+    , text-short
     , validation
 
   other-modules:

@@ -8,13 +8,16 @@
 -- Stability   :  provisional
 -- Portability :  portable
 --
--- Defines the primative operations for standard Needleman-Wunsch and Ukkonen
+-- Defines the primitive operations for standard Needleman-Wunsch and Ukkonen
 -- algorithms for performing a direct optimization heuristic alignmnet between
 -- two alignment context strings.
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE BangPatterns, ConstraintKinds, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module Alignment.Pairwise.Internal
   ( Cost
@@ -22,7 +25,7 @@ module Alignment.Pairwise.Internal
   , MatrixConstraint
   , MatrixFunction
   , NeedlemanWunchMatrix
-  -- * Direct Optimization primative construction functions
+  -- * Direct Optimization primitive construction functions
   , directOptimization
   , measureCharacters
   , needlemanWunschDefinition
@@ -33,15 +36,16 @@ module Alignment.Pairwise.Internal
 import           Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
 import           Data.Foldable
 import           Data.Key
-import           Data.Matrix.ZeroIndexed  (Matrix)
-import           Data.Maybe               (fromMaybe)
+import           Data.Matrix.ZeroIndexed           (Matrix)
+import           Data.Maybe                        (fromMaybe)
 import           Data.Ord
 import           Data.Semigroup
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.NonEmpty
 import           Numeric.Extended.Natural
-import           Prelude            hiding (lookup, reverse, zipWith)
+import           Prelude                           hiding (lookup, reverse,
+                                                    zipWith)
 
 
 -- |
@@ -106,7 +110,7 @@ type MatrixFunction m f
 
 
 -- |
--- Wraps the primative operations in this module to a cohesive operation that is
+-- Wraps the primitive operations in this module to a cohesive operation that is
 -- parameterized by an 'TransitionCostMatrix'.
 --
 -- Reused internally by different implementations.
@@ -131,7 +135,7 @@ directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
     (alignmentCost, uncommutedContext)   = traceback      traversalMatrix longerInput shorterInput
-    alignmentContext 
+    alignmentContext
       | swapped   = reverseContext <$> uncommutedContext
       | otherwise = uncommutedContext
 
@@ -215,7 +219,7 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     downCost                      =  downOverlapCost +   upwardValue
     (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
                                       ( diagCost,  diagChar)
-                                      (rightCost, rightChar) 
+                                      (rightCost, rightChar)
                                       ( downCost,  downChar)
 
 
@@ -266,7 +270,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
         , show colCount
         ]
 
-    headerRow = mconcat
+    headerRow = fold
         [ " "
         , pad maxPrefixWidth "⊗"
         , "┃ "
@@ -274,7 +278,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
         , concatMap (pad maxColumnWidth) longerTokens
         ]
 
-    barRow    = mconcat
+    barRow    = fold
         [ " "
         , bar maxPrefixWidth
         , "╋"
@@ -295,6 +299,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
     renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
     renderContext (Insert x   _) = if x == gapGroup then "—" else "ι"
+    renderContext Gapping{}      = "—"
 
     pad :: Int -> String -> String
     pad n e = replicate (n - len) ' ' <> e <> " "
@@ -338,7 +343,7 @@ traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, reverse $ un
         where
           (_, directionArrow, medianElement) = alignMatrix ! currentCell
 
-          (nextCell, contextElement) = 
+          (nextCell, contextElement) =
               case directionArrow of
                 LeftArrow -> ((i    , j - 1), Delete medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
                 UpArrow   -> ((i - 1, j    ), Insert medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))

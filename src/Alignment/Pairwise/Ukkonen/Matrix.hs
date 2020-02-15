@@ -15,15 +15,20 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ConstraintKinds, DeriveFoldable, DeriveFunctor, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds    #-}
+{-# LANGUAGE DeriveFoldable     #-}
+{-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE TypeFamilies       #-}
 
 module Alignment.Pairwise.Ukkonen.Matrix
   ( UkkonenMethodMatrix(..)
   ) where
 
-import           Alignment.Pairwise.Ukkonen.Ribbon           (Ribbon)
+import           Alignment.Pairwise.Ukkonen.Ribbon (Ribbon)
 import           Data.Key
-import           Prelude           hiding (lookup)
+import           Prelude                           hiding (lookup)
 
 
 -- |
@@ -37,7 +42,7 @@ import           Prelude           hiding (lookup)
 --
 -- Use the 'createUkkonenMethodMatrix' function to create this effcient structure.
 newtype UkkonenMethodMatrix a = U (Ribbon a)
-    deriving (Eq, Foldable, Functor)
+    deriving stock (Eq, Foldable, Functor)
 
 
 type instance Key UkkonenMethodMatrix = (Int, Int)

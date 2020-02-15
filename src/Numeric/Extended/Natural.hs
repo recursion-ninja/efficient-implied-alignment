@@ -10,7 +10,11 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric, MagicHash, Strict, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE MagicHash          #-}
+{-# LANGUAGE Strict             #-}
+{-# LANGUAGE TypeFamilies       #-}
 
 module Numeric.Extended.Natural
   ( ExtendedNatural()
@@ -18,13 +22,13 @@ module Numeric.Extended.Natural
   , Finite
   ) where
 
-import Control.DeepSeq
-import Data.Bits
-import GHC.Exts
-import GHC.Integer.Logarithms
-import GHC.Generics
-import Numeric.Extended.Internal
-import Test.QuickCheck
+import           Control.DeepSeq
+import           Data.Bits
+import           GHC.Exts
+import           GHC.Generics
+import           GHC.Integer.Logarithms
+import           Numeric.Extended.Internal
+import           Test.QuickCheck
 
 
 -- |
@@ -55,9 +59,9 @@ import Test.QuickCheck
 --     with @infinity@ as an operand, multiplication with @infinity@ as an
 --     operand subtraction with @infinity@ as the minuend, or division with
 --     @infinity@ as the denominator.
--- 
+--
 newtype ExtendedNatural = Cost Word
-  deriving (Eq, Generic, Ord)
+  deriving stock (Eq, Generic, Ord)
 
 
 type instance Finite ExtendedNatural = Word
@@ -120,12 +124,12 @@ instance Num ExtendedNatural where
       | result <  maxima    = maxBound
       | otherwise           = Cost result
       where
-        maxima = max x y 
+        maxima = max x y
         result = x + y
 
     lhs@(Cost x) - rhs@(Cost y)
       | lhs == infinity = infinity
-      | lhs <= rhs      = minBound 
+      | lhs <= rhs      = minBound
       | otherwise       = Cost $ x - y
 
     lhs@(Cost x) * rhs@ (Cost y)
@@ -150,16 +154,16 @@ instance Num ExtendedNatural where
 
                 -- If the minimum possible number of bits to
                 -- represent the product is exceeds the Word width,
-                -- then an overflow definately occured and
-                -- the product is the upper finite bound. 
+                -- then an overflow definitely occurred and
+                -- the product is the upper finite bound.
                 GT -> maxBound
-               
+
                 -- If the minimum possible number of bits to
                 -- represent the product equals the Word width,
                 -- then great care must be taken!
                 -- First we compute the product directly.
                 -- Then we perform an expensive division operation
-                -- to determine if overflow occured.
+                -- to determine if overflow occurred.
                 EQ -> let result = x * y
                       in  if   result `quotRem` x /= (y,0)
                           then maxBound
@@ -223,7 +227,7 @@ wordWidth = finiteBitSize (minBound :: Word)
 
 -- |
 -- Calculate the integer logarithm of a 'Word' to base 2 using efficient compiler
--- builtins. This should translate into an assembly primative on CISC chipsets.
+-- builtins. This should translate into an assembly primitive on CISC chipsets.
 -- Might be slightly more expensive on RISC chipsets.
 {-# INLINE bitsUsed  #-}
 bitsUsed :: Word -> Int

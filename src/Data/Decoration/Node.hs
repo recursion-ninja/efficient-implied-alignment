@@ -10,16 +10,18 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Decoration.Node where
 
 
-import Control.DeepSeq
-import Control.Lens
-import Data.Decoration.Class
-import Data.SymbolString
-import GHC.Generics
+import           Control.DeepSeq
+import           Control.Lens
+import           Data.Decoration.Class
+import           Data.SymbolString
+import           GHC.Generics
 
 
 data PreliminaryNode
