@@ -204,11 +204,24 @@ Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 \\                & \;\, | \;\; \textbf{\texttt{GAPPED}}
 \end{align*}
 
+That is, $\Sigma_{\Gamma}$ contains all pairs of elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{ALIGN}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{DELETE}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{INSERT}}$, and an additional element $\textbf{\texttt{GAPPED}}$.
+This construction of $\Sigma_{\Gamma}$ extends the original alphabet $\Sigma$ to preserve alignment information in the algorithms presented below.
+Note that if $\setsize{\Sigma} = x$ then $\setsize{\Sigma_{\Gamma}} = 2^{2x}$.
+This follows from the fact that $|\NEPowerset (\Sigma)|$ is equal to one less than the size of the powerset of $\Sigma$, due to $\NEPowerset (\Sigma)$ disallowing the empty set. 
+
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
+We will call strings from $\Sigma^{*}_{\Gamma}$ an alignment context.
 Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a non-negative alignment cost and alignment context.
 It is required that $\otimes$ be commutative but need not be associative.
 Both of these constraints will be discussed later.
 These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
+
+It is worth explaining the motivation of the constructions defined above. 
+Most pairwise string alignment functions take two finite strings of symbols from the original alphabet, and supply a new finite string of symbols from the original alphabet.
+We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\Sigma$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
+The results of $\odot$ cannot preserve all information from it's inputs, but the construction of $\otimes$ can do so.
+Figure ?? demonstrates how $\odot$ can produce a result with ambiguous relationship to it's inputs, but $\otimes$ preserves this information.
+The preservation of result's relationship to it's input is require for the algorithmic improvements presented below.
 
 
 \section*{Overview of the Implied Alignment Algorithm}
@@ -253,10 +266,10 @@ In the case that the strings are identical, the alignment is trivial.
 This assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
 Additionally, the commutativity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (i.e. ensures label invariance).
 
-We now apply a ``wave-front'' update procedure, which is very similar to the Needleman-Wunsch procedure to align two strings.
+We now apply a ``wave-front'' update procedure \citep{cormen2001}, which is very similar to the Needleman-Wunsch procedure to align two strings.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
 The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
-The pre-order traversal performed later will consumed the tagged information when merging alignment contexts.
+The pre-order traversal performed later will consume the tagged information when merging alignment contexts.
 Storing this information for each element of the pairwise alignment result allows a more efficient generation of a multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and that presented in this paper.
 
@@ -317,7 +330,7 @@ The logic applied in the ``sliding zip'' is to propagate gaps from the tree abov
 The ``sliding zip'' process is often easier to  understood by stepping through the algorithm.
 An example alignment of this ``sliding zip'' process for two internal nodes is shown in Figure \ref{Fig:Examplepre-order}.
 
-There are five cases describing logic determining how to derive each index of the current node's final alignment. The cases are presented in the pseudocode in Algorithm \ref{Alg:pre-order}, Figure \ref{Fig:Examplepre-order}, and described below.
+There are five cases describing logic determining how to derive each index of the current node's final alignment. The cases are presented in the pseudocode of Algorithm \ref{Alg:deriveAlignment}, in Figure \ref{Fig:Examplepre-order}, and described below.
 
 \begin{itemize}
 
@@ -364,7 +377,7 @@ There are five cases describing logic determining how to derive each index of th
 %
 %\end{itemize}
 
-The improvement of the implied alignment algorithm presented here compared to the original algorithm is that the additional stored information allows us to determine the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time. 
+The improvement of the implied alignment algorithm presented here compared to the original algorithm is that the additional stored information allows us to determine the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time ($m$ is defined in the next paragraph). 
 The aforementioned $n^2$ component occurred in previous implementations due to the use of a ``back-propagation'' technique, which required that, at each pre-order step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
 Additionally, the $k^2$ component in the previous implementation was due to using a Needleman-Wunsch string alignment between the current node and its parent node at each pre-order step.
 By saving the requisite information on the nodes during the post-order traversal, then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
@@ -722,7 +735,7 @@ The proposed invariant approximation would have heuristic utility as a basis for
 % Requires LaTeX packages: dcolumn 
 \begin{table}[!htbp] \centering 
   \caption{Regression coefficients of leaf-set size and string length on runtime} 
-  \label{} 
+  \label{Tab:Regression} 
 \begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
@@ -748,7 +761,20 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 	
 	\begin{figure}[h!]
 		\caption{\csentence{Example pre-order alignment for two internal nodes}
-			Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure.}
+			Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure.
+			\newline
+			The cell with the ``\textbf{\texttt{?}}'' is the cell who's value is being computed.
+			\newline
+			Cells with ``\textbf{\texttt{A}}'' are elements tagged as \textbf{\texttt{ALIGN}}.
+			\newline 
+			Cells with ``\textbf{\texttt{D}}'' are elements tagged as \textbf{\texttt{DELETE}}.
+			\newline 
+			Cells with ``\textbf{\texttt{I}}'' are elements tagged as \textbf{\texttt{INSERT}}.
+			\newline
+			Cells with ``\textbf{\texttt{G}}'' are elements tagged as \textbf{\texttt{GAPPING}}.
+			\newline
+			Cells with ``\textbf{\texttt{X}}'' represent that the end of the sequence has been reached.
+		}
 		\label{Fig:Examplepre-order}
 		\vspace{2ex}
 		\includegraphics{example-preorder.eps}
@@ -818,13 +844,13 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 			\Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}
 			\Function{$\otimes$}{$\textit{lhs}, \textit{rhs}$}
 			\newline
-			\Comment{Conditionals here are required to ensure commutivity of $\otimes$.}
+			\Comment{Conditionals here are required to ensure commutativity of $\otimes$.}
 			\If    {$\textit{lhs} = \textit{rhs}$}
 			\State \Return $\textit{lhs}$
 			\ElsIf {$\textit{lhs} < \textit{rhs}$}
-			\State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$
+			\State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$ \Comment{See Algorithm \ref{Alg:matrixTraceback}}
 			\Else
-			\State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$
+			\State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$ \Comment{See Algorithm \ref{Alg:matrixTraceback}}
 			\EndIf
 			\EndFunction
 		\end{algorithmic}
@@ -853,7 +879,7 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 			\State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
 			\State $y \gets \sigma \left(           \textit{longer}_{j-1}, \quad\quad\quad \textbf{--} \right)$
 			\State $z \gets \sigma \left( \quad\quad\quad\;\, \textbf{--}, \textit{lesser}_{i-1} \right)$
-			\State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$
+			\State $\left( minCost, minDir, minElem \right) \gets \Call{getMinimal}{x, y, z}$ \Comment{See Algorithm \ref{Alg:getMinimal}}
 			\If {$\left( \textit{minDir}, \textit{minElem} \right) = \left( \nwarrow, \textbf{--} \right)$} \Comment{Aligned gap is insertion}
 			\State \Return $\left( minCost, \leftarrow, \textbf{--} \right)$
 			\Else
@@ -873,10 +899,10 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 			
 			\Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
 			\State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
-			\State \Return $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+			\State $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$ \Comment{See Algorithm \ref{Alg:matrixDefinition}}
 			\State $alignedStr \gets \left[ \,\right]$
 			\While{$\left( i, j \right) > \left( 0, 0 \right)$}
-			\State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$
+			\State $\left( \_, dirArrow, elem \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$ \Comment{See Algorithm \ref{Alg:matrixDefinition}}
 			\Switch{$\textit{dirArrow}$}
 			\Case{$\leftarrow$}
 			\State $\left( i, j\right) \gets \left( i \quad\;\;, j - 1       \right)$
@@ -906,20 +932,28 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 			\Require{$\left(    downCost,    downElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
 			\Require{Total ordering over directional arrows defined as: $\nwarrow \; < \; \leftarrow \; < \; \uparrow$}
 			\Ensure{$\left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-			\Function{getMinimal}{$ \, \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.85cm}
-				$,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.85cm}
-				$,\, \left(    downCost,    downElem \right)$\newline\hspace*{4cm}}
-			\State \Return $minimumBy \; \left(\lambda \left(c, \_, d \right) \rightarrow \textbf{comparing}\; c \; \textbf{then} \; d\right)$\newline\hspace*{3.85cm}
-			$[\, \left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,   ,\;      \nwarrow    \right)$\newline\hspace*{3.85cm}
-			$,\, \left(\, rightCost,    rightElem \bigcup \gap, \, \leftarrow    \right)$\newline\hspace*{3.85cm}
-			$,\, \left(    downCost,     downElem \bigcup \gap, \;   \uparrow \; \right)$\newline\hspace*{3.85cm}
-			$]$
+			\Function{getMinimal}{$ \; \left(\;\;diagCost,\;\,diagElem \right)$\newline\hspace*{3.40cm}
+				$,\, \left(\, rightCost,   rightElem \right)$\newline\hspace*{3.40cm}
+				$,\, \left(    downCost,    downElem \right)$\newline\hspace*{3.55cm}}
+	        \If   {$\textit{diagCost}  \leq \textit{rightCost}$}
+              \If {$\textit{diagCost}  \leq \textit{downCost}$}
+			    \State \Return $\left(\;\;diagCost, \;\,diagElem   \quad\;\;\;\;\,\,\,   ,\;      \nwarrow    \right)$
+			  \Else
+			    \State \Return $\left(    downCost,     downElem \,\bigcup\, \gap, \;   \uparrow \; \right)$
+			  \EndIf
+			\Else
+			  \If {$\textit{rightCost} \leq \textit{downCost}$}
+                \State \Return $\left(\, rightCost,    rightElem \,\bigcup\, \gap, \, \leftarrow    \right)$
+              \Else
+                \State \Return $\left(    downCost,     downElem \,\bigcup\, \gap, \;   \uparrow \; \right)$
+              \EndIf
+            \EndIf
 			\EndFunction
 		\end{algorithmic}
 	\end{algorithm}
 	
 	\begin{algorithm}
-		\caption{Post-order Traversal}\label{post-order}
+		\caption{Post-order Traversal}\label{Alg:post-order}
 		\begin{algorithmic}[1]
 			\Require{$inputString \in \Sigma^{*}$ }
 			\Ensure{$\Sigma_{\Gamma}^{*}$ }
@@ -943,7 +977,7 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 			\Else
 			\State $\textit{lhs}  \gets \Call{post-order}{\textit{node.children.first}}$
 			\State $\textit{rhs}  \gets \Call{post-order}{\textit{node.children.second}}$
-			\State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$
+			\State $\left(\textit{alignCost}, \textit{alignContext}\right) \gets \textit{lhs.prelimString} \otimes \textit{rhs.prelimString}$ \Comment{See Algorithm \ref{Alg:pairwiseAlignment}}
 			\State $\textit{node.cost} \gets \textit{alignCost} + \textit{lhs.cost} + \textit{rhs.cost}$
 			\State $\textit{node.prelimString} \gets \textit{alignContext}$
 			\EndIf
@@ -952,7 +986,7 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 	\end{algorithm}
 
     \begin{algorithm}
-		\caption{Pre-order Traversal}\label{pre-order}
+		\caption{Pre-order Traversal}\label{Alg:pre-order}
 		\begin{algorithmic}[1]
 			\Require{      A binary tree decorated with node labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
 			\Ensure {$\;\,$ A binary tree decorated with node labels \enskip $finalString   \in \Sigma_{\Gamma}^{*}$}
@@ -973,7 +1007,7 @@ Adjusted R$^{2}$ & \multicolumn{1}{c}{0.956} & \multicolumn{1}{c}{0.964} & \mult
 
     \begin{algorithm}
 		\label{Alg:pre-order}
-		\caption{Non-root Node Alignment}\label{deriveAlignment}
+		\caption{Non-root Node Alignment}\label{Alg:deriveAlignment}
 		\begin{algorithmic}[1]
 			\Require{$isLeft \in \left\{ True,\, False \right\}$}
 			\Require{$\textit{pAlignment},\, \textit{pContext},\, \textit{cContext} \in \Sigma_{\Gamma}^*$}
