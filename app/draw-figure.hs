@@ -12,16 +12,16 @@ import           Prelude                      hiding (zip)
 main :: IO ()
 main = mainWith
      . scale 7
-     $ canvas # connectOutside' arrowLine "frame 0" "frame 1"
-              # connectOutside' arrowBent "frame 1" "frame 2"
-              # connectOutside' arrowLine "frame 2" "frame 3"
-              # connectOutside' arrowBent "frame 3" "frame 4"
-              # connectOutside' arrowLine "frame 4" "frame 5"
-              # connectOutside' arrowBent "frame 5" "frame 6"
-              # connectOutside' arrowLine "frame 6" "frame 7"
-              # connectOutside' arrowBent "frame 7" "frame 8"
-              # connectOutside' arrowLine "frame 8" "frame 9"
-              # connectOutside' arrowBent "frame 9" "frame 10"
+     $ canvas # connectOutside' arrowBent "frame 0" "frame 1"
+              # connectOutside' arrowLine "frame 1" "frame 2"
+              # connectOutside' arrowBent "frame 2" "frame 3"
+              # connectOutside' arrowLine "frame 3" "frame 4"
+              # connectOutside' arrowBent "frame 4" "frame 5"
+              # connectOutside' arrowLine "frame 5" "frame 6"
+              # connectOutside' arrowBent "frame 6" "frame 7"
+              # connectOutside' arrowLine "frame 7" "frame 8"
+              # connectOutside' arrowBent "frame 8" "frame 9"
+              # connectOutside' arrowLine "frame 9" "frame 10"
 
 
 canvas :: Diagram B
@@ -35,7 +35,7 @@ arrowLine = with & shaftStyle %~ lw 3
 
 arrowBent :: (Typeable n, RealFloat n) => ArrowOpts n
 arrowBent =
-    let shaft = trailFromVertices $ p2 <$> [(0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
+    let shaft = trailFromVertices $ p2 <$> [ (0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
     in  with & arrowShaft .~ shaft
              & headLength .~ 12
              & shaftStyle %~ lw 3
@@ -168,7 +168,7 @@ derivedAt i xs = foldl makeCell mempty cells
 
 
 blkLine, bluLine, redLine, grnLine :: (Typeable (N a), Floating (N a), HasStyle a, V a ~ V2) => a -> a
-blkLine = lineColor (sRGB   0   0  0)
+blkLine = lineColor (sRGB   0   0   0)
 bluLine = lineColor (sRGB   0   0 128)
 redLine = lineColor (sRGB 196   0   0)
 grnLine = lineColor (sRGB   0 128   0)
@@ -184,8 +184,7 @@ stp = upper <> lower
 
 fPoints :: [P2 Double]
 fPoints = p2 <$>
-    [  ( 0, 90)
-    ,  (40, 90)
+    [  (40, 90)
     ,  ( 0, 72)
     ,  (40, 72)
     ,  ( 0, 54)
@@ -195,13 +194,13 @@ fPoints = p2 <$>
     ,  ( 0, 18)
     ,  (40, 18)
     ,  ( 0,  0)
+    ,  (41.25,  0)
     ]
 
 
 lPoints :: [P2 Double]
 lPoints = p2 <$>
-    [ (20,  92 )
-    , (20,  84 )
+    [ (20,  84 )
     , (20,  74 )
     , (20,  66 )
     , (20,  56 )
@@ -210,10 +209,11 @@ lPoints = p2 <$>
     , (20,  30 )
     , (20,  20 )
     , (20,  12 )
-    , (28.5  ,  3.5 )--, (45    ,  3.5), (53.125,  3.5)
-    , (30.875,  1   )--, (45.375,  1  ), (53.125,  1  )
-    , (30    , -1.5 )--, (45.375, -1.5), (53.125, -1.5)
-    , (27.625, -4   )--, (45    , -4  ), (53.125, -4  )
+    , (20,  2  )
+    , ( 1.5  ,  3.5 + 90)--, (45    ,  3.5), (53.125,  3.5)
+    , ( 3.875,  1   + 90)--, (45.375,  1  ), (53.125,  1  )
+    , ( 3    , -1.5 + 90)--, (45.375, -1.5), (53.125, -1.5)
+    , ( 0.625, -4   + 90)--, (45    , -4  ), (53.125, -4  )
     ]
 
 
