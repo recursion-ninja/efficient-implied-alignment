@@ -132,7 +132,7 @@
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' that runs in $\mathcal{O}(k^2 * n^2)$ time.
 		Here we describe an implied alignment algorithm that runs in \textsc{$\mathcal{O}(k * n^2)$}.
 		For well-behaved data, such as molecular sequences, the runtime approaches a best case runtime of \textsc{$\Omega(k * n)$}.
-		This reduction in the time complexity of the procedure dramatically improves its utility in generating multiple sequence alignments and their heuristic utility.
+		This reduction in the time complexity of the procedure dramatically improves both its utility in generating multiple sequence alignments and heuristic utility.
 	\end{abstract}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,25 +170,28 @@
 
 %\doublespacing
 \section*{Background}
-Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} phylogenetic tree search in order to provide verification and more rapid heuristic analysis.
-IA has been a component of POY \citep{Wheeleretal2015, POY5} since its inception.
-A more formal description of the algorithm was presented in \cite{Wheeleretal2006}.
-Although originally designed for dynamic homology \citep{Wheeler2001} analysis, the procedure was first used as a stand-alone multiple sequence analysis (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink phylogenies.
+Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} to be used in phylogenetic tree search providing both verification and more rapid heuristic analysis.
+The method was originally implemented in later versions of MALIGN \citep{Wheeler1991-1998} and has been a component of POY \citep{Wheeleretal2015, POY2, POY3, POY5, Wheeleretal2006} since its inception.
+A more formal description of the algorithm was presented in \cite{Wheeleretal2006} and \cite{VaronandWheeler2012}.
+Although originally designed for alignment-free phylogenetic analysis (dynamic homology, \citealp{Wheeler2001}), the procedure was first used as a stand-alone multiple sequence alignment (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink systematics.
+
 Furthermore, Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
-This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
-The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure described by \cite{Wheeler2003b}, benefits greatly from improvements in the time-complexity we present in this paper.
+This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, Lehtonen2008, WheelerandGiribet2009, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
+The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure \citep{Wheeler2003b} benefits greatly from improvements in the time-complexity we present in this paper.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
-As such, any individual IA is not guaranteed to be either optimal or unique and there may be an exponential number of equally optimal IAs for any given binary tree.
+As such, any individual IA is guaranteed to be neither optimal nor unique with potentially an exponential number of equally optimal IAs for any given binary tree.
+IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeleretal2015}.
+Similar MSA approaches also based in probabilistic analysis have been described by \cite{LoytynojaandGoldman2008} and \cite{Loytynojaetal2010}, and implemented in PRANK \citep{PRANK}.
 
-The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than the algorithm in POY.
-Previous work relied on DO to first assign median states, and then later IA consumed these median states to produce the alignment.
-Here we describe IA as a way to produce the alignment first without the median states from DO, and the alignment from IA can then later be consumed to produce the median states.
+The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than earlier versions of the algorithm.
+Previous work relied on DO graph vertex median sequence assignments, and then later, IA consumed these medians to produce the full alignment.
+Here, we describe IA through the creation of vertex alignments structures, and these structures are later consumed to produce the median sequences.
 
-The algorithm uses the repeated application of a pairwise string alignment function to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
+The algorithm uses the repeated application of a pairwise string alignment function (the method is agnostic) to perform an efficient multiple string alignment for a given binary tree describing the relationships of strings.
 The more similar the strings, the better the algorithm performs.
 Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationship can be provided. 
-We will provide an example of the IA algorithm's performance on biological data.
+Below, we provide an example of the IA algorithm's performance on biological data.
 
 \section*{Definition of the heuristic function}
 In order for a logically consistent alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
@@ -214,14 +217,14 @@ We will call strings from $\Sigma^{*}_{\Gamma}$ an alignment context.
 Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a non-negative alignment cost and alignment context.
 It is required that $\otimes$ be commutative but need not be associative.
 Both of these constraints will be discussed later.
-These constraints are necessary but not sufficient for a logically consistent implied alignment to be inferred on the heuristic alignment function.
+These constraints are necessary but not sufficient for a heuristically optimal implied alignment to be inferred on the alignment function.
 
-It is worth explaining the motivation of the constructions defined above. 
+It is worth noting the motivation of the constructions defined above. 
 Most pairwise string alignment functions take two finite strings of symbols from the original alphabet, and supply a new finite string of symbols from the original alphabet.
 We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\Sigma$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
-The results of $\odot$ cannot preserve all information from it's inputs, but the construction of $\otimes$ can do so.
-Figure ?? demonstrates how $\odot$ can produce a result with ambiguous relationship to it's inputs, but $\otimes$ preserves this information.
-The preservation of result's relationship to it's input is require for the algorithmic improvements presented below.
+The results of $\odot$ cannot preserve all information from the inputs, but the construction of $\otimes$ can.
+Figure ?? demonstrates how $\odot$ can produce a result with ambiguous relationship to the inputs, but $\otimes$ preserves this information.
+The preservation of this relationship between input and output is required for the algorithmic improvements presented below.
 
 
 \section*{Overview of the Implied Alignment Algorithm}
@@ -231,34 +234,34 @@ To do so, we will traverse $\mathcal{T}$ twice.
 First, we will performing a post-order traversal, from the leaves to the root, using $\otimes$ to produce preliminary contexts for each node. 
 Second, we will perform a pre-order traversal, from the root to the leaves, aligning each preliminary context with it's parent to assign a final alignment on each node.
 
-The difficult part of efficiently using a binary string alignment function (like $\otimes$) to produce a MSA, lies in how the output of binary operations are combined across the ``global scope'' of $\mathcal{T}$.
+The difficult part of using a binary string alignment function (like $\otimes$) to produce a MSA efficiently, lies in how the output of binary operations are combined across the ``global scope'' of $\mathcal{T}$.
 When performing the post-order traversal, the only information known at a given node is what is contained in it's subtree.
-Only once the root node is reached at the end of the post-order traversal, the information from the entirety of $\mathcal{T}$ in scope.
-When performing the subsequent pre-order, we take the ``complete'' scope available at the root node and thread the information down towards the leaves.
-At each step towards the leaves, we take the ``complete'' context threaded down from the root, and combine it with the preliminary context to assign the final alignment of that node.
-In this way we collect all requisite information for an MSA during the post-order traversal and then apply that information during the pre-order traversal to deriving the MSA.
+Only once the root node is reached at the completion of the post-order traversal, is the information from the entirety of $\mathcal{T}$ in scope.
+When performing the subsequent pre-order traversal, we take the ``complete'' scope available at the root node and thread the information towards the leaves.
+At each step towards the leaves, we take the ``complete'' context threaded from the root, and combine it with the preliminary context to assign the final alignment of that node.
+In this way, we collect all requisite information for an MSA during the post-order traversal and then apply that information during the pre-order traversal to derive the MSA.
 
-The efficiency of how the alignments can be generated is of concern.
-The complexity of the IA algorithm's pre-order traversal in previous work left much to be desired.
-We address this complexity by tagging each element of the string with information that describes where it originated from. 
+The time complexity of the IA algorithm's pre-order traversal in previous work left much to be desired.
+We address this by tagging each element of the string with information that describes where that element originated.
 We can lift each symbol in $\Sigma$ into $\Sigma_{\Gamma}$ through the alignment process.
 After the post-order traversal, each node in $\mathcal{T}$ will have a string in $\Sigma_{\Gamma}^{*}$.
-The elements of said strings are tagged with one of four options representing where the information of this element originated from relative to that node.
+The elements of said strings are tagged with one of four options representing where the information of this element originated relative to that node.
 \textbf{\texttt{ALIGN}} originated from both subtrees, \textbf{\texttt{DELETE}} originated from the left subtree, \textbf{\texttt{INSERT}} originated from the right subtree, and \textbf{\texttt{GAPPED}} originated from neither subtree (elsewhere in the $\mathcal{T}$).
 
 This tag on each element provides contextual information that allows for an efficient processing of the elements in the pre-order traversal.
 During the pre-order traversal, a node's preliminary context is ``zipped'' with the parent's alignment in order to derive it's final alignment.
-We will show that this tagging and ``zipping'' process is a substantial improvement over previous work. 
-It is worth noting that this tagging is compact from an information theoretic perspective, representing only two additional bits of information per element.
+We will show that this tagging and ``zipping'' process is a substantial improvement over previous work (quadratic to linear in number of leaves). 
+It is worth noting that this tagging is compact from a storage perspective, representing only two additional bits per element.
+
 
 
 \section*{An example heuristic function}
 
-We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$.
+We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the Implied Alignment algorithm, though there are other sufficient definitions of $\otimes$ (including affine and \cite{Ukkonen1985} variants).
 One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
-This algorithm is very similar to DO.
+The algorithm is modified along the lines of DO, with an additional step taken to produce the tagged elements in the output alignment.
 
-First, we deterministically decide which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
+First, we decide deterministically which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
 We assign the input strings based on the data they contain.
 The longer string is assigned to the columns of the alignment matrix, the shorter string to the rows.
 If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix. 
@@ -266,7 +269,7 @@ In the case that the strings are identical, the alignment is trivial.
 This assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
 Additionally, the commutativity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (i.e. ensures label invariance).
 
-We now apply a ``wave-front'' update procedure \citep{cormen2001}, which is very similar to the Needleman-Wunsch procedure to align two strings.
+We now apply a ``wave-front'' update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as the Needleman-Wunsch procedure to align two strings.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
 The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
 The pre-order traversal performed later will consume the tagged information when merging alignment contexts.
@@ -277,13 +280,15 @@ The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment}  is of 
 For clarity, this example function is presented as a modification of the well understood Needleman-Wunsch algorithm, however this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
 For instance, by using the method described by \cite{Ukkonen1985}, this algorithm's runtime could be improved to average case $\mathcal{O}\left( k * \log k \right)$ time in general, and near linear time on sequences of high similarity.
 Additionally, by using the method described by \cite{Hirschberg1975}, this algorithm can be further improved to use $\mathcal{O}\left( k \right)$ space.
+Affine gap models can be incorporated via the method of \cite{VaronandWheeler2012}.
+
 
 The $\sigma$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\Sigma$. The metrics used in our data set can be found in Table \ref{Tab:Metrics}.
 Note that $\sigma$ can be a more complex metric than the ones presented here, such as a metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 
 \section*{Description of post-order traversal}
-The post-order traversal (from the leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure, see Algorithm \ref{post-order}.
+The post-order traversal (leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure, see Algorithm \ref{Alg:post-order}.
 We assign preliminary contexts and costs to each node, $n_x$, of $\mathcal{T}$.
 These preliminary contexts will be consumed to assign a final string alignment in a subsequent pre-order traversal of the tree.
 The post-order traversal described here is very similar to the DO post-order traversal described by \cite{Wheeler2003}, differing only in the use of $\otimes$ which captures the preliminary context of a subtree, instead of generating a preliminary median string assignment.
@@ -293,7 +298,7 @@ Additionally, if $l_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gam
 
 On each internal node, $i_x$ with children $c_l$ and $c_r$, of $\mathcal{T}$, we call $c_l$ $\otimes$ $c_r$.
 The resultant \textit{prelimString} is assigned to $i_x.prelimString$, and the sum of the $c_l.cost$ and $c_r.cost$ is assigned to $i_x.cost$.
-By performing this operation in a post-order traversal over $\mathcal{T}$, we propagate the preliminary contexts and costs returned from the calls to $\otimes$ up the tree from the leaves to the root.
+By performing this operation in a post-order traversal over $\mathcal{T}$, we propagate the preliminary contexts and costs returned from the calls to $\otimes$ from the leaves to the root.
 
 After performing the post-order traversal, each internal node contains the preliminary context information and the cost for the entire subtree.
 Consequently, when the post-order traversal is complete, the root node contains the preliminary context information of the full leaf set of strings.
@@ -308,7 +313,7 @@ If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \r
 The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations created in the post-order traversal in order to assign final alignment decorations to each node.
 First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however these events are indistinguishable at the root node.
-By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{deriveAlignment}.
+By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{Alg:deriveAlignment}.
 
 For each non-root node $n_x$, we first determine whether the current node is the left or right child of its parent.
 This is required because deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, and we must use this information when deriving the current node's alignment.
@@ -520,7 +525,7 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
 
 String alignment is of paramount importance in phylogenetic search, though when the string alignment occurs can be a matter of contention.
 Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
-A more modern method of dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather the strings are compared vertex by vertex on the current tree under consideration in the phylogentic search.
+An alternate method based on dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather are compared vertex by vertex on the current tree under consideration during a phylogentic search.
 Although implied alignments are not required to identify phylogenetic trees that are heuristically `best,' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY \citealp{POY5, Wheeleretal2015}) or as the basis of a search itself as with more traditional approaches.
 
 How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
@@ -529,11 +534,11 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
 
-\section*{Future work}
-If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
-Even an incredibly expensive, poly-time $\otimes$ definition would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
-The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation that could be computed once and referenced many times.
-The proposed invariant approximation would have heuristic utility as a basis for  comparing on which trees in the tree space a more computationally expensive implied alignment should be performed.
+%\section*{Future work}
+%If a heuristic function $\otimes$ that was both commutative and associative and with sufficiently low error could be defined, then the iterative approximation \citep{Wheeler2003a} could be dramatically improved upon. 
+%Even an incredibly expensive, poly-time $\otimes$ definition would have its cost amortized over the tree-space search because the heuristic would only need to be applied once to a dynamic homology and then an implied alignment generated, which would be the same for all trees in the tree space. 
+%The iterative approximation would cease needing to be iterative and rather be an \emph{invariant} approximation that could be computed once and referenced many times.
+%The proposed invariant approximation would have heuristic utility as a basis for  comparing on which trees in the tree space a more computationally expensive implied alignment should be performed.
 
 %\section{Appendix}
 %
