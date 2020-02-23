@@ -38,6 +38,7 @@ Portability :  portable (I hope)
 module Main where
 
 import           Data.Foldable
+import           Data.Key
 import           Data.List
 import           Data.List.Split
 import           Data.Maybe
@@ -97,7 +98,7 @@ findNameInString subString fullString pos
   | null subString = error "Null name to find"
   | null fullString = Nothing
   | subString `isPrefixOf` fullString = --ensures full name (e.g seq1 and seq10)
-  if (fullString !! length subString)  `elem` newickControlChars then Just pos
+  if (fullString ! length subString)  `elem` newickControlChars then Just pos
   else findNameInString subString (tail fullString) (pos + 1)
   | otherwise = findNameInString subString (tail fullString) (pos + 1)
 
@@ -220,14 +221,14 @@ main =
        mapM_ (hPutStrLn stderr) args
        hPutStrLn stderr ""
        let operation = head args
-       let inNewick = args !! 1
+       let inNewick = args ! 1
        if   operation == "add" || operation == "delete"
        then hPutStrLn stderr $ unwords [ "Newick will", operation, "taxon/a" ]
        else error $ unwords [ "Operation", operation, "is unrecognized, must be 'add' or 'delete'"]
-       hPutStrLn stderr $ unwords [ "Openning newick  treefile", inNewick, "and taxon/a to be added/deleted from file",  args !! 2 ]
+       hPutStrLn stderr $ unwords [ "Openning newick  treefile", inNewick, "and taxon/a to be added/deleted from file",  args ! 2 ]
        hPutStrLn stderr "Warning--Tree must be dichotomous for deletion"
        treeFileHandle <- openFile inNewick ReadMode
-       deleteTaxaHandle <- openFile (args !! 2) ReadMode
+       deleteTaxaHandle <- openFile (args ! 2) ReadMode
        rawTreeStuff <- hGetContents treeFileHandle --init so remove last empty String
        let rawTreeFile = init $ splitOn ";" rawTreeStuff
        hPutStrLn stderr $ unwords [ "Input of",  show $ length rawTreeFile, "trees" ]
@@ -239,7 +240,7 @@ main =
        let deleteTaxa = words deleteTaxaRaw
        let op = if   operation == "delete"
                then removeTaxonFromNewick deleteTaxa
-               else addTaxon2Newick (head deleteTaxa) (deleteTaxa !! 1)
+               else addTaxon2Newick (head deleteTaxa) (deleteTaxa ! 1)
        mapM_ putStrLn $ appendString ";\n" . op <$> cleanTreeFile
 
         --let newTree = removeTaxonFromNewick cleanTreeFile (tail $ tail args)

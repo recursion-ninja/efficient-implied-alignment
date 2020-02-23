@@ -41,6 +41,7 @@ Portability :  portable (I hope)
 
 module Main where
 
+import           Data.Key
 import           Data.List
 import           System.Environment
 import           System.IO
@@ -138,8 +139,8 @@ main =
         else hPutStr stderr "Arguments: "
         mapM_ (hPutStrLn stderr) args
         hPutStrLn stderr ""
-        let numTaxa = read (args !! 1) :: Int
-        let fraction = read (args !! 2) :: Double
+        let numTaxa = read (args ! 1) :: Int
+        let fraction = read (args ! 2) :: Double
         deletedTaxaHandle <- openFile (last args <> ".deleted") WriteMode
         inFileHandle <- openFile (head args) ReadMode
         inContents <- hGetContents inFileHandle
