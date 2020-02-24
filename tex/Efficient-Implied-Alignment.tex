@@ -196,7 +196,7 @@ Below, we provide an example of the IA algorithm's performance on biological dat
 
 \section*{Definition of the heuristic function}
 
-In order for a logically consistent alignment to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
+In order for a MSA to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
 Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
@@ -314,7 +314,7 @@ If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \r
 
 \section*{Description of pre-order traversal for final alignments}
 
-The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations created in the post-order traversal in order to assign final alignment decorations to each node.
+The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations on each node created in the post-order traversal in order to assign final alignment decorations to each node.
 First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however these events are indistinguishable at the root node.
 By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{Alg:deriveAlignment}.
