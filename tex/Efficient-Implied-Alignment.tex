@@ -223,9 +223,8 @@ These constraints are necessary but not sufficient for a heuristically optimal i
 
 It is worth noting the motivation of the constructions defined above. 
 Most pairwise string alignment functions take two finite strings of symbols from the original alphabet, and supply a new finite string of symbols from the original alphabet.
-We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\Sigma$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
-The results of $\odot$ cannot preserve all information from the inputs, but the construction of $\otimes$ can.
-Figure ?? demonstrates how $\odot$ can produce a result with ambiguous relationship to the inputs, but $\otimes$ preserves this information.
+We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
+The results of $\odot$ can contain cases of ambiguity where it cannot be inferred which input elements correspond to which output elements, but the construction of $\otimes$ never produces these cases of ambiguity due to the tagging of each element.
 The preservation of this relationship between input and output is required for the algorithmic improvements presented below.
 
 
