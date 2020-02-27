@@ -263,11 +263,11 @@ executable newick-add-delete-taxon
   default-language: Haskell2010
 
   
-executable draw-figure
+executable draw-pre-order-figure
 
   import:  ghc-flags
 
-  main-is: draw-figure.hs
+  main-is: draw-pre-order-figure.hs
 
   hs-source-dirs:
       app
