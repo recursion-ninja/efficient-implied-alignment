@@ -173,7 +173,7 @@
 Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} to be used in phylogenetic tree search providing both verification and more rapid heuristic analysis.
 The method was originally implemented in later versions of MALIGN \citep{Wheeler1991-1998} and has been a component of POY \citep{Wheeleretal2015, POY2, POY3, POY5, Wheeleretal2006} since its inception.
 A more formal description of the algorithm was presented in \cite{Wheeleretal2006} and \cite{VaronandWheeler2012}.
-Although originally designed for alignment-free phylogenetic analysis (dynamic homology, \citealp{Wheeler2001}), the procedure was used as a stand-alone multiple sequence alignment (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink systematics.
+Although originally designed for alignment-free phylogenetic analysis (dynamic homology, \citealp{Wheeler2001}), the procedure was first used as a stand-alone multiple sequence alignment (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink systematics.
 
 Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
 This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, Lehtonen2008, WheelerandGiribet2009, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
@@ -259,7 +259,7 @@ It is worth noting that this tagging is compact from a storage perspective, repr
 \section*{An example heuristic function}
 
 We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$ (including affine and \cite{Ukkonen1985} variants).
-One candidate function fitting the description of $\otimes$ can be defined by making a slight modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
+One candidate function fitting the description of $\otimes$ can be defined by making a minor modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
 The algorithm is modified along the lines of DO, with an additional step taken to produce the tagged elements in the output alignment.
 
 First, we decide deterministically which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
