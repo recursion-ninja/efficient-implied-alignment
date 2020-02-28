@@ -129,9 +129,9 @@
 	\begin{abstract}
 		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labelled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
-		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$ time.
-		Here we describe an implied alignment algorithm with a complexity of \textsc{$\mathcal{O}(k * n^2)$}.
-		For well-behaved data, such as molecular sequences, the best-case complexity approaches \textsc{$\Omega(k * n)$}.
+		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
+		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
+		For well-behaved data, such as molecular sequences, the runtime approaches the best-case complexity of \textsc{$\Omega(k * n)$}.
 		This reduction in the time complexity of the procedure dramatically improves both its utility in generating multiple sequence alignments and its heuristic utility.
 	\end{abstract}
 	
@@ -188,15 +188,16 @@ The IA algorithm presented in this paper takes a different intellectual approach
 Previous algorithmic approaches relied on DO assigning median sequences to the graph vertices. These sequences were then consumed by IA to produce the full alignment.
 Here, we describe IA through the creation of vertex alignments structures, and these \textit{structures} are later consumed to produce the median sequences.
 
-The algorithm uses the repeated application of a pairwise string alignment function (the method is agnostic) to perform an efficient multiple string alignment for a given binary tree whose leaves are labelled by strings. I.e., the tree describes the relationship of those strings.
-The more similar the initial leaf labellings the better the algorithm performs.
+The algorithm uses the repeated application of a pairwise string alignment function to perform an efficient MSA for a given binary tree whose leaves are labeled by strings, i.e. the tree describes the relationship of those strings.
+The more similar the initial leaf labelings the better the algorithm performs.
 Thus, while this algorithm has general use for performing an MSA, it is especially well-suited for the alignment of biological sequences where the strings are highly similar and a binary tree describing the strings' relationships can be provided. 
 Below, we provide an example of the IA algorithm's performance on biological data.
 
 
 \section*{Definition of the heuristic function}
 
-In order for a MSA to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
+In order for an MSA to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
+As long as these constraints are satisfied, the implementation details of the function are agnostic to the IA algorithm presented here.
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
 Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
@@ -215,17 +216,16 @@ Note that if $\setsize{\Sigma} = x$ then $\setsize{\Sigma_{\Gamma}} = 2^{2x}$.
 This follows from the fact that $|\NEPowerset (\Sigma)|$ is equal to one less than the size of the power set of $\Sigma$, due to $\NEPowerset (\Sigma)$ disallowing the empty set. 
 
 Let $\Sigma^{*}_{\Gamma}$ be the set of all finite strings over the alphabet $\Sigma_{\Gamma}$.
-We will call strings from $\Sigma^{*}_{\Gamma}$ an alignment context.
-Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a nonnegative alignment cost and alignment context.
+Let $\otimes : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \left(\NonNegReals,\; \Sigma^{*}_{\Gamma}\right)$ be a heuristic function that returns a nonnegative alignment cost and an alignment result in $\Sigma^{*}_{\Gamma}$.
 It is required that $\otimes$ be commutative but it need not be associative.
-Both of these constraints will be discussed later.
+Both of these constraints will be explored later in the ``Discussion'' section.
 These constraints are necessary but not sufficient for a heuristically optimal implied alignment to be inferred on the alignment function.
 
 It is worth noting the motivation of the constructions defined above. 
 Most pairwise string alignment functions take two finite strings of symbols from the original alphabet and supply a new finite string of symbols from the original alphabet.
 We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and letting $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
-The results of $\odot$ can contain cases of ambiguity in which it cannot be inferred which input elements correspond to which output elements, but the construction of $\otimes$ never produces these cases of ambiguity due to the tagging of each element.
-Figure ?? demonstrates how $\odot$ can produce a result with ambiguous relationship to the inputs, but $\otimes$ preserves this information.
+We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
+The results of $\odot$ can contain cases of ambiguity where it cannot be inferred which input elements correspond to which output elements, but the construction of $\otimes$ never produces these cases of ambiguity due to the tagging of each element.
 The preservation of this relationship between input and output is required for the algorithmic improvements presented below.
 
 
@@ -233,8 +233,8 @@ The preservation of this relationship between input and output is required for t
 
 The IA algorithm provides an MSA for a binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string with symbols in $\Sigma$ and length at most $k$.
 To do so, we will traverse $\mathcal{T}$ twice.
-First, we perform a post-order traversal---i.e. a node is visited after its children---from the leaves to the root, using $\otimes$ to produce preliminary contexts for each node. 
-Second, we perform a pre-order traversal, from the root to the leaves, aligning each preliminary context with its parent to produce a final alignment on each node.
+First, we perform a post-order traversal---i.e. a node is visited after its children---from the leaves to the root, assigning the results of $\otimes$ as a ``preliminary context'' decoration to each node.
+Second, we perform a pre-order traversal, from the root to the leaves, aligning each preliminary context with its parent to assign a ``final alignment'' decoration to each node.
 
 The difficult part of using a binary string alignment function (like $\otimes$) to produce an MSA efficiently lies in how the output of binary operations are combined across the ``global scope'' of $\mathcal{T}$.
 When performing the post-order traversal, the only information known at a given node is what is contained in its subtree.
@@ -244,7 +244,7 @@ At each post-order step we take the ``complete'' context threaded from the root 
 Thus, we collect all requisite information for an MSA during the post-order traversal and then apply that information during the pre-order traversal to derive the MSA.
 
 As noted above, the time complexity of the IA algorithm's pre-order traversal in previous work was $\mathcal{O}(k^2 * n^2)$.
-We are able to improve this by, during the post-order pass, tagging each element of a string on a node $n_x$ with information that notates on which subtree of $n_x$ that element originated.
+We are able to improve this by, during the post-order pass, tagging each element of a string on a node $v_x$ with information that notates on which subtree of $v_x$ that element originated.
 We can lift each symbol in $\Sigma$ into $\Sigma_{\Gamma}$ through the alignment process.
 After the post-order traversal each node in $\mathcal{T}$ will have a string in $\Sigma_{\Gamma}^{*}$.
 The elements of said strings are tagged with one of four options representing which child node the information of this element originated relative to that node.
@@ -273,7 +273,7 @@ Commutativity of $\otimes$ ensures that the IA algorithm provides the same align
 We now apply a ``wave-front'' update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as the Needleman-Wunsch.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
 The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
-These tagged pairwise alignments will be consumed on the subsequent pre-order traversal of $\mathcal{T}$ when merging alignment contexts.
+These tagged pairwise alignments will be consumed on the subsequent pre-order traversal of $\mathcal{T}$ when merging preliminary contexts.
 Storing this information for each element of the pairwise alignment allows a more efficient generation of the eventual multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and that presented in this paper.
 
@@ -285,21 +285,21 @@ Affine gap models can be incorporated via the method of \cite{VaronandWheeler201
 
 
 The $\sigma$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\Sigma$. The metrics used in our data set can be found in Table \ref{Tab:Metrics}.
-Note that $\sigma$ can be a more complex metric than those presented here, for instance metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
+Note that $\sigma$ can be a more complex metric than those presented here, for instance a metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 
 \section*{Description of post-order traversal}
 
 The post-order traversal (leaves to the root) of the binary tree $\mathcal{T}$ is a straightforward procedure, see Algorithm \ref{Alg:post-order}.
-We assign preliminary contexts and costs to each node, $n_x$, of $\mathcal{T}$.
-These preliminary contexts will be consumed to assign a final string alignment in the subsequent pre-order traversal of the tree.
+We assign preliminary contexts and costs to each node, $v_x$, of $\mathcal{T}$.
+These preliminary contexts will be consumed to assign a final alignment in the subsequent pre-order traversal of the tree.
 The post-order traversal described here is very similar to the DO post-order traversal described by \cite{Wheeler2003}, differing only in the use of $\otimes$ which captures the preliminary context of a subtree, instead of generating a preliminary median string assignment.
 
-First, for each leaf node, $l_x$, we set $l_x.cost$ to $0$.
-Additionally, if $l_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$---i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$---then we call $\Call{InitializeString}{l_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
+First, for each leaf node, $v_x$, we set $v_x.cost$ to $0$.
+Additionally, if $v_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$---i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$---then we call $\Call{InitializeString}{v_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
 
-On each internal node, $i_x$ with children $c_l$ and $c_r$, of $\mathcal{T}$, we call $c_l$ $\otimes$ $c_r$.
-The resultant \textit{prelimString} is assigned to $i_x.prelimString$, and the sum of the $c_l.cost$ and $c_r.cost$ is assigned to $i_x.cost$.
+On each internal node, $v_y$ with children $v_l$ and $v_r$, of $\mathcal{T}$, we call $v_l$ $\otimes$ $v_r$.
+The resultant \textit{prelimString} is assigned to $v_y.prelimString$, and the sum of the $v_l.cost$ and $v_r.cost$ is assigned to $v_y.cost$.
 By performing this operation in a post-order traversal over $\mathcal{T}$, we propagate the preliminary contexts and costs returned from the calls to $\otimes$ from the leaves to the root.
 
 Upon completion of the post-order traversal, each internal node contains the preliminary context information and the cost for the entire subtree.
@@ -319,49 +319,50 @@ First, the root node must be initialized for the pre-order traversal by assignin
 This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however these events are indistinguishable at the root node.
 By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{Alg:deriveAlignment}.
 
-For each non-root node, $n_c$, we first determine whether $n_c$ is the left or right child of its parent.
-This is required because deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, and we must use this information when deriving the final alignment of $n_c$.
+For each non-root node, $v_c$, we first determine whether $v_c$ is the left or right child of its parent.
+This is required because deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, and we must use this information when deriving the final alignment of $v_c$.
 
-The final alignment of the parent of $n_c$, $n_p$, will necessarily be of greater than or equal length to $n_p$'s preliminary alignment, because $n_p$'s final alignment contains all the information from the contexts of $n_p$'s subtrees as well as the information from the rest of the tree, that is, the contexts of all of the subtrees of every ancestor node to $n_p$.
-The preliminary context of $n_p$ is also greater than or equal to the preliminary context of $n_c$, due to the $n_p$'s context containing all information from $n_c$'s context, plus the addition of $n_c$'s sister subtree.
-The resulting value assigned to $n_c$'s final alignment will have the same length as the final alignment assigned to $n_p$.
+The final alignment of the parent of $v_c$, $v_p$, will necessarily be of greater than or equal length to $v_p$'s preliminary context, because $v_p$'s final alignment contains all the information from the contexts of $v_p$'s subtrees as well as the information from the rest of the tree, that is, the contexts of all of the subtrees of every ancestor node to $v_p$.
+The preliminary context of $v_p$ is also greater than or equal to the preliminary context of $v_c$, due to the $v_p$'s context containing all information from $v_c$'s context, plus the addition of $v_c$'s sister subtree.
+The resulting value assigned to $v_c$'s final alignment will have the same length as the final alignment assigned to $v_p$.
 Since this invariant length is maintained from the root node to the leaf nodes' final alignment assignments, all alignments will have the same length.
 This constitutes a simple inductive proof that the final alignment assignment of each node will be of equal length and constitute a genuine string alignment.
 
-The final alignment for $n_c$ is derived by performing a ``sliding zip'' over $n_p$'s final alignment, $n_p$'s preliminary context, and $n_c$'s preliminary context.
-$n_p$'s final alignment is used as the basis of the zip. The inputs to this alignment are the preliminary contexts of $n_p$ and $n_c$ and $n_p$'s final alignment.
-At each step of the ``sliding zip,'' one element of $n_p$'s final alignment will be consumed and one element of $n_c$'s final alignment will be defined.
-Additionally, at each step of the zip, one of: an element from $n_p$'s preliminary context, elements from both $n_p$'s and $n_c$'s preliminary contexts, or no elements from either node's context, will be consumed.
-Finally, we define an element of $n_c$'s final alignment to be either an element from $n_c$'s preliminary context or a gap.
-The process is called a ``sliding zip'' because, due to the varying lengths of the three inputs, the elements of $n_p$'s and $n_c$'s preliminary contexts do not have an immediately apparent index with which they correspond to $n_p$'s final alignment, which is used as the basis of the zip.
-Rather, the elements of $n_p$'s and $n_c$'s preliminary contexts ``slide'' through the zipping process, and their corresponding indices with the $n_p$'s final assignment is deduced dynamically.
-The logic applied in the ``sliding zip'' is to propagate gaps from the tree above $n_c$ down to $n_c$, and when not dealing with a gap propagated from an ancestor node to $n_c$, to align the non-gap elements or introduce a new gap to be propagated.
+The final alignment for $v_c$ is derived by performing a ``sliding zip'' over $v_p$'s final alignment, $v_p$'s preliminary context, and $v_c$'s preliminary context.
+$v_p$'s final alignment is used as the basis of the zip.
+The inputs to this alignment are the preliminary contexts of $v_p$ and $v_c$ and $v_p$'s final alignment.
+At each step of the ``sliding zip,'' one element of $v_p$'s final alignment will be consumed and one element of $v_c$'s final alignment will be defined.
+Additionally, at each step of the zip, one of: an element from $v_p$'s preliminary context, elements from both $v_p$'s and $v_c$'s preliminary contexts, or no elements from either node's context, will be consumed.
+Finally, we define an element of $v_c$'s final alignment to be either an element from $v_c$'s preliminary context or a gap.
+The process is called a ``sliding zip'' because, due to the varying lengths of the three inputs, the elements of $v_p$'s and $v_c$'s preliminary contexts do not have an immediately apparent index with which they correspond to $v_p$'s final alignment, which is used as the basis of the zip.
+Rather, the elements of $v_p$'s and $v_c$'s preliminary contexts ``slide'' through the zipping process, and their corresponding indices with the $v_p$'s final assignment is deduced dynamically.
+The logic applied in the ``sliding zip'' is to propagate gaps from the tree above $v_c$ down to $v_c$, and when not dealing with a gap propagated from an ancestor node to $v_c$, to align the non-gap elements or introduce a new gap to be propagated.
 The ``sliding zip'' process is often easier to  understood by stepping through the algorithm.
 An example alignment of this ``sliding zip'' process for two internal nodes is shown in Figure \ref{Fig:Examplepre-order}.
 
-There are five cases determining the derivation of each index of $n_c$'s final alignment. The cases are presented in the pseudocode of Algorithm \ref{Alg:deriveAlignment}, in Figure \ref{Fig:Examplepre-order}, and described below.
+There are five cases determining the derivation of each index of $v_c$'s final alignment. The cases are presented in the pseudocode of Algorithm \ref{Alg:deriveAlignment}, in Figure \ref{Fig:Examplepre-order}, and described below.
 
 \begin{itemize}
 
-  \item Case 0: When the sliding zip has consumed all elements of the $n_c$'s preliminary context, then the next element of $n_c$'s final alignment is ``\texttt{GAPPED}.''
-  Because we only define the next element of $n_c$'s final alignment to be either an element from $n_c$'s preliminary context or a gap, the latter is the only choice.
+  \item Case 0: When the sliding zip has consumed all elements of the $v_c$'s preliminary context, then the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
+  Because we only define the next element of $v_c$'s final alignment to be either an element from $v_c$'s preliminary context or a gap, the latter is the only choice.
 
-  \item Case 1: When the element of $n_p$'s final alignment is ``\texttt{ALIGN},'' then we consume the next elements of both $n_p$'s and $n_c$'s preliminary contexts and the next element of $n_c$'s final alignment is $n_p$'s consumed preliminary context element.
-  Because $n_p$'s final alignment element was marked as an alignment event, we know that $n_c$ was aligned with its sister subtree at this index, and that $n_c$'s preliminary context element is the correct element for this index of the alignment.
+  \item Case 1: When the element of $v_p$'s final alignment is ``\texttt{ALIGN},'' then we consume the next elements of both $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_p$'s consumed preliminary context element.
+  Because $v_p$'s final alignment element was marked as an alignment event, we know that $v_c$ was aligned with its sister subtree at this index, and that $v_c$'s preliminary context element is the correct element for this index of the alignment.
   
-  \item Case 2: When the both $n_p$'s final alignment element and $n_p$'s preliminary context element are ``\texttt{DELETE},'' and $n_c$ is the \textit{left} child of its parent, then we consume the next element of each of $n_p$'s and $n_c$'s preliminary contexts and the next element of $n_c$'s final alignment is $n_c$'s consumed preliminary context element.
-  Because deletion events originate from the left subtree of a node, and $n_c$ is the left child of $n_p$, $n_c$'s preliminary context element is the correct element for this index of the alignment.
-  If the same deletion event was encountered but $n_c$ was the right child of $n_p$, then $n_c$'s preliminary context element would not be the correct element for this index of the alignment, because deletion events originate from the left subtree and the deletion event was encountered in the right subtree.
+  \item Case 2: When the both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{DELETE},'' and $v_c$ is the \textit{left} child of its parent, then we consume the next element of each of $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_c$'s consumed preliminary context element.
+  Because deletion events originate from the left subtree of a node, and $v_c$ is the left child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
+  If the same deletion event was encountered but $v_c$ was the right child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because deletion events originate from the left subtree and the deletion event was encountered in the right subtree.
   In the case that a deletion event is encountered in a right subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the node's sister subtree.
   This is caught by Case 4.
   
-  \item Case 3: When the both $n_p$'s final alignment element and $n_p$'s preliminary context element are ``\texttt{INSERT},'' and $n_c$ is the \textit{right} child of $n_p$, we consume the next element of both $n_p$'s and $n_c$'s preliminary contexts and assign to the next element of $n_c$'s final alignment $n_c$'s consumed preliminary context element.
-  Because insertion events originate from the right subtree of a node, and $n_c$ is the right child of $n_p$, $n_c$'s preliminary context element is the correct element for this index of the alignment.
-  If the same insertion event was encountered but $n_c$ was the left child of $n_p$, then $n_c$'s preliminary context element would not be the correct element for this index of the alignment, because insertion events originate from the right subtree and the insertion event was encountered in the left subtree.
-  In the case that a insertion event is encountered in a left subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $n_c$'s sister subtree.
+  \item Case 3: When the both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{INSERT},'' and $v_c$ is the \textit{right} child of $v_p$, we consume the next element of both $v_p$'s and $v_c$'s preliminary contexts and assign to the next element of $v_c$'s final alignment $v_c$'s consumed preliminary context element.
+  Because insertion events originate from the right subtree of a node, and $v_c$ is the right child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
+  If the same insertion event was encountered but $v_c$ was the left child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because insertion events originate from the right subtree and the insertion event was encountered in the left subtree.
+  In the case that a insertion event is encountered in a left subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $v_c$'s sister subtree.
   This is caught by Case 4.
   
-  \item Case 4: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $n_p$'s preliminary context and the next element of $n_c$'s final alignment is ``\texttt{GAPPED}.''
+  \item Case 4: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
   This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a deletion or insertion event was encountered in the right or left subtree, respectively. 
 
 \end{itemize}
@@ -417,7 +418,7 @@ An example Haskell implementation of the implied alignment algorithm described a
 To explore the performance of the pre-order traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
 Both full data sets consisted of a preselected tree and predetermined string alignment (i.e. including gaps).
 The full leaf set of the tree was repeatedly halved to produce a data set of doubling leaf set sizes.
-The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the correct length from each string, and then removing all the gaps from the alignment slice.
+The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the current length from each string, and then removing all the gaps from the alignment slice.
 The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
 Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
 
