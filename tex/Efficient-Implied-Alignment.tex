@@ -354,13 +354,13 @@ There are five cases determining the derivation of each index of $v_c$'s final a
   Because deletion events originate from the left subtree of a node, and $v_c$ is the left child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
   If the same deletion event was encountered but $v_c$ was the right child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because deletion events originate from the left subtree and the deletion event was encountered in the right subtree.
   In the case that a deletion event is encountered in a right subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the node's sister subtree.
-  This is caught by Case 4.
+  This is implicitly dealt with in Case 4.
   
   \item Case 3: When the both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{INSERT},'' and $v_c$ is the \textit{right} child of $v_p$, we consume the next element of both $v_p$'s and $v_c$'s preliminary contexts and assign to the next element of $v_c$'s final alignment $v_c$'s consumed preliminary context element.
   Because insertion events originate from the right subtree of a node, and $v_c$ is the right child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
   If the same insertion event was encountered but $v_c$ was the left child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because insertion events originate from the right subtree and the insertion event was encountered in the left subtree.
   In the case that a insertion event is encountered in a left subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $v_c$'s sister subtree.
-  This is caught by Case 4.
+  This is implicitly dealt with in Case 4.
   
   \item Case 4: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
   This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a deletion or insertion event was encountered in the right or left subtree, respectively. 
