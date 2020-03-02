@@ -127,7 +127,7 @@
 \begin{abstractbox}
 	
 	\begin{abstract}
-		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labelled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
+		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labeled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
 		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
