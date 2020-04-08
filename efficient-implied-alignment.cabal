@@ -97,12 +97,15 @@ library
     -- >=0.5.8 Required for Data.Map.restrictKeys
     , containers         >=0.5.8
     , deepseq
+    , dlist          
     , hashable
     , integer-gmp
     , keys
     , lens
-    , matrix
+--    , matrix
+    , matrices
     , megaparsec         >=8.0
+    , monad-loops          
     , mtl
     , parser-combinators >=1.2
     , pointed
@@ -126,7 +129,7 @@ library
       Data.BTree            
       Data.Decoration
       Data.DecTree
-      Data.Matrix.ZeroIndexed
+--      Data.Matrix.ZeroIndexed
       Data.SymbolString
       Data.TCM
       Data.UserInput
@@ -144,6 +147,7 @@ library
       Alignment.Pairwise.Internal
       Alignment.Pairwise.NeedlemanWunsch
       Alignment.Pairwise.Ukkonen
+      Alignment.Pairwise.UnboxedUkkonen
       Alignment.Pairwise.Ukkonen.Internal
       Alignment.Pairwise.Ukkonen.Matrix
       Alignment.Pairwise.Ukkonen.Ribbon
@@ -348,6 +352,7 @@ test-suite test-align
     , deepseq
     , keys
     , lens
+    , matrices
     , pointed
     , semigroupoids
     , text-short
@@ -379,6 +384,7 @@ test-suite test-trees
     , deepseq
     , keys
     , lens
+    , matrices
     , pointed
     , semigroupoids
     , tasty
@@ -413,6 +419,7 @@ test-suite test-suite
     , deepseq
     , keys
     , lens
+    , matrices
     , pointed
     , QuickCheck
     , semigroupoids

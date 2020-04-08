@@ -18,7 +18,7 @@
 {-# LANGUAGE UnboxedSums                #-}
 
 module Data.SymbolString
-  ( SymbolAmbiguityGroup()
+  ( SymbolAmbiguityGroup(..)
   , SymbolContext(..)
   , SymbolString()
   , (/\)
@@ -34,18 +34,30 @@ module Data.SymbolString
   , renderSmartly
   , renderString
   , renderSymbolString
+  -- * Constructors
+  , alignElement
+  , deleteElement
+  , insertElement
+  , gappingElement
+  -- * Queries
+  , isAlign
+  , isDelete
+  , isInsert
+  , isGapping
   ) where
 
 import           Control.DeepSeq
 import           Data.Alphabet
 import           Data.Alphabet.IUPAC
 import           Data.Bits
+--import           Data.Coerce
 import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty      (NonEmpty (..))
 import qualified Data.List.NonEmpty      as NE
 import           Data.Semigroup.Foldable
 import           Data.Vector.NonEmpty
+--import           Data.Vector.Unboxed     (Unbox)
 import           Data.Word
 import           GHC.Generics
 import           Prelude                 hiding (filter)
@@ -57,6 +69,13 @@ type SymbolString = Vector SymbolContext
 data Blank = Blank
 
 
+-- |
+-- A non-empty set of characters.
+newtype SymbolAmbiguityGroup = SAG Word16
+    deriving stock   (Generic)
+    deriving newtype (Bits, Enum, Eq, FiniteBits, Ord)
+
+
 data  SymbolContext
     = Align   {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
     | Delete  {-# UNPACK #-} !SymbolAmbiguityGroup {-# UNPACK #-} !SymbolAmbiguityGroup
@@ -65,11 +84,84 @@ data  SymbolContext
     deriving stock (Eq, Generic, Ord)
 
 
--- |
--- A non-empty set of characters.
-newtype SymbolAmbiguityGroup = SAG Word16
-    deriving stock   (Generic)
-    deriving newtype (Bits, Eq, FiniteBits, Enum, Ord)
+alignElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext
+alignElement = Align
+
+
+deleteElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext
+deleteElement = Delete
+
+
+insertElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext
+insertElement = Insert
+
+
+gappingElement :: Word -> SymbolContext
+gappingElement = Gapping . bit . fromEnum . pred
+
+
+isAlign   :: SymbolContext -> Bool
+isAlign   Align {} = True
+isAlign   _        = False
+
+
+isDelete  :: SymbolContext -> Bool
+isDelete  Delete{} = True
+isDelete  _        = False
+
+
+isInsert  :: SymbolContext -> Bool
+isInsert  Insert{} = True
+isInsert  _        = False
+
+
+isGapping :: SymbolContext -> Bool
+isGapping Gapping{} = True
+isGapping _         = False
+
+
+{-
+data  SymbolContext2
+    = SymbolContext2
+    { getMedian :: {-# UNPACK #-} !SymbolAmbiguityGroup
+    , getLeft   :: {-# UNPACK #-} !SymbolAmbiguityGroup
+    , getRight  :: {-# UNPACK #-} !SymbolAmbiguityGroup
+    }
+    deriving stock (Eq, Generic, Ord)
+
+
+alignElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
+alignElement = SymbolContext2
+
+
+deleteElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
+deleteElement m y = SymbolContext2 m 0 y
+
+
+insertElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
+insertElement m x = SymbolContext2 m x 0
+
+
+gappingElement :: Word -> SymbolContext2
+gappingElement w = let g = bit . fromEnum $ w - 1
+                   in  SymbolContext2 g 0 0
+
+
+isAlign   :: SymbolContext2 -> Bool
+isAlign   (SymbolContext2 _ x y) = coerce x /= (0 :: Word16) && coerce y /= (0 :: Word16)
+
+
+isDelete  :: SymbolContext2 -> Bool
+isDelete  (SymbolContext2 _ x y) = coerce x /= (0 :: Word16) && coerce y == (0 :: Word16)
+
+
+isInsert  :: SymbolContext2 -> Bool
+isInsert  (SymbolContext2 _ x y) = coerce x == (0 :: Word16) && coerce y /= (0 :: Word16)
+
+
+isGapping :: SymbolContext2 -> Bool
+isGapping (SymbolContext2 _ x y) = coerce x == (0 :: Word16) && coerce y == (0 :: Word16)
+-}
 
 
 encodeAmbiguityGroup :: (Eq a, Foldable1 f) => Alphabet a -> f a -> SymbolAmbiguityGroup

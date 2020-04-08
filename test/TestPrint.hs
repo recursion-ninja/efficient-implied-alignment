@@ -17,7 +17,6 @@ import           Data.List.NonEmpty      (NonEmpty (..), intersperse)
 import qualified Data.List.NonEmpty      as NE
 import           Data.Map                (Map)
 import qualified Data.Map                as M
-import           Data.Matrix.ZeroIndexed (matrix)
 import           Data.Pointed
 import           Data.Semigroup          ((<>))
 import           Data.Semigroup.Foldable

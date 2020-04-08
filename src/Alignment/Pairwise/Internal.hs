@@ -14,14 +14,20 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE TypeFamilies          #-}
+
+-- To add Indexable/Lookup instances for Matrix
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Alignment.Pairwise.Internal
   ( Cost
-  , Direction()
+  , Direction(..)
   , MatrixConstraint
   , MatrixFunction
   , NeedlemanWunchMatrix
@@ -34,18 +40,26 @@ module Alignment.Pairwise.Internal
 
 
 import           Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
+import           Control.Monad.State.Strict
 import           Data.Foldable
 import           Data.Key
-import           Data.Matrix.ZeroIndexed           (Matrix)
+import           Data.Matrix                       (Matrix, dim, unsafeIndex)
 import           Data.Maybe                        (fromMaybe)
 import           Data.Ord
 import           Data.Semigroup
 import           Data.SymbolString
 import           Data.TCM
+import qualified Data.Vector.Generic         as G
+import qualified Data.Vector.Generic.Mutable as M
 import           Data.Vector.NonEmpty
+import qualified Data.Vector.Primitive       as P
+import qualified Data.Vector.Unboxed         as U
+import           Data.Word                   (Word8)
 import           Numeric.Extended.Natural
-import           Prelude                           hiding (lookup, reverse,
-                                                    zipWith)
+import           Prelude                           hiding (lookup, reverse, zipWith)
+
+--import Debug.Trace
+trace = const id
 
 
 -- |
@@ -72,7 +86,79 @@ data Direction = DiagArrow | LeftArrow | UpArrow
   deriving (Eq, Ord)
 
 
--- | (✔)
+data instance U.MVector s Direction = MV_Direction (P.MVector s Word8)
+
+
+data instance U.Vector   Direction  = V_Direction  (P.Vector    Word8)
+
+
+instance U.Unbox Direction
+
+
+instance M.MVector U.MVector Direction where
+
+    {-# INLINE basicLength #-}
+    basicLength (MV_Direction v) = M.basicLength v
+
+    {-# INLINE basicUnsafeSlice #-}
+    basicUnsafeSlice i n (MV_Direction v) = MV_Direction $ M.basicUnsafeSlice i n v
+
+    {-# INLINE basicOverlaps #-}
+    basicOverlaps (MV_Direction v1) (MV_Direction v2) = M.basicOverlaps v1 v2
+
+    {-# INLINE basicUnsafeNew #-}
+    basicUnsafeNew n = MV_Direction `liftM` M.basicUnsafeNew n
+
+    {-# INLINE basicInitialize #-}
+    basicInitialize (MV_Direction v) = M.basicInitialize v
+
+    {-# INLINE basicUnsafeReplicate #-}
+    basicUnsafeReplicate n x = MV_Direction `liftM` M.basicUnsafeReplicate n (fromDirection x)
+
+    {-# INLINE basicUnsafeRead #-}
+    basicUnsafeRead (MV_Direction v) i = toDirection `liftM` M.basicUnsafeRead v i
+
+    {-# INLINE basicUnsafeWrite #-}
+    basicUnsafeWrite (MV_Direction v) i x = M.basicUnsafeWrite v i (fromDirection x)
+
+    {-# INLINE basicClear #-}
+    basicClear (MV_Direction v) = M.basicClear v
+
+    {-# INLINE basicSet #-}
+    basicSet (MV_Direction v) x = M.basicSet v (fromDirection x)
+
+    {-# INLINE basicUnsafeCopy #-}
+    basicUnsafeCopy (MV_Direction v1) (MV_Direction v2) = M.basicUnsafeCopy v1 v2
+
+    basicUnsafeMove (MV_Direction v1) (MV_Direction v2) = M.basicUnsafeMove v1 v2
+
+    {-# INLINE basicUnsafeGrow #-}
+    basicUnsafeGrow (MV_Direction v) n = MV_Direction `liftM` M.basicUnsafeGrow v n
+
+
+instance G.Vector U.Vector Direction where
+
+    {-# INLINE basicUnsafeFreeze #-}
+    basicUnsafeFreeze (MV_Direction v) = V_Direction `liftM` G.basicUnsafeFreeze v
+
+    {-# INLINE basicUnsafeThaw #-}
+    basicUnsafeThaw (V_Direction v) = MV_Direction `liftM` G.basicUnsafeThaw v
+
+    {-# INLINE basicLength #-}
+    basicLength (V_Direction v) = G.basicLength v
+
+    {-# INLINE basicUnsafeSlice #-}
+    basicUnsafeSlice i n (V_Direction v) = V_Direction $ G.basicUnsafeSlice i n v
+
+    {-# INLINE basicUnsafeIndexM #-}
+    basicUnsafeIndexM (V_Direction v) i = toDirection `liftM` G.basicUnsafeIndexM v i
+
+    basicUnsafeCopy (MV_Direction mv) (V_Direction v) = G.basicUnsafeCopy mv v
+
+    {-# INLINE elemseq #-}
+    elemseq _ = seq
+
+
 instance Show Direction where
 
     show DiagArrow = "↖"
@@ -109,6 +195,24 @@ type MatrixFunction m f
     -> m (Cost, Direction, SymbolAmbiguityGroup)
 
 
+type instance Key Matrix = (Int, Int)
+
+
+instance Indexable Matrix where
+
+    index = unsafeIndex
+
+
+instance Lookup Matrix where
+
+    lookup p@(i,j) m
+      | i < 0 || r <= i = Nothing
+      | j < 0 || c <= j = Nothing
+      | otherwise       = Just $ unsafeIndex m p
+      where
+        (r,c) = dim m
+
+  
 -- |
 -- Wraps the primitive operations in this module to a cohesive operation that is
 -- parameterized by an 'TransitionCostMatrix'.
@@ -130,7 +234,7 @@ directOptimization
   -> f SymbolContext
   -> f SymbolContext
   -> (Word, Vector SymbolContext)
-directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {-- trace (_renderingFunction lhs rhs traversalMatrix) --} (alignmentCost, alignmentContext)
+directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = trace (_renderingFunction lhs rhs traversalMatrix) (alignmentCost, alignmentContext)
   where
     (swapped, longerInput, shorterInput) = measureCharacters lhs rhs
     traversalMatrix                      = matrixFunction overlapFunction longerInput shorterInput
@@ -161,14 +265,19 @@ directOptimization overlapFunction _renderingFunction matrixFunction lhs rhs = {
 -- Handles equality of inputs by /not/ swapping.
 {-# INLINEABLE measureCharacters #-}
 {-# SPECIALISE measureCharacters :: Vector SymbolContext -> Vector SymbolContext -> (Bool, Vector SymbolContext, Vector SymbolContext) #-}
-measureCharacters :: (Foldable f, Ord s) => f s -> f s -> (Bool, f s, f s)
+measureCharacters
+  :: Foldable f
+  => f SymbolContext
+  -> f SymbolContext
+  -> (Bool, f SymbolContext, f SymbolContext)
 measureCharacters lhs rhs
   | lhsOrdering == LT = ( True, rhs, lhs)
   | otherwise         = (False, lhs, rhs)
   where
     lhsOrdering =
         case comparing length lhs rhs of
-          EQ -> toList lhs `compare` toList rhs
+          EQ -> let f = fmap symbolAlignmentMedian . toList
+                in  f lhs `compare` f rhs
           x  -> x
 
 
@@ -229,7 +338,7 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
 --
 -- Useful for debugging purposes.
 {-# INLINEABLE renderCostMatrix #-}
-{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
+--{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 {-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 renderCostMatrix
   :: ( Foldable f
@@ -365,3 +474,16 @@ getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCos
       , (rightCost, rightChar <> gap, LeftArrow)
       , (downCost ,  downChar <> gap, UpArrow  )
       ]
+      
+{-# INLINE fromDirection #-}
+fromDirection :: Direction -> Word8
+fromDirection DiagArrow = 0
+fromDirection LeftArrow = 1
+fromDirection UpArrow   = 2
+
+
+{-# INLINE toDirection #-}
+toDirection :: Word8 -> Direction
+toDirection 0 = DiagArrow
+toDirection 1 = LeftArrow
+toDirection _ = UpArrow

@@ -27,7 +27,7 @@ import           Data.List.NonEmpty           (NonEmpty (..))
 import qualified Data.List.NonEmpty           as NE
 import           Data.Map                     (Map)
 import qualified Data.Map                     as M
-import           Data.Matrix.ZeroIndexed      (matrix)
+import qualified Data.Matrix                  as Mat
 import           Data.Pointed
 import           Data.Semigroup               ((<>))
 import           Data.Semigroup.Foldable
@@ -101,7 +101,7 @@ discreteMetricTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
     scm = buildSymbolChangeMatrix   fakeParseInput
-    fakeParseInput = matrix 5 5 (\(i,j) -> if i == j then 0 else 1)
+    fakeParseInput = Mat.fromList (5,5) [ if i == j then 0 else 1 | i <- [0..4], j <- [0..4]]
 
 
 preferGapsTCM :: TransitionCostMatrix
@@ -109,9 +109,9 @@ preferGapsTCM = tcm
   where
     tcm = buildTransitionCostMatrix defaultAlphabet scm
     scm = buildSymbolChangeMatrix   fakeParseInput
-    fakeParseInput = matrix 5 5 f
+    fakeParseInput = Mat.fromList (5,5) [ f i j | i <- [0..4], j <- [0..4]]
       where
-        f (i,j)
+        f i j
           | i == j    = 0
           | i == 4    = 1
           | j == 4    = 1

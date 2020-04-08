@@ -42,7 +42,7 @@ Portability :  portable (I hope)
 module Main where
 
 import           Data.Key
-import           Data.List
+import           Data.List (intersperse)
 import           System.Environment
 import           System.IO
 

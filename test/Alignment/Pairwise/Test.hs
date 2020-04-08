@@ -43,7 +43,8 @@ testSuite :: TestTree
 testSuite = testGroup "Pairwise alignment tests"
     [ testSuiteNaiveDO
     , testSuiteMemoizedDO
-    , testSuiteUkkonnenDO
+    , testSuiteUkkonenDO
+    , testSuiteUnboxedUkkonenDO
     , constistentImplementation
     ]
 
@@ -113,15 +114,28 @@ testSuiteMemoizedDO = testGroup "Memoized DO"
     ]
 
 
-testSuiteUkkonnenDO = testGroup "Ukkonnen DO"
-    [ isValidPairwiseAlignment "Ukkonnen DO over discrete metric"
+testSuiteUkkonenDO = testGroup "Ukkonen DO"
+    [ isValidPairwiseAlignment "Ukkonen DO over discrete metric"
        $ \x y -> toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
-    , isValidPairwiseAlignment "Ukkonnen DO over L1 norm"
+    , isValidPairwiseAlignment "Ukkonen DO over L1 norm"
        $ \x y -> toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
-    , isValidPairwiseAlignment "Ukkonnen DO over prefer substitution metric (1:2)"
+    , isValidPairwiseAlignment "Ukkonen DO over prefer substitution metric (1:2)"
        $ \x y -> toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
-    , isValidPairwiseAlignment "Ukkonnen DO over prefer insertion/deletion metric (2:1)"
+    , isValidPairwiseAlignment "Ukkonen DO over prefer insertion/deletion metric (2:1)"
        $ \x y -> toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
+    ]
+
+
+
+testSuiteUnboxedUkkonenDO = testGroup "Unboxed Ukkonen DO"
+    [ isValidPairwiseAlignment "Unboxed Ukkonen DO over discrete metric"
+       $ \x y -> toOtherReturnContext (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
+    , isValidPairwiseAlignment "Unboxed Ukkonen DO over L1 norm"
+       $ \x y -> toOtherReturnContext (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
+    , isValidPairwiseAlignment "Unboxed Ukkonen DO over prefer substitution metric (1:2)"
+       $ \x y -> toOtherReturnContext (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
+    , isValidPairwiseAlignment "Unboxed Ukkonen DO over prefer insertion/deletion metric (2:1)"
+       $ \x y -> toOtherReturnContext (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
     ]
 
 
@@ -173,9 +187,25 @@ isValidPairwiseAlignment label alignmentFunction = testGroup label
     outputsCorrespondToInputs :: (NucleotideSequence, NucleotideSequence) -> Property
     outputsCorrespondToInputs (NS lhs, NS rhs) =
         medianList lhs /= medianList rhs ==>
-            counterexample "lhs' === rhs" (filterGaps lhs' /= filterGaps (medianList rhs)) .&&.
-            counterexample "rhs' === lhs" (filterGaps rhs' /= filterGaps (medianList lhs))
+            counterexample counterExample1 (filterGaps lhs' /= filterGaps (medianList rhs)) .&&.
+            counterexample counterExample2 (filterGaps rhs' /= filterGaps (medianList lhs))
       where
+        counterExample1 = unlines
+          [ "lhs' === rhs !?!?"
+          , "filterGaps lhs' /= filterGaps (medianList rhs)"
+          , "lhs  " <> show lhs
+          , "lhs' " <> show lhs' <> " ~/~ " <> show (filterGaps lhs')
+          , "rhs  " <> show rhs  <> " ~/~ " <> show (filterGaps (medianList rhs))
+          , "rhs' " <> show rhs'
+          ]
+        counterExample2 = unlines
+          [ "rhs' === lhs !?!?"
+          , "filterGaps rhs' /= filterGaps (medianList lhs)"
+          , "rhs  " <> show rhs
+          , "rhs' " <> show rhs' <> " ~/~ " <> show (filterGaps rhs')
+          , "lhs  " <> show lhs  <> " ~/~ " <> show (filterGaps (medianList lhs))
+          , "lhs' " <> show lhs'
+          ]
         (_, _, _, lhs', rhs') = alignmentFunction lhs rhs
 
     outputsAreNotReversed :: (NucleotideSequence, NucleotideSequence) -> Property
