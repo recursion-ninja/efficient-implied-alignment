@@ -182,7 +182,7 @@ The use of IA as an MSA algorithm as well as its use in the ``static approximati
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be neither optimal nor unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
 IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeler2006} and its implementations were described by \citep{Varonetal2010,Wheeleretal2015}.
-Similar MSA approaches also based in probabilistic analysis have been described by \cite{LoytynojaandGoldman2008} and \cite{Loytynojaetal2010}, and implemented in PRANK \citep{PRANK}.
+Similar MSA approaches also based in probabilistic analysis have been described e.g by \cite{Loytynoja2005} and \cite{Paten2008}, and implemented in PRANK \citep{PRANK}.
 
 The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than earlier versions of IA.
 Previous algorithmic approaches relied on DO assigning median sequences to the graph vertices. These sequences were then consumed by IA to produce the full alignment.
@@ -259,8 +259,8 @@ It is worth noting that this tagging is compact from a storage perspective, repr
 \section*{An example heuristic function}
 
 We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$ (including affine and \cite{Ukkonen1985} variants).
-One candidate function fitting the description of $\otimes$ can be defined by making a minor modification to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
-The algorithm is modified along the lines of DO, with an additional step taken to produce the tagged elements in the output alignment.
+One candidate function fitting the description of $\otimes$ can be defined similarly to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
+The algorithm is modified along same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment.
 
 First, we decide deterministically which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
 We assign the input strings based on the data they contain.
@@ -281,7 +281,7 @@ The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment} is of $
 For clarity, while this example function is presented as a modification of the well understood Needleman-Wunsch algorithm, this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
 For instance, by using the method described by \cite{Ukkonen1985}, this algorithm's time complexity could be improved to average case of $\mathcal{O}\left( k * \log k \right)$ in general, and near linear time on sequences of high similarity.
 Additionally, by using the method described by \cite{Hirschberg1975}, this algorithm could be further improved to use $\mathcal{O}\left( k \right)$ space.
-Affine gap models can be incorporated via the method of \cite{VaronandWheeler2012}.
+Affine gap models described by \cite{Gotoh1982} can be incorporated via the method of \cite{VaronandWheeler2012}.
 
 
 The $\sigma$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\Sigma$. The metrics used in our data set can be found in Table \ref{Tab:Metrics}.
@@ -309,7 +309,7 @@ In the pre-order traversal, we will consume this preliminary context to perform 
 Because the post-order traversal can be performed using any valid definition of $\otimes$, the complexity of the post-order traversal is dependent on the complexity of the heuristic alignment function used.
 Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
 Then post-order traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
-If we were to use Ukkonnen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
+If we were to use Ukkonen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
 
 
 \section*{Description of pre-order traversal for final alignments}

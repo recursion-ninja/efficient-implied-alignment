@@ -13,6 +13,23 @@
   pages = {579},
 }
 
+@article {Loytynoja2005,
+	author = {L{\"o}ytynoja, Ari and Goldman, Nick},
+	title = {An algorithm for progressive multiple alignment of sequences with insertions},
+	volume = {102},
+	number = {30},
+	pages = {10557--10562},
+	year = {2005},
+	doi = {10.1073/pnas.0409137102},
+	publisher = {National Academy of Sciences},
+	abstract = {Dynamic programming algorithms guarantee to find the optimal alignment between two sequences. For more than a few sequences, exact algorithms become computationally impractical, and progressive algorithms iterating pairwise alignments are widely used. These heuristic methods have a serious drawback because pairwise algorithms do not differentiate insertions from deletions and end up penalizing single insertion events multiple times. Such an unrealistically high penalty for insertions typically results in overmatching of sequences and an underestimation of the number of insertion events. We describe a modification of the traditional alignment algorithm that can distinguish insertion from deletion and avoid repeated penalization of insertions and illustrate this method with a pair hidden Markov model that uses an evolutionary scoring function. In comparison with a traditional progressive alignment method, our algorithm infers a greater number of insertion events and creates gaps that are phylogenetically consistent but spatially less concentrated. Our results suggest that some insertion/deletion {\textquotedblleft}hot spots{\textquotedblright} may actually be artifacts of traditional alignment algorithms.},
+	issn = {0027-8424},
+	URL = {https://www.pnas.org/content/102/30/10557},
+	eprint = {https://www.pnas.org/content/102/30/10557.full.pdf},
+	journal = {Proceedings of the National Academy of Sciences}
+}
+
+
 @article{LoytynojaandGoldman2008,
   author = {A. L\"oytynoja and A. J. Vilella and N. Goldman},
   title = {Phylogeny-Aware Gap Placement Prevents Errors in Sequence Alignment and Evolutionary Analysis},
@@ -21123,6 +21140,21 @@ with an assessment of the effects of alignment and optimality criteria},
   Pages                    = {330-331}
 }
 
+@article{Paten2008,
+author = {Paten, Benedict and Herrero, Javier and Fitzgerald, Stephen and Beal, Kathryn and Flicek, Paul and Holmes, Ian and Birney, Ewan}, 
+title = {Genome-wide nucleotide-level mammalian ancestor reconstruction},
+volume = {18}, 
+number = {11}, 
+pages = {1829-1843}, 
+year = {2008}, 
+doi = {10.1101/gr.076521.108}, 
+abstract ={Recently attention has been turned to the problem of reconstructing complete ancestral sequences from large multiple alignments. Successful generation of these genome-wide reconstructions will facilitate a greater knowledge of the events that have driven evolution. We present a new evolutionary alignment modeler, called “Ortheus,” for inferring the evolutionary history of a multiple alignment, in terms of both substitutions and, importantly, insertions and deletions. Based on a multiple sequence probabilistic transducer model of the type proposed by Holmes, Ortheus uses efficient stochastic graph-based dynamic programming methods. Unlike other methods, Ortheus does not rely on a single fixed alignment from which to work. Ortheus is also more scaleable than previous methods while being fast, stable, and open source. Large-scale simulations show that Ortheus performs close to optimally on a deep mammalian phylogeny. Simulations also indicate that significant proportions of errors due to insertions and deletions can be avoided by not assuming a fixed alignment. We additionally use a challenging hold-out cross-validation procedure to test the method; using the reconstructions to predict extant sequence bases, we demonstrate significant improvements over using closest extant neighbor sequences. Accompanying this paper, a new, public, and genome-wide set of Ortheus ancestor alignments provide an intriguing new resource for evolutionary studies in mammals. As a first piece of analysis, we attempt to recover “fossilized” ancestral pseudogenes. We confidently find 31 cases in which the ancestral sequence had a more complete sequence than any of the extant sequences.}, 
+URL = {http://genome.cshlp.org/content/18/11/1829.abstract}, 
+eprint = {http://genome.cshlp.org/content/18/11/1829.full.pdf+html}, 
+journal = {Genome Research} 
+}
+
+
 @Article{paulus2000,
   Title                    = {Phylogeny of the {M}yriapoda - {C}rustacea -
  {Insecta}: a new attempt using photoreceptor
@@ -24360,6 +24392,22 @@ with an assessment of the effects of alignment and optimality criteria},
   Year                     = {1985},
   Number                   = {810-825},
   Volume                   = {45}
+}
+
+@Article{Sankoff2000,
+    author = {Sankoff, David},
+    title = "{The early introduction of dynamic programming into
+  computational biology }",
+    journal = {Bioinformatics},
+    volume = {16},
+    number = {1},
+    pages = {41-47},
+    year = {2000},
+    month = {01},
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/16.1.41},
+    url = {https://doi.org/10.1093/bioinformatics/16.1.41},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/16/1/41/669986/160041.pdf},
 }
 
 @Article{Sankoffetal1994,
