@@ -180,7 +180,7 @@ This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure \citep{Wheeler2003b} benefits greatly from improvements in the time complexity we present in this paper.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
-As such, any individual IA is guaranteed to be neither optimal nor unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
+As such, any individual IA is not guaranteed to be neither optimal nor unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
 IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeler2006} and its implementations were described by \citep{Varonetal2010,Wheeleretal2015}.
 Similar MSA approaches also based in probabilistic analysis have been described by \cite{LoytynojaandGoldman2008} and \cite{Loytynojaetal2010}, and implemented in PRANK \citep{PRANK}.
 
@@ -274,7 +274,7 @@ We now apply a ``wave-front'' update procedure \citep{cormen2001}, a common elem
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
 The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
 These tagged pairwise alignments will be consumed on the subsequent pre-order traversal of $\mathcal{T}$ when merging preliminary contexts.
-Storing this information for each element of the pairwise alignment allows a more efficient generation of the eventual multiple string alignment.
+Storing this information for each element of the pairwise alignment allows a more efficient generation of the subsequent multiple string alignment.
 This additional tagging detail is the key difference between previous alignment methods and that presented in this paper.
 
 The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment} is of $\Theta\left( k^2 \right)$ complexity in both time and space, where $k$ is the length of the longer string.
@@ -337,7 +337,7 @@ Finally, we define an element of $v_c$'s final alignment to be either an element
 The process is called a ``sliding zip'' because, due to the varying lengths of the three inputs, the elements of $v_p$'s and $v_c$'s preliminary contexts do not have an immediately apparent index with which they correspond to $v_p$'s final alignment, which is used as the basis of the zip.
 Rather, the elements of $v_p$'s and $v_c$'s preliminary contexts ``slide'' through the zipping process, and their corresponding indices with the $v_p$'s final assignment is deduced dynamically.
 The logic applied in the ``sliding zip'' is to propagate gaps from the tree above $v_c$ down to $v_c$, and when not dealing with a gap propagated from an ancestor node to $v_c$, to align the non-gap elements or introduce a new gap to be propagated.
-The ``sliding zip'' process is often easier to  understood by stepping through the algorithm.
+The ``sliding zip'' process is often easier to understand by stepping through the algorithm.
 An example alignment of this ``sliding zip'' process for two internal nodes is shown in Figure \ref{Fig:Examplepre-order}.
 
 There are five cases determining the derivation of each index of $v_c$'s final alignment. The cases are presented in the pseudocode of Algorithm \ref{Alg:deriveAlignment}, in Figure \ref{Fig:Examplepre-order}, and described below.
@@ -387,14 +387,14 @@ There are five cases determining the derivation of each index of $v_c$'s final a
 %
 %\end{itemize}
 
-The improvement of the implied alignment algorithm presented here compared to the original algorithm is that the additional stored information allows us to determine the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time ($m$ is defined in the next paragraph). 
-The aforementioned $n^2$ component occurred in previous implementations due to the use of a ``back-propagation'' technique, which required that, at each pre-order step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
-Additionally, the $k^2$ component in the previous implementation was due to using a Needleman-Wunsch string alignment between the current node and its parent node at each pre-order step.
-By saving the requisite information on the nodes during the post-order traversal and then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
-
 Let $m = \frac{a}{k}$, where $k$ is the length of the longest input string, and $a$ is the length of the root node's preliminary context.
 In the best case that a ``perfect alignment'' is derived, that is, that each element of all the input strings can be aligned with one of the elements of the longest input string, then $m = 1$.
 In the worst case that a ``degenerate alignment'' is derived, that is, that no element of any of the input strings can be aligned with any of the elements of the longest input string, and all input strings are of equal length, then $m = n$.
+
+The improvement of the implied alignment algorithm presented here compared to the original algorithm is that the additional stored information allows us to determine the final assignments in $\Theta(k * m * n)$ instead of $\mathcal{O}(k^2 * n^2)$ time. 
+The aforementioned $n^2$ component occurred in previous implementations due to the use of a ``back-propagation'' technique, which required that, at each pre-order step, each new gap found in the alignment was retroactively applied to every alignment derived in a previous pre-order step.
+Additionally, the $k^2$ component in the previous implementation was due to using a Needleman-Wunsch string alignment between the current node and its parent node at each pre-order step.
+By saving the requisite information on the nodes during the post-order traversal and then consuming this information with the ``sliding-zip'' technique, we replace these computationally expensive operations with a much more efficient algorithm.
 
 In the pre-order traversal algorithm presented above, we generate an implied alignment in $\Theta(k * m * n)$ time.
 We must perform a ``sliding-zip'' operation on each node in the binary tree $\mathcal{T}$, hence the factor of $n$.
@@ -446,7 +446,7 @@ The pathological data sets shows the stark difference between the best case $\Om
 The OLS model empirically supports the theoretical best and worst cases demonstrated by the two runs on the pathological data set as shown in Figures \ref{Fig:Best} and \ref{Fig:Worst}.
 
 The OLS model also anecdotally supports the supposition that time complexity scales well for the biological data sets.
-The fungal and metazoan sequence data sets demonstrate a near-linear and quasi-linear time complexities with respect to the number of input strings and linear complexity with respect to string length.
+The fungal and metazoan sequence data sets demonstrate a near-linear time complexities with respect to the number of input strings and linear complexity with respect to string length.
 The fungal data sets lend support to the argument that some of ``real world'' use cases can perform close to the theoretical best case complexity (see Figures \ref{Fig:Fungi} and \ref{Fig:Metazoa}).
 
 
@@ -750,7 +750,7 @@ When using implied alignment to search on a dynamic homology, the alignments dep
     
 	\begin{table}[!htbp] \centering 
 		\caption{Regression coefficients of leaf-set size and string length on runtime} 
-		\label{} 
+		\label{Tab:Regression} 
 		\begin{tabular}{@{\extracolsep{5pt}}lD{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} D{.}{.}{-3} } 
 			\\[-1.8ex]\hline 
 			\hline \\[-1.8ex] 
