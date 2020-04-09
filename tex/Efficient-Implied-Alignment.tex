@@ -128,7 +128,7 @@
 	
 	\begin{abstract}
 		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labeled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
-		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
+		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and \texttt{LEFT}--tagged elements occurred.
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
 		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
 		For well-behaved data, such as molecular sequences, the runtime approaches the best-case complexity of \textsc{$\Omega(k * n)$}.
@@ -180,13 +180,13 @@ This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure \citep{Wheeler2003b} benefits greatly from improvements in the time complexity we present in this paper.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
-As such, any individual IA is not guaranteed to be neither optimal nor unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
+As such, any individual IA is not guaranteed to be either optimal or unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
 IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeler2006} and its implementations were described by \citep{Varonetal2010,Wheeleretal2015}.
 Similar MSA approaches also based in probabilistic analysis have been described e.g by \cite{Loytynoja2005} and \cite{Paten2008}, and implemented in PRANK \citep{PRANK}.
 
 The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than earlier versions of IA.
 Previous algorithmic approaches relied on DO assigning median sequences to the graph vertices. These sequences were then consumed by IA to produce the full alignment.
-Here, we describe IA through the creation of vertex alignments structures, and these \textit{structures} are later consumed to produce the median sequences.
+Here, we describe IA through the assigning ``preliminary contexts'' to the graph vertices, and these \textit{contexts} are later consumed to produce the median sequences and the full alignment.
 
 The algorithm uses the repeated application of a pairwise string alignment function to perform an efficient MSA for a given binary tree whose leaves are labeled by strings, i.e. the tree describes the relationship of those strings.
 The more similar the initial leaf labelings the better the algorithm performs.
@@ -198,19 +198,20 @@ Below, we provide an example of the IA algorithm's performance on biological dat
 
 In order for an MSA to be inferred, there are constraints on the heuristic alignment function used to decorate the tree prior to performing the IA algorithm.
 As long as these constraints are satisfied, the implementation details of the function are agnostic to the IA algorithm presented here.
+
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
 Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
-Let $\NEPowerset (\operatorname{X})$ denote the collection of non-empty subsets of $\mathrm{X}$.
+Let $\NEPowerset (\operatorname{X})$ denote the powerset of $\mathrm{X}$, minus the empty set.
 Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
 \begin{align*}
-  \Sigma_{\Gamma} &      =      \textbf{\texttt{ALIGN}}  \;\;\;\; \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
-\\                & \;\, | \;\; \textbf{\texttt{DELETE}} \;\,     \NEPowerset (\Sigma) 
-\\                & \;\, | \;\; \textbf{\texttt{INSERT}} \;\; \quad\quad\quad\,    \;\; \NEPowerset (\Sigma)
+  \Sigma_{\Gamma} &      =      \textbf{\texttt{BOTH}}  \;\;\;\; \NEPowerset (\Sigma) \;\; \NEPowerset (\Sigma)
+\\                & \;\, | \;\; \textbf{\texttt{LEFT}} \;\;\;\;  \NEPowerset (\Sigma) 
+\\                & \;\, | \;\; \textbf{\texttt{RIGHT}} \;\; \quad\quad\quad\,    \;\; \NEPowerset (\Sigma)
 \\                & \;\, | \;\; \textbf{\texttt{GAPPED}}
 \end{align*}
 
-That is, $\Sigma_{\Gamma}$ contains all pairs of elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{ALIGN}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{DELETE}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{INSERT}}$, and an additional element $\textbf{\texttt{GAPPED}}$.
+That is, $\Sigma_{\Gamma}$ contains all pairs of elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{BOTH}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{LEFT}}$, all elements of $\NEPowerset (\Sigma)$ tagged as $\textbf{\texttt{RIGHT}}$, and an additional element $\textbf{\texttt{GAPPED}}$.
 This construction of $\Sigma_{\Gamma}$ extends the original alphabet $\Sigma$ to preserve alignment information in the algorithms presented below.
 Note that if $\setsize{\Sigma} = x$ then $\setsize{\Sigma_{\Gamma}} = 2^{2x}$.
 This follows from the fact that $|\NEPowerset (\Sigma)|$ is equal to one less than the size of the power set of $\Sigma$, due to $\NEPowerset (\Sigma)$ disallowing the empty set. 
@@ -224,7 +225,6 @@ These constraints are necessary but not sufficient for a heuristically optimal i
 It is worth noting the motivation of the constructions defined above. 
 Most pairwise string alignment functions take two finite strings of symbols from the original alphabet and supply a new finite string of symbols from the original alphabet.
 We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and letting $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
-We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and let $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
 The results of $\odot$ can contain cases of ambiguity where it cannot be inferred which input elements correspond to which output elements, but the construction of $\otimes$ never produces these cases of ambiguity due to the tagging of each element.
 The preservation of this relationship between input and output is required for the algorithmic improvements presented below.
 
@@ -248,44 +248,47 @@ We are able to improve this by, during the post-order pass, tagging each element
 We can lift each symbol in $\Sigma$ into $\Sigma_{\Gamma}$ through the alignment process.
 After the post-order traversal each node in $\mathcal{T}$ will have a string in $\Sigma_{\Gamma}^{*}$.
 The elements of said strings are tagged with one of four options representing which child node the information of this element originated relative to that node.
-Those tagged \textbf{\texttt{ALIGN}} originated from both subtrees, those tagged \textbf{\texttt{DELETE}} originated from the left subtree, those tagged \textbf{\texttt{INSERT}} originated from the right subtree, and those tagged \textbf{\texttt{GAPPED}} originated from neither subtree (elsewhere in $\mathcal{T}$).
+Those tagged \textbf{\texttt{BOTH}} originated from both subtrees, those tagged \textbf{\texttt{LEFT}} originated from the left subtree, those tagged \textbf{\texttt{RIGHT}} originated from the right subtree, and those tagged \textbf{\texttt{GAPPED}} originated from neither subtree (elsewhere in $\mathcal{T}$).
+Because elements tagged \textbf{\texttt{GAPPED}} originated from neither subtree, \textbf{\texttt{GAPPED}} elements cannot be created during the post-order, only added during the pre-order.
 
 This tag on each element provides contextual information that allows for an efficient processing of the elements in the pre-order traversal.
 During the pre-order traversal, a node's preliminary context is ``zipped'' with the parent's alignment in order to derive its final alignment.
-We will show that this tagging and ``zipping'' process is a substantial improvement over previous work, reducing the time complexity from quadratic to linear on the number of leaves.
-It is worth noting that this tagging is compact from a storage perspective, representing only two additional bits per element.
+We will show that this tagging and ``zipping'' process is a substantial improvement over previous work, reducing the time complexity from quadratic to linear in the length of the strings.
+It is worth noting that this tagging can be represented as a succinct data structure per \cite{Jacobson1988}, requiring only an two additional bits per element.
 
 
 \section*{An example heuristic function}
 
-We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$ (including affine and \cite{Ukkonen1985} variants).
-One candidate function fitting the description of $\otimes$ can be defined similarly to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
-The algorithm is modified along same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment.
+We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$.
+The candidate function fitting the description of $\otimes$ we present will be defined similarly to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
+The algorithm is modified along same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment. Algorithm \ref{Alg:pairwiseAlignment} (described below) is used to generate the results presented in the Methods section.
 
-First, we decide deterministically which string is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
+First, we decide deterministically which of the two input strings is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
 We assign the input strings based on the data they contain.
 The longer string is assigned to the columns of the alignment matrix, the shorter string to the rows.
 If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix. 
 In the case that the strings are identical, the alignment is trivial.
-This assignment enforces the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
+If the first string supplied to $\otimes$ was not assigned to the rows of the matrix, then we must swap the $\textbf{\texttt{LEFT}}$ and $\textbf{\texttt{RIGHT}}$ tags of the resulting string alignment before returning the result.
+This assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
 Commutativity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (i.e. ensures label invariance).
-
-We now apply a ``wave-front'' update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as the Needleman-Wunsch.
+ 
+We now apply a memoized update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as the Needleman-Wunsch.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
-The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as an insertion, deletion, or alignment event, respectively. 
+The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as $\textbf{\texttt{LEFT}}$, $\textbf{\texttt{RIGHT}}$, or $\textbf{\texttt{BOTH}}$, respectively. 
 These tagged pairwise alignments will be consumed on the subsequent pre-order traversal of $\mathcal{T}$ when merging preliminary contexts.
-Storing this information for each element of the pairwise alignment allows a more efficient generation of the subsequent multiple string alignment.
-This additional tagging detail is the key difference between previous alignment methods and that presented in this paper.
+Storing this information for each element of the pairwise alignment allows a more efficient generation of the subsequent multiple string alignment, allowing for an asymptotic improvement over the previous IA algorithm.
+This additional tagging detail is the key difference between previous alignment methods and the one presented in this paper.
 
 The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment} is of $\Theta\left( k^2 \right)$ complexity in both time and space, where $k$ is the length of the longer string.
-For clarity, while this example function is presented as a modification of the well understood Needleman-Wunsch algorithm, this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
-For instance, by using the method described by \cite{Ukkonen1985}, this algorithm's time complexity could be improved to average case of $\mathcal{O}\left( k * \log k \right)$ in general, and near linear time on sequences of high similarity.
-Additionally, by using the method described by \cite{Hirschberg1975}, this algorithm could be further improved to use $\mathcal{O}\left( k \right)$ space.
-Affine gap models described by \cite{Gotoh1982} can be incorporated via the method of \cite{VaronandWheeler2012}.
+For clarity, while this example function is presented as a modification of the well understood Needleman-Wunsch algorithm (without explicit memoization), this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
+For instance, by using the method described by \cite{Ukkonen1985100}, this algorithm's time complexity could be improved to $\mathcal{O}\left( k * s \right)$, where $s$ is the edit distance between the strings. 
+Alternatively, by using the method described by \cite{Hirschberg1975}, this algorithm could be improved to use $\mathcal{O}\left( k \right)$ space.
+Affine gap models \cite{Gotoh1982} can also be incorporated via the method of \cite{VaronandWheeler2012}.
 
-
-The $\sigma$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\Sigma$. The metrics used in our data set can be found in Table \ref{Tab:Metrics}.
-Note that $\sigma$ can be a more complex metric than those presented here, for instance a metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
+The operator $\sigma \,:\, \NEPowerset(\Sigma) \times \NEPowerset(\Sigma) \rightarrow \left(\NonNegReals,\, \NEPowerset(\Sigma) \right)$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\NEPowerset (\Sigma)$.
+The metrics used in our data sets can be found in Table \ref{Tab:Metrics}. The metrics presented in Table \ref{Tab:Metrics} show the transition cost between elements of $\Sigma$.
+However, these metrics can be expanded to define the transition cost between elements of $\NEPowerset(\Sigma)$ in the manner described by \cite{VaronandWheeler2012}.
+Note that $\sigma$ can also be a more complex metric than those presented here, for instance a metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 
 \section*{Description of post-order traversal}
@@ -299,34 +302,33 @@ First, for each leaf node, $v_x$, we set $v_x.cost$ to $0$.
 Additionally, if $v_x$ is of type $\Sigma^{*}$ and not of type $\Sigma^{*}_{\Gamma}$---i.e. if it has been decorated with a finite string of symbols from the alphabet $\Sigma$, and it is not decorated with a finite string of preliminary contexts over the alphabet $\Sigma_{\Gamma}$---then we call $\Call{InitializeString}{v_x.prelimString}$ to apply the transformation $\Sigma^{*} \rightarrow \Sigma^{*}_{\Gamma}$.
 
 On each internal node, $v_y$ with children $v_l$ and $v_r$, of $\mathcal{T}$, we call $v_l$ $\otimes$ $v_r$.
-The resultant \textit{prelimString} is assigned to $v_y.prelimString$, and the sum of the $v_l.cost$ and $v_r.cost$ is assigned to $v_y.cost$.
+The resultant \textit{prelimString} is assigned to $v_y.prelimString$, and the sum of the $v_l.cost$, $v_r.cost$, and the alignment cost of $v_l$ $\otimes$ $v_r$ is assigned to $v_y.cost$.
 By performing this operation in a post-order traversal over $\mathcal{T}$, we propagate the preliminary contexts and costs returned from the calls to $\otimes$ from the leaves to the root.
 
-Upon completion of the post-order traversal, each internal node contains the preliminary context information and the cost for the entire subtree.
-Consequently, when the post-order traversal is complete, the root node contains the preliminary context information of the full leaf set of strings.
+Upon completion of the post-order traversal, each internal node contains the preliminary context information and the cost for the corresponding subtree.
+Consequently, when the post-order traversal is complete, the root node contains the preliminary context information of the full leaf set of strings and the alignment cost for the entire tree $\mathcal{T}$.
 In the pre-order traversal, we will consume this preliminary context to perform an (efficient) alignment on the strings.
 
 Because the post-order traversal can be performed using any valid definition of $\otimes$, the complexity of the post-order traversal is dependent on the complexity of the heuristic alignment function used.
 Let the complexity of $\otimes$ be defined as $H(k)$, where $k$ is the maximum string length of the leaf labels of the tree $\mathcal{T}$.
 Then post-order traversal runs in $\mathcal{O}(H(k) * n)$ time and space, where $n$ is the number of leaves in the binary tree $\mathcal{T}$.
-If we were to use Ukkonen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * \log  k * n)$ average case time and space.
+If we were to use Ukkonen's method with the $\otimes$ described in Algorithm \ref{Alg:pairwiseAlignment}, the post-order traversal would run in $\mathcal{O}(k * s * n)$ time and space, where $s$ is the maximum edit distance between any two strings.
 
 
 \section*{Description of pre-order traversal for final alignments}
 
-The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations on each node created in the post-order traversal in order to assign final alignment decorations to each node.
-First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the preliminary context, replacing all deletion events in the preliminary context with insertion events.
-This is required because, at the root node, deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, however these events are indistinguishable at the root node.
-By initializing the root node in this manner, we treat the root node consistently with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{Alg:deriveAlignment}.
+The pre-order traversal (from the root to the leaves) of the binary tree $\mathcal{T}$ consumes the preliminary context decorations on each node created in the post-order traversal in order to assign final alignment decorations of $\Sigma_{\Gamma}^{*}$ to each node, see Algorithm \ref{Alg:preorder}.
+First, the root node must be initialized for the pre-order traversal by assigning the final alignment as the root's preliminary context.
+By initializing the root node in this manner, the root node is consistent with the treatment of any other parent node when deriving the internal node alignments in Algorithm \ref{Alg:deriveAlignment}.
 
 For each non-root node, $v_c$, we first determine whether $v_c$ is the left or right child of its parent.
-This is required because deletion events originate from alignments of the left subtree and insertion events originate from alignments of the right subtree, and we must use this information when deriving the final alignment of $v_c$.
+This is required because \texttt{LEFT}--tagged elements originate from alignments of the left subtree and \texttt{RIGHT}--tagged elements originate from alignments of the right subtree, and we must use this information when deriving the final alignment of $v_c$.
 
 The final alignment of the parent of $v_c$, $v_p$, will necessarily be of greater than or equal length to $v_p$'s preliminary context, because $v_p$'s final alignment contains all the information from the contexts of $v_p$'s subtrees as well as the information from the rest of the tree, that is, the contexts of all of the subtrees of every ancestor node to $v_p$.
 The preliminary context of $v_p$ is also greater than or equal to the preliminary context of $v_c$, due to the $v_p$'s context containing all information from $v_c$'s context, plus the addition of $v_c$'s sister subtree.
 The resulting value assigned to $v_c$'s final alignment will have the same length as the final alignment assigned to $v_p$.
 Since this invariant length is maintained from the root node to the leaf nodes' final alignment assignments, all alignments will have the same length.
-This constitutes a simple inductive proof that the final alignment assignment of each node will be of equal length and constitute a genuine string alignment.
+This constitutes a simple inductive argument that the final alignment assignment of each node will be of equal length and constitute a genuine string alignment.
 
 The final alignment for $v_c$ is derived by performing a ``sliding zip'' over $v_p$'s final alignment, $v_p$'s preliminary context, and $v_c$'s preliminary context.
 $v_p$'s final alignment is used as the basis of the zip.
@@ -344,42 +346,44 @@ There are five cases determining the derivation of each index of $v_c$'s final a
 
 \begin{itemize}
 
-  \item Case 0: When the sliding zip has consumed all elements of the $v_c$'s preliminary context, then the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
+  \item Case 0: When the element of $v_p$'s final alignment is ``\texttt{GAPPED},'' then the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
+
+  \item Case 1: When the sliding zip has consumed all elements of the $v_c$'s preliminary context, then the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
   Because we only define the next element of $v_c$'s final alignment to be either an element from $v_c$'s preliminary context or a gap, the latter is the only choice.
 
-  \item Case 1: When the element of $v_p$'s final alignment is ``\texttt{ALIGN},'' then we consume the next elements of both $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_p$'s consumed preliminary context element.
+  \item Case 2: When the element of $v_p$'s final alignment is ``\texttt{BOTH},'' then we consume the next elements of both $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_c$'s consumed preliminary context element.
   Because $v_p$'s final alignment element was marked as an alignment event, we know that $v_c$ was aligned with its sister subtree at this index, and that $v_c$'s preliminary context element is the correct element for this index of the alignment.
   
-  \item Case 2: When the both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{DELETE},'' and $v_c$ is the \textit{left} child of its parent, then we consume the next element of each of $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_c$'s consumed preliminary context element.
-  Because deletion events originate from the left subtree of a node, and $v_c$ is the left child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
-  If the same deletion event was encountered but $v_c$ was the right child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because deletion events originate from the left subtree and the deletion event was encountered in the right subtree.
-  In the case that a deletion event is encountered in a right subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the node's sister subtree.
-  This is implicitly dealt with in Case 4.
+  \item Case 3: When both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{LEFT},'' and $v_c$ is the \textit{left} child of its parent, then we consume the next element of each of $v_p$'s and $v_c$'s preliminary contexts and the next element of $v_c$'s final alignment is $v_c$'s consumed preliminary context element.
+  Because \texttt{LEFT}--tagged elements originate from the left subtree of a node, and $v_c$ is the left child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
+  If the same \texttt{LEFT}--tagged element was encountered but $v_c$ was the right child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because \texttt{LEFT}--tagged elements originate from the left subtree of $v_p$ and the \texttt{LEFT}--tagged element under consideration was encountered in $v_p$'s right subtree.
+  In the case that a \texttt{LEFT}--tagged element is encountered in the right subtree of $v_p$, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in the $v_c$'s sister subtree.
+  This is implicitly dealt with in Case 5.
   
-  \item Case 3: When the both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{INSERT},'' and $v_c$ is the \textit{right} child of $v_p$, we consume the next element of both $v_p$'s and $v_c$'s preliminary contexts and assign to the next element of $v_c$'s final alignment $v_c$'s consumed preliminary context element.
-  Because insertion events originate from the right subtree of a node, and $v_c$ is the right child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
-  If the same insertion event was encountered but $v_c$ was the left child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because insertion events originate from the right subtree and the insertion event was encountered in the left subtree.
-  In the case that a insertion event is encountered in a left subtree, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $v_c$'s sister subtree.
-  This is implicitly dealt with in Case 4.
+  \item Case 4: When both $v_p$'s final alignment element and $v_p$'s preliminary context element are ``\texttt{RIGHT},'' and $v_c$ is the \textit{right} child of $v_p$, we consume the next element of both $v_p$'s and $v_c$'s preliminary contexts and assign to the next element of $v_c$'s final alignment $v_c$'s consumed preliminary context element.
+  Because \texttt{RIGHT}--tagged elements originate from the right subtree of a node, and $v_c$ is the right child of $v_p$, $v_c$'s preliminary context element is the correct element for this index of the alignment.
+  If the same \texttt{RIGHT}--tagged element was encountered but $v_c$ was the left child of $v_p$, then $v_c$'s preliminary context element would not be the correct element for this index of the alignment, because \texttt{RIGHT}--tagged elements originate from the right subtree of $v_p$ and the \texttt{RIGHT}--tagged element under consideration was encountered in $v_p$'s left subtree.
+  In the case that a \texttt{RIGHT}--tagged element is encountered in the left subtree of $v_p$, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $v_c$'s sister subtree.
+  This is implicitly dealt with in Case 5.
   
-  \item Case 4: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
-  This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a deletion or insertion event was encountered in the right or left subtree, respectively. 
+  \item Case 5: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
+  This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a \texttt{LEFT}--tagged or \texttt{RIGHT}--tagged element was encountered in $v_p$'s right or left subtree, respectively. 
 
 \end{itemize}
 
 %\begin{itemize}
 %
-%\item If the next element of the parental final alignment is a deletion event, consume the parental final alignment element and add a deletion event to the current node's final alignment.
+%\item If the next element of the parental final alignment is a \texttt{LEFT}--tagged element, consume the parental final alignment element and add a \texttt{LEFT}--tagged element to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment is an insertion or alignment event and the next element of the parental preliminary context is a deletion event, then we consume both elements and add a deletion event to the current node's final alignment.
+%\item If the next element of the parental final alignment is an insertion or alignment event and the next element of the parental preliminary context is a \texttt{LEFT}--tagged element, then we consume both elements and add a \texttt{LEFT}--tagged element to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment is an insertion event and the next element of the parental preliminary context is an alignment event, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
+%\item If the next element of the parental final alignment is an \texttt{RIGHT}--tagged element and the next element of the parental preliminary context is an alignment event, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
 %
-%\item If the next element of the parental final alignment is an insertion event and the next element of the parental preliminary context is an insertion event and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary context.
-%If the median value is \textit{not} the same as the inserted value from the parental preliminary context, then we consume both the parental final alignment and the parental preliminary context elements and add a deletion event to the current node's final alignment. 
-%If the median value is the same as the inserted value from the parental preliminary context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary context to the current node's final alignment, converting a deletion event to an insertion event if the consumed element of the current node's preliminary alignment was a deletion event.
+%\item If the next element of the parental final alignment is an \texttt{RIGHT}--tagged element and the next element of the parental preliminary context is an \texttt{RIGHT}--tagged element and we are deriving the alignment of a leaf node, then we must inspect the median value of the next element of the current node's preliminary context.
+%If the median value is \textit{not} the same as the inserted value from the parental preliminary context, then we consume both the parental final alignment and the parental preliminary context elements and add a \texttt{LEFT}--tagged element to the current node's final alignment. 
+%If the median value is the same as the inserted value from the parental preliminary context or we are not deriving the alignment of a aligning a leaf node, then we consume all three elements along and add the consumed element of the current node's preliminary context to the current node's final alignment, converting a \texttt{LEFT}--tagged element to an \texttt{RIGHT}--tagged element if the consumed element of the current node's preliminary alignment was a \texttt{LEFT}--tagged element.
 %
-%\item If the next element of the parental final alignment is an alignment event and the next element of the parental preliminary context is an insertion event, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
+%\item If the next element of the parental final alignment is an alignment event and the next element of the parental preliminary context is an \texttt{RIGHT}--tagged element, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
 %
 %\item If the next element of the parental final alignment is an alignment event and the next element of the parental preliminary context is an alignment event, we must check if we are deriving the alignment for a leaf node.
 %If we are deriving the alignment for a leaf node, then we consume both elements along with the next element of the current node's preliminary context and add the consumed element of the current node's preliminary context to the current node's final alignment.
@@ -411,7 +415,7 @@ Hence, the worst case time complexity of the implied alignment algorithm is $\ma
 
 \section*{Methods}
 
-An example Haskell implementation of the implied alignment algorithm described above, along with a script to replicate the results discussed below can both be found here: 
+An example Haskell implementation of the implied alignment algorithm described above, the data sets used to generate the results, along with a script to replicate the results discussed below can all be found here: 
 
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
@@ -424,12 +428,12 @@ Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $
 
 Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
-The strings of the pathological data set consisted of a single symbol repeated some specified number of times.
-The lengths of the strings containing many copies of a single character were repeatedly doubled in size.
-The data set also used the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
+The smallest tree is a quartet tree, with the strings consisting of a single symbol from the alphabet $\Sigma = \{\mathrm{A, C, G, T}\}$ repeated $k$ number of times.
+The lengths of the strings on each leaf were repeatedly doubled in size to scale the string length.
+The size of the tree was scaled by taking $2^{\frac{n}{4}}$ quartet trees and combining them together into a larger balannced binary tree of $n$ leaves.
 
 The time complexity scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
-The former metric preferentially selects substitution events over insertion or deletion events, thus producing the ``perfect alignment.''
+The former metric preferentially selects substitution events over insertion or \texttt{LEFT}--tagged elements, thus producing the ``perfect alignment.''
 Conversely, the latter selects for insertion or deletion over substitution, thus producing the ``degenerate alignment.''
 
 
@@ -508,7 +512,7 @@ The IA algorithm can be improved to run with $\mathcal{O}(k * n^2)$ and best cas
 
 The algorithm originally described by \cite{Wheeler2003} was given the name implied alignment to differentiate it from other methods (e.g. sum-of-pairs alignment) unconnected to the vertex string assignments ``implied'' by the binary tree on a given leaf-set. 
 However, it is worth articulating exactly how the alignment we derive is \emph{implied} by the tree.
-In short, it is the lack of associativity.
+In short, it is the requirement of commutativity and the lack of associativity.
 
 For the purposes of this analysis we will ignore the cost returned from the $\otimes$ and consider only the resulting alignment context.
 Therefore let $\oplus : \Sigma^{*}_{\Gamma} \times \Sigma^{*}_{\Gamma} \rightarrow \Sigma^{*}_{\Gamma}$ be defined as $\otimes$, but ignoring the alignment cost of the result. If we are given a rooted binary tree $\mathcal{T} = ((A,B),(C,D))$ with leaves $A, B, C, D \in \Sigma^{*}$ then the ancestral state of the root node defined by the heuristic function $\oplus$ would be $((A \oplus B) \oplus (C \oplus D))$. 
@@ -531,14 +535,14 @@ For example consider a transposed tree $\mathcal{T'}$:
 This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under $\oplus$ and not the unique alignment on all trees for the leaf-set under $\oplus$.
 Clearly, a $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set.
 
-String alignment is of paramount importance in phylogenetic search, though \textit{when} the string alignment occurs can be a matter of contention.
-Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
-An alternate method based on dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather are compared vertex by vertex on the current tree under consideration during a phylogenetic search.
-Although implied alignments are not required to identify phylogenetic trees that are heuristically ``best,'' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY \citealp{POY5, Wheeleretal2015}) or as the basis of a search itself, as with more traditional approaches.
-
-How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
-When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
-When using implied alignment to search on a dynamic homology, the alignments depend on the topology.
+%String alignment is of paramount importance in phylogenetic search, though \textit{when} the string alignment occurs can be a matter of contention.
+%Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
+%An alternate method based on dynamic homology has been described by \citep{Wheeler1996}, in which strings are not pre-aligned, but rather are compared vertex by vertex on the current tree under consideration during a phylogenetic search.
+%Although implied alignments are not required to identify phylogenetic trees that are heuristically ``best,'' they can be used in enhanced tree search heuristics during a dynamic homology search (as in POY \citealp{POY5, Wheeleretal2015}) or as the basis of a search itself, as with more traditional approaches.
+%
+%How a string alignment is used in a phylogenetic search leads to an important distinction in interpreting the meaning of the resulting string alignment.
+%When performing the traditional methodology of aligning strings then searching on the static alignment, the resulting topology of the phylogenetic search is implied by the initial alignment.
+%When using implied alignment to search on a dynamic homology, the alignments depend on the topology.
 
 %See figure from this other paper Ward will note, as a good example of how Implied Alignment differs from a traditional multiple sequence alignment algorithm.
 
@@ -644,7 +648,7 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 
   \subsection*{Acknowledgements}
 	
-    We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions.
+    We would like to thank Eric Ford, Callan McGill, Katherine St. John, and Erilia Wu for insightful discussions. We would also like to thank the three reviewers for improvements to the manuscript.
 
 \begin{backmatter}
 	
@@ -745,7 +749,9 @@ When using implied alignment to search on a dynamic homology, the alignments dep
     			-- & 1 & 1 & 1 & 1 & 0
     		\end{tabular}
     		%\caption{Prefer InDel}
-    	\end{minipage}
+    	\end{minipage}\par
+        \vspace{0.75em}\raggedright
+        Expansion of the metrics presented in Table \ref{Tab:Metrics} is described by \cite{VaronandWheeler2012}.
     \end{table}
     
 	\begin{table}[!htbp] \centering 
@@ -776,18 +782,18 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 	\section*{Figures}
 	
 	\begin{figure}[h!]
-		\caption{\csentence{Example pre-order alignment for two internal nodes}
-			Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure.
+		\caption{\csentence{Example pre-order alignment for a parent node and it's left child.}
+			\newline Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure. See Algorithm \ref{Alg:deriveAlignment}.
 			\newline
 			The cell with the ``\textbf{\texttt{?}}'' is the cell who's value is being computed.
 			\newline
-			Cells with ``\textbf{\texttt{A}}'' are elements tagged as \textbf{\texttt{ALIGN}}.
+			Cells with ``\textbf{\texttt{B}}'' are elements tagged as \textbf{\texttt{BOTH}}.
 			\newline 
-			Cells with ``\textbf{\texttt{D}}'' are elements tagged as \textbf{\texttt{DELETE}}.
+			Cells with ``\textbf{\texttt{L}}'' are elements tagged as \textbf{\texttt{LEFT}}.
 			\newline 
-			Cells with ``\textbf{\texttt{I}}'' are elements tagged as \textbf{\texttt{INSERT}}.
+			Cells with ``\textbf{\texttt{R}}'' are elements tagged as \textbf{\texttt{RIGHT}}.
 			\newline
-			Cells with ``\textbf{\texttt{G}}'' are elements tagged as \textbf{\texttt{GAPPING}}.
+			Cells with ``\textbf{\texttt{G}}'' are elements tagged as \textbf{\texttt{GAPPED}}.
 			\newline
 			Cells with ``\textbf{\texttt{X}}'' represent that the end of the sequence has been reached.
 		}
@@ -824,6 +830,21 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 		\centering
 		\begin{minipage}{0.48\textwidth}
 			\centering
+			\caption{Best case pre-order runtime}
+			\label{Fig:Best}
+			\includegraphics[width=1.1\textwidth]{pathological-12-preorder.png}
+		\end{minipage}
+		\hfill
+		\begin{minipage}{0.48\textwidth}
+			\centering
+			\caption{Worst case pre-order runtime}
+			\label{Fig:Worst}
+			\includegraphics[width=1.1\textwidth]{pathological-31-preorder.png}
+		\end{minipage}
+
+		\begin{minipage}{0.48\textwidth}
+			
+			\centering
 			\caption{Fungi pre-order runtime}
 			\label{Fig:Fungi}
 			\includegraphics[width=1.1\textwidth]{fungi-preorder.png}
@@ -836,26 +857,14 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			\includegraphics[width=1.1\textwidth]{metazoa-preorder.png}
 		\end{minipage}
 		
-		\begin{minipage}{0.48\textwidth}
-			\centering
-			\caption{Best case pre-order runtime}
-			\label{Fig:Best}
-			\includegraphics[width=1.1\textwidth]{pathological-12-preorder.png}
-		\end{minipage}
-		\hfill
-		\begin{minipage}{0.48\textwidth}
-			\centering
-			\caption{Worst case pre-order runtime}
-			\label{Fig:Worst}
-			\includegraphics[width=1.1\textwidth]{pathological-31-preorder.png}
-		\end{minipage}
 	\end{figure}
 
 	
 	\section*{Algorithms}	
 	
 	\begin{algorithm}
-		\caption{Example $\otimes$ definition}\label{Alg:pairwiseAlignment}
+		\caption{Example $\otimes$ definition}
+		\label{Alg:pairwiseAlignment}
 		\begin{algorithmic}[1]
 			\Require{$lhs, \; rhs \in \Sigma_{\Gamma}^{*}$ }
 			\Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}
@@ -867,20 +876,48 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			\ElsIf {$\textit{lhs} < \textit{rhs}$}
 			\State \Return $\Call{matrixTraceback}{\sigma, \textit{lhs}, \textit{rhs}}$ \Comment{See Algorithm \ref{Alg:matrixTraceback}}
 			\Else
-			\State \Return $\Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$ \Comment{See Algorithm \ref{Alg:matrixTraceback}}
+			\State $\textit{result} \gets \Call{matrixTraceback}{\sigma, \textit{rhs}, \textit{lhs}}$ \Comment{See Algorithm \ref{Alg:matrixTraceback}}
+			\State \Return $\Call{swapContexts}{\textit{result}}$ \Comment{See Algorithm \ref{Alg:swapContext}}
 			\EndIf
 			\EndFunction
+			
 		\end{algorithmic}
 	\end{algorithm}
 	
 	\begin{algorithm}
-		\caption{Generate the alignment matrix of $\otimes$}\label{Alg:matrixDefinition}
+		\caption{Swap the $\textbf{\texttt{LEFT}}$ and $\textbf{\texttt{RIGHT}}$ contexts of $s \in \Sigma_{\Gamma}^{*}$}
+		\label{Alg:swapContext}
+		\begin{algorithmic}[1]
+			\Require{$inputString \in \Sigma_{\Gamma}^{*}$ }
+			\Ensure{$\Sigma_{\Gamma}^{*}$ }
+			\Function{swapContexts}{$\textit{inputString}$}
+			\State $i \gets \vert\textit{inputString} \;\vert - 1$
+			\While{$i \geq 0$}
+			\Switch{$\textit{inputString}_i$}
+			\Case{$\textbf{\texttt{LEFT}}  \;\;\;\; v$}
+			\State $\textit{inputString}_i \gets \textbf{\texttt{RIGHT}} \;\; v$
+			\EndCase
+			\Case{$\textbf{\texttt{RIGHT}} \;\; v$}
+			\State $\textit{inputString}_i \gets \textbf{\texttt{LEFT}} \;\;\;\;  v$
+			\EndCase
+			\EndSwitch
+			\State $i \gets i - 1$
+			\EndWhile
+			\Return $\textit{inputString}$
+			\EndFunction
+		\end{algorithmic}
+    \end{algorithm}
+
+	\begin{algorithm}
+		\caption{Generate the alignment matrix of $\otimes$, presented without explicit memoization}
+		\label{Alg:matrixDefinition}
 		\begin{algorithmic}[1]
 			\Require{$lesser, \; longer \in \Sigma_{\Gamma}^{*}$}
-			\Require{$\sigma \; \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
+			\Require{$\sigma \,:\, \NEPowerset(\Sigma) \times \NEPowerset(\Sigma) \rightarrow \left(\NonNegReals,\, \NEPowerset(\Sigma) \right)$}
 			\Require{$i \, \in \left[-1, \; \vert \textit{lesser} \,\;\vert - 1 \right] \subset \mathbb{Z}$}
 			\Require{$j    \in \left[-1, \; \vert \textit{longer} \,  \vert - 1 \right] \subset \mathbb{Z}$}
-			\Ensure{($\NonNegReals$, $\mathbf{Dir}$, $\Sigma_{\Gamma}$)}
+			\Ensure{($\NonNegReals$, $\mathbf{Dir}$, $\Sigma_{\Gamma}$)}\\
+			 A suitable memoization strategy should be applied to avoid repeated work of shared sub problems
 			\Function{matrixDefinition}{$\textit{lesser}, \textit{longer}, \sigma, i, j$}
 			\If   {$i < 0 \lor j < 0$} \Comment{Outside of matrix is infinite cost}
 			\State \Return $\left( \infty, \nwarrow, \textbf{--} \right)$
@@ -908,12 +945,13 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 	\end{algorithm}
 	
 	\begin{algorithm}
-		\caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}\label{Alg:matrixTraceback}
+		\caption{Consume the alignment matrix of $\otimes$, returning the alignment and cost}
+		\label{Alg:matrixTraceback}
 		\begin{algorithmic}[1]
 			\Require{$lesser,\; longer \in \Sigma_{\Gamma}^{*}$}
-			\Require{$\sigma \; \colon \left( \Sigma_{\Gamma}, \Sigma_{\Gamma}\right) \rightarrow \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
-			\Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}
-			
+			\Require{$\sigma \,:\, \NEPowerset(\Sigma) \times \NEPowerset(\Sigma) \rightarrow \left(\NonNegReals,\, \NEPowerset(\Sigma) \right)$}
+			\Ensure{($\NonNegReals$, $\Sigma_{\Gamma}^{*}$)}\\
+			A suitable memoization strategy should be applied to avoid repeated work of shared sub problems
 			\Function{matrixTraceback}{$\textit{lesser}, \textit{longer}$}
 			\State $\left( i, j \right) \gets \left( \vert \textit{lesser} \;\vert - 1,\; \vert \textit{longer} \;\vert - 1 \right)$
 			\State $\left( alignedCost, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j}$ \Comment{See Algorithm \ref{Alg:matrixDefinition}}
@@ -942,7 +980,8 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 	\end{algorithm}
 	
 	\begin{algorithm}
-		\caption{Get the minimal directional matrix context from the $3$ inputs}\label{Alg:getMinimal}
+		\caption{Get the minimal directional matrix context from the $3$ inputs}
+		\label{Alg:getMinimal}
 		\begin{algorithmic}[1]
 			\Require{$\left(\;\;diagCost,\;\,diagElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
 			\Require{$\left(\, rightCost,   rightElem \right) \in \left(\NonNegReals, \Sigma_{\Gamma} \right)$}
@@ -970,24 +1009,17 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 	\end{algorithm}
 	
 	\begin{algorithm}
-		\caption{Post-order Traversal}\label{Alg:post-order}
+		\caption{Post-order Traversal}
+		\label{Alg:post-order}
 		\begin{algorithmic}[1]
-			\Require{$inputString \in \Sigma^{*}$ }
-			\Ensure{$\Sigma_{\Gamma}^{*}$ }
-			\Function{initializeString}{$\textit{inputString}$}
-			\State $i \gets \vert\textit{inputString} \;\vert - 1,$
-			\While{$i \geq 0$}
-			\State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
-			\EndWhile
-			\Return $\textit{inputString}$
-			\EndFunction
-			
+					
 			\Require{A binary tree decorated with leaf labels $inputString \in \Sigma_{\Gamma}^{*}$ }
 			\Ensure{A binary tree decorated with internal labels $prelimString \in \Sigma_{\Gamma}^{*}$ }
 			%    \Procedure{post-order(n)}{}
 			\Function{post-order}{$\textit{node}$}
 			\If   {isLeaf ( $\textit{node}$ )}
 			\State $\textit{node.cost} \gets 0$
+			\State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
 			%        \If {isOfType ($\Sigma^{*}$, $\textit{node.prelimString}$ )}
 			%          \State $\textit{node.prelimString} \gets \Call{initializeString}{node.prelimString}$
 			%sy        \EndIf
@@ -999,11 +1031,24 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			\State $\textit{node.prelimString} \gets \textit{alignContext}$
 			\EndIf
 			\EndFunction
+
+			\Require{$inputString \in \Sigma^{*}$ }
+			\Ensure{$\Sigma_{\Gamma}^{*}$ }
+			\Function{initializeString}{$\textit{inputString}$}
+			\State $i \gets \vert\textit{inputString} \;\vert - 1,$
+			\While{$i \geq 0$}
+			\State $\textit{inputString}_i \gets \textbf{ALIGN} \; \left\{ \textit{inputString}_i\right\} \left\{ \textit{inputString}_i \right\} \left\{ \textit{inputString}_i \right\}$
+			\State $i \gets i - 1$
+			\EndWhile
+			\Return $\textit{inputString}$
+			\EndFunction
+			
 		\end{algorithmic}
 	\end{algorithm}
 
     \begin{algorithm}
-		\caption{Pre-order Traversal}\label{Alg:pre-order}
+		\caption{Pre-order Traversal}
+		\label{Alg:preorder}
 		\begin{algorithmic}[1]
 			\Require{      A binary tree decorated with node labels $prelimString  \in \Sigma_{\Gamma}^{*}$}
 			\Ensure {$\;\,$ A binary tree decorated with node labels \enskip $finalString   \in \Sigma_{\Gamma}^{*}$}
@@ -1017,6 +1062,8 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			\State $\textit{v} \gets$ \Call{DeriveAlignment}{$isLeft ( \textit{node} ), \textit{parentFinal}, \textit{parentPrelim}, \textit{childPrelim}$}
 			\State $\textit{node.finalString} \gets \textit{v}$
 			\EndIf
+			\State $\Call{PreOrder}{\textit{node.children.first}}$
+			\State $\Call{PreOrder}{\textit{node.children.second}}$
 			\EndFunction
 			
 		\end{algorithmic}
@@ -1034,28 +1081,29 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			\State $\textit{ccLen} \enskip\, \gets$ \Call{length}{$\textit{cContext}$}
 			\State $\left( \textit{i}, \textit{j}, \textit{k} \right) \;\gets \left( 0, 0, 0 \right)$
 			\For{$\textit{i} < \textit{paLen}$}
-			\If    {$\textit{k} \geq \textit{ccLen}$} \Comment{Case 0}
+			\If {$\;\;\; \textit{pAlignment}_i = \texttt{GAPPED}$ \Comment{Case 0}\par\hskip\algorithmicindent \enskip
+				$\lor \; \textit{k} \geq \textit{ccLen}$ \Comment{Case 1}\par\hskip\algorithmicindent\hspace{-0.8em}}
 			\State $\textit{result}_i \gets \texttt{GAPPED}$
 			\Else
-			\If {$\enskip \textit{pAlignment}_i = \texttt{ALIGN}$\Comment{Case 1}\par\hskip\algorithmicindent \quad\enskip
-				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{DELETE} \land \;\;\, isLeft \right)$\Comment{Case 2}\par\hskip\algorithmicindent\quad\enskip
-				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{INSERT} \land \neg   isLeft \right)$\Comment{Case 3}\par\hskip\algorithmicindent$\;\;\;$}  
+			\If {$\enskip\; \textit{pAlignment}_i = \texttt{BOTH}$\Comment{Case 2}\par\hskip\algorithmicindent \quad\enskip
+				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{LEFT} \;\;\; \land \;\;\, isLeft \right)$\Comment{Case 3}\par\hskip\algorithmicindent\quad\enskip
+				$\lor \left( \textit{pAlignment}_i = \textit{pContext}_j = \texttt{RIGHT} \; \land \neg   isLeft \right)$\Comment{Case 4}\par\hskip\algorithmicindent$\;\;\;$}  
 			\State $\textit{result}_i \gets \textit{cContext}_k$
 			\State $\textit{k} \gets \textit{k} + 1$
-			\Else \Comment{Case 4}
+			\Else \Comment{Case 5}
 			\State $\textit{result}_i \gets \texttt{GAPPED}$
 			\EndIf
 					
 			%          \Switch{$\textit{pAlignment}_i$}
 			%            
-			%            \Case{$\texttt{ALIGN}$} \Comment{Case 1}
+			%            \Case{$\texttt{BOTH}$} \Comment{Case 1}
 			%            \State $\textit{result}_i \gets \textit{cContext}_k$
 			%            \State $\textit{k} \gets \textit{k} + 1$
 			%            \EndCase
 			%                      
-			%            \Case{$\texttt{DELETE}}$
+			%            \Case{$\texttt{LEFT}}$
 			%              \Switch{$\textit{pContext}_j$}
-			%                \Case{$\texttt{DELETE}$} \Comment{Case 2}
+			%                \Case{$\texttt{LEFT}$} \Comment{Case 2}
 			%                \State $\textit{result}_i \gets \texttt{GAPPED}$
 			%                \EndCase
 			%                \Default \Comment{Case 3}
@@ -1065,9 +1113,9 @@ When using implied alignment to search on a dynamic homology, the alignments dep
 			%              \EndSwitch
 			%            \EndCase
 			%            
-			%            \Case{$\texttt{INSERT}$} 
+			%            \Case{$\texttt{RIGHT}$} 
 			%              \Switch{$\textit{pContext}_j$}
-			%                \Case{$\texttt{INSERT}$} \Comment{Case 4}
+			%                \Case{$\texttt{RIGHT}$} \Comment{Case 4}
 			%                \State $\textit{result}_i \gets \textit{cContext}_k$
 			%                \State $\textit{k} \gets \textit{k} + 1$
 			%                \EndCase

@@ -52,9 +52,9 @@ data  AlignCell
 
 
 toSymbol :: AlignCell -> Char
-toSymbol Align    = '𝗔' -- '𝓐'
-toSymbol Delete   = '𝗗' -- '𝓓'
-toSymbol Insert   = '𝗜' -- '𝓘'
+toSymbol Align    = '𝗕'-- '𝗔' -- '𝓐'
+toSymbol Delete   = '𝗟' -- '𝗗' -- '𝓓'
+toSymbol Insert   = '𝗥' -- '𝗜' -- '𝓘'
 toSymbol Gapped   = '𝗚'
 toSymbol Spacing  = ' '
 toSymbol Question = '？'
@@ -220,14 +220,14 @@ lPoints = p2 <$>
 labels :: [Diagram B]
 labels =
     let lab = centerXY . scale 1.8 . pad 1.5 . bold . text
-    in  [ lab "Case 1"
+    in  [ lab "Case 2"
         , lab "Case 3"
-        , lab "Case 4"
-        , lab "Case 1"
-        , lab "Case 4"
-        , lab "Case 4"
-        , lab "Case 1"
+        , lab "Case 0"
+        , lab "Case 2"
+        , lab "Case 5"
         , lab "Case 3"
+        , lab "Case 2"
+        , lab "Case 1"
         , lab "Case 0"
         , lab "Case 0"
         , lab "Parent's final       alignment"--, lab "(preorder" , lab "result)"
@@ -253,9 +253,9 @@ ijks =
     , ( 2, 2, 2)
     , ( 3, 2, 2)
     , ( 4, 3, 3)
-    , ( 5, 3, 3)
-    , ( 6, 4, 4)
-    , ( 7, 5, 5)
+    , ( 5, 4, 3)
+    , ( 6, 5, 4)
+    , ( 7, 6, 5)
     , ( 8, 6, 5)
     , ( 9, 6, 5)
     , (10, 6, 5)
@@ -265,11 +265,11 @@ ijks =
 pAlign :: [AlignCell]
 pAlign =
     [ Align
-    , Insert
+    , Delete
     , Gapped
     , Align
-    , Delete
     , Insert
+    , Delete
     , Align
     , Insert
     , Gapped
@@ -280,14 +280,14 @@ pAlign =
 pContext :: [AlignCell]
 pContext =
     [ Align
-    , Insert
-    , Spacing
-    , Insert
-    , Spacing
-    , Spacing
     , Delete
+    , Spacing
+    , Align
     , Insert
     , Delete
+    , Align
+    , Insert
+    , Spacing
     , Spacing
     ]
 
@@ -299,9 +299,9 @@ cContext =
     , Spacing
     , Insert
     , Spacing
-    , Spacing
-    , Delete
     , Align
+    , Delete
+    , Spacing
     , Spacing
     , Spacing
     ]
@@ -314,9 +314,9 @@ cAlign =
     , Gapped
     , Insert
     , Gapped
-    , Gapped
-    , Delete
     , Align
+    , Delete
+    , Gapped
     , Gapped
     , Gapped
     ]
