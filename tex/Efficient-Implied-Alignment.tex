@@ -127,12 +127,15 @@
 \begin{abstractbox}
 	
 	\begin{abstract}
+		\section*{Background}
 		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labeled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
 		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and \texttt{LEFT}--tagged elements occurred.
+		\section*{Results}
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
 		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
 		For well-behaved data, such as molecular sequences, the runtime approaches the best-case complexity of \textsc{$\Omega(k * n)$}.
-		This reduction in the time complexity of the procedure dramatically improves both its utility in generating multiple sequence alignments and its heuristic utility.
+		\section*{Conclusions}
+		The reduction in the time complexity of the algorithm dramatically improves both its utility in generating multiple sequence alignments and its heuristic utility.
 	\end{abstract}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -419,22 +422,22 @@ An example Haskell implementation of the implied alignment algorithm described a
 
 \centerline{\url{https://github.com/recursion-ninja/efficient-implied-alignment}}
 
-To explore the performance of the pre-order traversal, we ran the implied alignment algorithm described in this paper on fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
-Both full data sets consisted of a preselected tree and predetermined string alignment (i.e. including gaps).
-The full leaf set of the tree was repeatedly halved to produce a data set of doubling leaf set sizes.
-The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the current length from each string, and then removing all the gaps from the alignment slice.
-The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
-Both biological data sets used the discrete metric $\sigma_0$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
-
-Additionally, a pathological data set was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
+We ran the implied alignment algorithm described in this paper on a pathological data set that was constructed to illustrate the best and worst case performance of the implied alignment algorithm.
 The pathological data set consisted of balanced binary trees which repeatedly doubled in size.
 The smallest tree is a quartet tree, with the strings consisting of a single symbol from the alphabet $\Sigma = \{\mathrm{A, C, G, T}\}$ repeated $k$ number of times.
 The lengths of the strings on each leaf were repeatedly doubled in size to scale the string length.
 The size of the tree was scaled by taking $2^{\frac{n}{4}}$ quartet trees and combining them together into a larger balannced binary tree of $n$ leaves.
 
-The time complexity scaling of this pathological data set was examined under two different metrics $\sigma_1$ and $\sigma_2$.
+The time complexity scaling of this pathological data set was examined under two different metrics $\sigma_0$ and $\sigma_1$.
 The former metric preferentially selects substitution events over insertion or \texttt{LEFT}--tagged elements, thus producing the ``perfect alignment.''
 Conversely, the latter selects for insertion or deletion over substitution, thus producing the ``degenerate alignment.''
+
+Additionally, to explore the performance of the pre-order traversal on `real world'' data, the algorithm was run on the fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
+Both full data sets consisted of a preselected tree and predetermined string alignment (i.e. including gaps).
+The full leaf set of the tree was repeatedly halved to produce a data set of doubling leaf set sizes.
+The string alignment was repeatedly truncated, dropping the beginning and end of the alignment, taking the central slice of the current length from each string, and then removing all the gaps from the alignment slice.
+The pruned trees and truncated strings were used as progressively doubling inputs, to measure runtime scaling in terms of both leaf set size and string length.
+Both biological data sets used the discrete metric $\sigma_3$ and the alphabet $\Sigma = \{\mathrm{A, C, G, T,}$ --$\,\}$.
 
 
 After running the algorithm on each data set, we constructed an Ordinary Least Square (OLS) model with the running time in milliseconds as a function of dimensions $k$ and $n$.
@@ -534,6 +537,17 @@ For example consider a transposed tree $\mathcal{T'}$:
 
 This commutative property and lack of an associative property is why the alignment is implied by the tree on the leaf-set under $\oplus$ and not the unique alignment on all trees for the leaf-set under $\oplus$.
 Clearly, a $\oplus$ that is both commutative \emph{and} associative using the algorithm described in this paper would yield the same alignment on all trees for a given leaf-set.
+
+	
+\section*{Abbreviations}
+
+\begin{tabular}{l<{\hspace{-3pt}}>{\hspace{-4pt}}l<{\hspace{-4pt}}>{\hspace{-4pt}}l}
+	DO  & -- & Direct Optimization \\
+	IA  & -- & Implied Alignment \\
+	MSA & -- & Multiple Sequence Alignment \\
+	OLS & -- & Ordinary Least Square \\
+	TAP & -- & Tree Alignment Problem
+\end{tabular}
 
 %String alignment is of paramount importance in phylogenetic search, though \textit{when} the string alignment occurs can be a matter of contention.
 %Traditionally all input sequence strings are aligned first, and that alignment is held constant as a phylogenetic tree is searched for on this alignment.
@@ -695,6 +709,24 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
 	%%
 	%% Do not use \listoffigures as most will included as separate files
 	
+	\section*{Figure Legends}
+	
+	Figure 1 shows an example pre-order alignment for a parent node and it's left child.
+    
+    Demonstrates how each of the different cases of the pre-order algorithm are applied in the ``sliding-zip'' procedure. See Algorithm \ref{Alg:deriveAlignment}.
+	
+	The cell with the ``\textbf{\texttt{?}}'' is the cell who's value is being computed.
+
+	Cells with ``\textbf{\texttt{B}}'' are elements tagged as \textbf{\texttt{BOTH}}.
+
+	Cells with ``\textbf{\texttt{L}}'' are elements tagged as \textbf{\texttt{LEFT}}.
+
+	Cells with ``\textbf{\texttt{R}}'' are elements tagged as \textbf{\texttt{RIGHT}}.
+
+	Cells with ``\textbf{\texttt{G}}'' are elements tagged as \textbf{\texttt{GAPPED}}.
+
+	Cells with ``\textbf{\texttt{X}}'' represent that the end of the sequence has been reached.
+	
     \newpage
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -710,23 +742,10 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
     \begin{table}[!hbt]
     	\caption{Metric costs of $\sigma_0$, $\sigma_1$, and $\sigma_2$}
     	\label{Tab:Metrics}
-    	\begin{minipage}{0.3\textwidth}
-    		\centering
-    		\begin{tabular}{c|ccccc}
-    			$\sigma_0$ & A & C & G & T & -- \\ \hline
-    			A  & 0 & 1 & 1 & 1 & 1  \\
-    			C  & 1 & 0 & 1 & 1 & 1  \\
-    			G  & 1 & 1 & 0 & 1 & 1  \\
-    			T  & 1 & 1 & 1 & 0 & 1  \\
-    			-- & 1 & 1 & 1 & 1 & 0
-    		\end{tabular}
-    		%	\caption{Discrete}
-    	\end{minipage}
-    	\hfill
     	\begin{minipage}{0.33\textwidth}
     		\centering
     		\begin{tabular}{c|ccccc}
-    			$\sigma_1$ & A & C & G & T & -- \\ \hline
+    			$\sigma_0$ & A & C & G & T & -- \\ \hline
     			A  & 0 & 1 & 1 & 1 & 2  \\
     			C  & 1 & 0 & 1 & 1 & 2  \\
     			G  & 1 & 1 & 0 & 1 & 2  \\
@@ -741,7 +760,7 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
     		%\begin{table}[!hbt]
     		%\begin{center}
     		\begin{tabular}{c|ccccc}
-    			$\sigma_2$ & A & C & G & T & -- \\ \hline
+    			$\sigma_1$ & A & C & G & T & -- \\ \hline
     			A  & 0 & 3 & 3 & 3 & 1  \\
     			C  & 3 & 0 & 3 & 3 & 1  \\
     			G  & 3 & 3 & 0 & 3 & 1  \\
@@ -749,7 +768,20 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
     			-- & 1 & 1 & 1 & 1 & 0
     		\end{tabular}
     		%\caption{Prefer InDel}
-    	\end{minipage}\par
+    	\end{minipage}
+        \hfill
+        \begin{minipage}{0.3\textwidth}
+    	\centering
+    	\begin{tabular}{c|ccccc}
+    		$\sigma_3$ & A & C & G & T & -- \\ \hline
+    		A  & 0 & 1 & 1 & 1 & 1  \\
+    		C  & 1 & 0 & 1 & 1 & 1  \\
+    		G  & 1 & 1 & 0 & 1 & 1  \\
+    		T  & 1 & 1 & 1 & 0 & 1  \\
+    		-- & 1 & 1 & 1 & 1 & 0
+    	\end{tabular}
+    	%	\caption{Discrete}
+        \end{minipage}\par
         \vspace{0.75em}\raggedright
         Expansion of the metrics presented in Table \ref{Tab:Metrics} is described by \cite{VaronandWheeler2012}.
     \end{table}
@@ -832,14 +864,14 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
 			\centering
 			\caption{Best case pre-order runtime}
 			\label{Fig:Best}
-			\includegraphics[width=1.1\textwidth]{pathological-12-preorder.png}
+			\includegraphics[width=0.95\textwidth]{pathological-12-preorder.png}
 		\end{minipage}
 		\hfill
 		\begin{minipage}{0.48\textwidth}
 			\centering
 			\caption{Worst case pre-order runtime}
 			\label{Fig:Worst}
-			\includegraphics[width=1.1\textwidth]{pathological-31-preorder.png}
+			\includegraphics[width=0.95\textwidth]{pathological-31-preorder.png}
 		\end{minipage}
 
 		\begin{minipage}{0.48\textwidth}
@@ -847,14 +879,14 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
 			\centering
 			\caption{Fungi pre-order runtime}
 			\label{Fig:Fungi}
-			\includegraphics[width=1.1\textwidth]{fungi-preorder.png}
+			\includegraphics[width=0.95\textwidth]{fungi-preorder.png}
 		\end{minipage}
 		\hfill
 		\begin{minipage}{0.48\textwidth}
 			\centering
 			\caption{Metazoa pre-order runtime}
 			\label{Fig:Metazoa}
-			\includegraphics[width=1.1\textwidth]{metazoa-preorder.png}
+			\includegraphics[width=0.95\textwidth]{metazoa-preorder.png}
 		\end{minipage}
 		
 	\end{figure}
