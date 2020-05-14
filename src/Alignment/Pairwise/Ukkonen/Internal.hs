@@ -60,7 +60,7 @@ ukkonenDO
   -> (Word, Vector SymbolContext)
 ukkonenDO alphabet overlapFunction lhs rhs
   | noGainFromUkkonenMethod = naiveDOMemo alphabet overlapFunction lhs rhs
-  | otherwise               = directOptimization overlapFunction (renderCostMatrix gapGroup) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
+  | otherwise               = directOptimization gapGroup overlapFunction (renderCostMatrix gapGroup) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
   where
     gap       = gapSymbol alphabet
     gapGroup  = encodeAmbiguityGroup alphabet $ gap:|[]

@@ -57,8 +57,8 @@ toOtherReturnContext (cost, contextVector) =
     in (cost, filterGaps a, a, b, c)
   where
     f (Align  x y z) = (  x,   y,   z)
-    f (Delete x y  ) = (  x,   y, gap)
-    f (Insert x   z) = (  x, gap,   z)
+    f (Delete x y  ) = (  x, gap,   y)
+    f (Insert x   z) = (  x,   z, gap)
     f (Gapping _   ) = (gap, gap, gap)
 
 
@@ -82,12 +82,50 @@ consistentResults label metric = SC.testProperty label $ SC.forAll checkConsiste
     f :: SymbolAmbiguityGroup -> SymbolString
     f = fromNonEmpty . (:|[]) . (\x -> Align x x x)
 
-    checkConsistency :: (NucleotideBase, NucleotideBase) -> Bool
-    checkConsistency (NB x, NB y) = naiveResult == memoedResult && naiveResult == ukkonenResult
+    checkConsistency :: (NucleotideBase, NucleotideBase) -> Either String String
+    checkConsistency inputs@(NB x, NB y)
+      | resultsMatch = Right $ show inputs
+      | otherwise    = Left contextRendering
       where
-        naiveResult   = naiveDO     alphabet metric (f x) (f y)
-        memoedResult  = naiveDOMemo alphabet tcm    (f x) (f y)
-        ukkonenResult = ukkonenDO   alphabet tcm    (f x) (f y)
+        naiveResult   = naiveDO          alphabet metric (f x) (f y)
+        memoedResult  = naiveDOMemo      alphabet tcm    (f x) (f y)
+        ukkonenResult = ukkonenDO        alphabet tcm    (f x) (f y)
+        unboxedResult = unboxedUkkonenDO alphabet tcm    (f x) (f y)
+
+        resultsMatch = all (naiveResult ==)
+            [  memoedResult
+            , ukkonenResult
+            , unboxedResult
+            ]
+
+        contextRendering = renderContexts tcm inputs contexts
+
+        contexts =
+            [ ("Naive"  ,  naiveResult)
+            , ("Memoed" , memoedResult)
+            , ("Ukkonen", ukkonenResult)
+            , ("Unboxed", unboxedResult)
+            ]
+
+{-
+renderContexts
+ :: ( Eq c
+    , Foldable f
+    , Functor f
+    , Show c
+    )
+ => (NucleotideBase, NucleotideBase)
+ -> f (String, (c, Vector SymbolContext))
+ -> String
+-}
+renderContexts tcm inputs xs = unlines . ([show inputs] <>) . fmap f $ toList xs
+  where
+    f (s, c) = s <> "\n" <> renderResult c
+    renderResult (cost, aligned) = unlines
+        [ "  Cost     : " <> show cost
+        , "  Alignment: " <> show aligned -- renderDynamicCharacter alphabet tcm aligned
+--        , "  Shown Obj: " <> show aligned
+        ]
 
 
 testSuiteNaiveDO = testGroup "Naive DO"
@@ -147,8 +185,8 @@ isValidPairwiseAlignment
 isValidPairwiseAlignment label alignmentFunction = testGroup label
     [ testProperty "alignment function is commutative"               commutivity
     , testProperty "aligned results are all equal length"            resultsAreEqualLength
-    , testProperty "output length is >= input length"                greaterThanOrEqualToInputLength
-    , testProperty "alignment length is =< sum of input lengths"     greaterThanOrEqualToInputLength
+    , testProperty "output length is ≥ input length"                 greaterThanOrEqualToInputLength
+    , testProperty "alignment length is ≤ sum of input lengths"      greaterThanOrEqualToInputLength
     , testProperty "output alignments were not erroneously swapped"  outputsCorrespondToInputs
     , testProperty "output alignments were not erroneously reversed" outputsAreNotReversed
     , testProperty "output alignments only contain new gaps"         filterGapsEqualsInput

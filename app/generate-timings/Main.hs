@@ -68,7 +68,7 @@ instance Ord FilePoint where
 
 main :: IO ()
 main = do
-    opts <- force <$> parseTimingParameters >>= validateTimingParameters
+    opts <- parseTimingParameters >>= validateTimingParameters . force
 
     let alignedFile = dataFile      opts
         newick      = treeFile      opts

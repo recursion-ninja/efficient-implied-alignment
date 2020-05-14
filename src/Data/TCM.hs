@@ -56,7 +56,7 @@ buildSymbolChangeMatrix
   :: Matrix Word
   -> SymbolChangeMatrix Int
 buildSymbolChangeMatrix matrix = let m = force matrix
-                                 in  (\x y -> unsafeIndex m (x,y))
+                                 in  curry (unsafeIndex m)
 --                                 in  (\x y -> getElem x y m)
 
 
