@@ -129,7 +129,7 @@
 	\begin{abstract}
 		\section*{Background}
 		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labeled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
-		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and \texttt{LEFT}--tagged elements occurred.
+		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
 		\section*{Results}
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
 		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
@@ -257,14 +257,14 @@ Because elements tagged \textbf{\texttt{GAPPED}} originated from neither subtree
 This tag on each element provides contextual information that allows for an efficient processing of the elements in the pre-order traversal.
 During the pre-order traversal, a node's preliminary context is ``zipped'' with the parent's alignment in order to derive its final alignment.
 We will show that this tagging and ``zipping'' process is a substantial improvement over previous work, reducing the time complexity from quadratic to linear in the length of the strings.
-It is worth noting that this tagging can be represented as a succinct data structure per \cite{Jacobson1988}, requiring only an two additional bits per element.
+It is worth noting that this tagging can be represented as a succinct data structure per \cite{Jacobson1988}, requiring only two additional bits per element.
 
 
 \section*{An example heuristic function}
 
 We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$.
 The candidate function fitting the description of $\otimes$ we present will be defined similarly to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
-The algorithm is modified along same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment. Algorithm \ref{Alg:pairwiseAlignment} (described below) is used to generate the results presented in the Methods section.
+The algorithm is modified along the same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment. Algorithm \ref{Alg:pairwiseAlignment} (described below) is used to generate the results presented in the Methods section.
 
 First, we decide deterministically which of the two input strings is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
 We assign the input strings based on the data they contain.
@@ -369,7 +369,7 @@ There are five cases determining the derivation of each index of $v_c$'s final a
   In the case that a \texttt{RIGHT}--tagged element is encountered in the left subtree of $v_p$, we introduce a new gap into all the alignments of the subtree at this index to account for the aligned element in $v_c$'s sister subtree.
   This is implicitly dealt with in Case 5.
   
-  \item Case 5: When none of the conditions for Case 0, 1, 2 or 3 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
+  \item Case 5: When none of the conditions for Case 0, 1, 2, 3, or 4 hold, then we consume the next element of $v_p$'s preliminary context and the next element of $v_c$'s final alignment is ``\texttt{GAPPED}.''
   This handles the cases where either the two subtrees were not aligned at the current index or a new gap needed to be introduced at the current index because a \texttt{LEFT}--tagged or \texttt{RIGHT}--tagged element was encountered in $v_p$'s right or left subtree, respectively. 
 
 \end{itemize}
@@ -429,7 +429,7 @@ The lengths of the strings on each leaf were repeatedly doubled in size to scale
 The size of the tree was scaled by taking $2^{\frac{n}{4}}$ quartet trees and combining them together into a larger balannced binary tree of $n$ leaves.
 
 The time complexity scaling of this pathological data set was examined under two different metrics $\sigma_0$ and $\sigma_1$.
-The former metric preferentially selects substitution events over insertion or \texttt{LEFT}--tagged elements, thus producing the ``perfect alignment.''
+The former metric preferentially selects substitution events over insertion or deletion elements, thus producing the ``perfect alignment.''
 Conversely, the latter selects for insertion or deletion over substitution, thus producing the ``degenerate alignment.''
 
 Additionally, to explore the performance of the pre-order traversal on `real world'' data, the algorithm was run on the fungal and metazoan biological data sets described by \cite{GiribetandWheeler1999} and \cite{GiribetandWheeler2001} respectively.
@@ -959,7 +959,7 @@ Clearly, a $\oplus$ that is both commutative \emph{and} associative using the al
 			\State $\left(\textit{leftCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
 			\State \Return $\left( \textit{leftCost}, \leftarrow, \textbf{--} \right)$
 			\ElsIf{$i \neq 0 \land \textit{lesser}_{i-1} \,\; = \textbf{--}$} \Comment{Preserve input gap}
-			\State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i, j - 1}$
+			\State $\left(\textit{aboveCost}, \_, \_ \right) \gets \Call{matrixDefinition}{\textit{lesser}, \textit{longer}, \sigma, i - 1, j}$
 			\State \Return $\left( \textit{aboveCost}, \uparrow, \textbf{--} \right)$
 			\Else \Comment{General recursive case}
 			\State $x \gets \sigma \left(           \textit{longer}_{j-1}, \textit{lesser}_{i-1} \right)$
