@@ -446,6 +446,11 @@ From there, we calculated the coefficients of each input in this equation: $\log
 Note that, because the logarithm of the inputs was taken, we would expect $\beta_1$ to be close to $1$ for linear performance with respect to that input variable and close to $2$ for quadratic performance.
 See Table \ref{Tab:Regression}.
 
+Due to technical limitations, a direct runtime comparison between the $\mathcal{O}(k^2 * n^2)$ implementation in POY and our implementation was not readily achievable.
+Instead we present the empirical runtime analysis of the pre-order traversal above.
+We did not thoroughly explore the implemented post-order traversal, as it does not deviate substantially from the well-understood Needleman-Wunsh algorithm.
+We have provided the reader a convenient \url{replicate-results.sh} script in the aforementioned code repository to conduct their own analysis of both the pre-order and post-order traversals.
+
 
 \section*{Results}
 
