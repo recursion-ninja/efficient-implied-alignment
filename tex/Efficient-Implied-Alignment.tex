@@ -129,7 +129,7 @@
 	\begin{abstract}
 		\section*{Background}
 		Given a binary tree $\mathcal{T}$ of $n$ leaves, each leaf labeled by a string of length at most $k$, and a binary string alignment function $\otimes$, an implied alignment can be generated to describe the alignment of a dynamic homology for $\mathcal{T}$.
-		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring from those internal node decorations on which edges insertion and deletion events occurred.
+		This is done by first decorating each node of $\mathcal{T}$ with an alignment context using $\otimes$, in a post-order traversal, then, during a subsequent pre-order traversal, inferring on which edges insertion and deletion events occurred using those internal node decorations.
 		\section*{Results}
 		Previous descriptions of the implied alignment algorithm suggest a technique of ``back-propagation'' with time complexity $\mathcal{O}(k^2 * n^2)$.
 		Here we describe an implied alignment algorithm with complexity \textsc{$\mathcal{O}(k * n^2)$}.
@@ -173,23 +173,22 @@
 
 \section*{Background}
 
-Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} to be used in phylogenetic tree search providing both verification and more rapid heuristic analysis.
+Implied Alignment (IA) was proposed by \cite{Wheeler2003} as an adjunct to Direct Optimization (DO) \citep{Wheeler1996,VaronandWheeler2012} to be used in phylogenetic tree search to provide both verification and more rapid heuristic analysis.
 The method was originally implemented in later versions of MALIGN \citep{Wheeler1991-1998} and has been a component of POY \citep{Wheeleretal2015, POY2, POY3, POY5, Wheeleretal2006} since its inception.
 A more formal description of the algorithm was presented in \cite{Wheeleretal2006} and \cite{VaronandWheeler2012}.
 Although originally designed for alignment-free phylogenetic analysis (dynamic homology, \citealp{Wheeler2001}), the procedure was first used as a stand-alone multiple sequence alignment (MSA) tool by \cite{WhitingAetal2006} in their analysis of skink systematics.
 
-Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
+IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeler2006} and its implementations were described by \citep{Varonetal2010,Wheeleretal2015}.
+Similar MSA approaches also based in probabilistic analysis have been described e.g by \cite{Loytynoja2005} and \cite{Paten2008}, and implemented in PRANK \citep{PRANK}. Whiting et al. found that IA was superior (in terms of tree optimality score) to other MSA methods in both parsimony and likelihood analyses.
 This observation has been repeated multiple times (e.g. \citealp{LindgrenandDaly2007, Lehtonen2008, WheelerandGiribet2009, FordandWheeler2015}; summarized in \citealp{Wheeler2012}).
 The use of IA as an MSA algorithm as well as its use in the ``static approximation'' procedure \citep{Wheeler2003b} benefits greatly from improvements in the time complexity we present in this paper.
 
 In a broader context, IA is a heuristic solution to the NP-hard Tree Alignment Problem (TAP) defined by \cite{sankoff1975}.
 As such, any individual IA is not guaranteed to be either optimal or unique, with potentially an exponential number of equally optimal implied alignments for any given binary tree.
-IA was originally described in the context of parsimony-based phylogenetic analysis and was later extended to probabilistic model-based approaches by \cite{Wheeler2006} and its implementations were described by \citep{Varonetal2010,Wheeleretal2015}.
-Similar MSA approaches also based in probabilistic analysis have been described e.g by \cite{Loytynoja2005} and \cite{Paten2008}, and implemented in PRANK \citep{PRANK}.
 
 The IA algorithm presented in this paper takes a different intellectual approach to deriving alignments than earlier versions of IA.
 Previous algorithmic approaches relied on DO assigning median sequences to the graph vertices. These sequences were then consumed by IA to produce the full alignment.
-Here, we describe IA through the assigning ``preliminary contexts'' to the graph vertices, and these \textit{contexts} are later consumed to produce the median sequences and the full alignment.
+Here, we describe IA as assigning ``preliminary contexts'' to the graph vertices, and later consuming these \textit{contexts} to produce the median sequences and the full alignment.
 
 The algorithm uses the repeated application of a pairwise string alignment function to perform an efficient MSA for a given binary tree whose leaves are labeled by strings, i.e. the tree describes the relationship of those strings.
 The more similar the initial leaf labelings the better the algorithm performs.
@@ -203,7 +202,7 @@ In order for an MSA to be inferred, there are constraints on the heuristic align
 As long as these constraints are satisfied, the implementation details of the function are agnostic to the IA algorithm presented here.
 
 Let $\Sigma$ be a finite alphabet of symbols such that $\setsize{\Sigma} \geq 3$.
-Let $\gap \in \Sigma$ be a gap symbol which will have a special meaning in the context of an alignment.
+Let $\gap \in \Sigma$ be a gap symbol, which will have a special meaning in the context of an alignment.
 Let $\NEPowerset (\operatorname{X})$ denote the powerset of $\mathrm{X}$, minus the empty set.
 Let $\Sigma_{\Gamma}$ be the alphabet of the following symbols:
 
@@ -229,30 +228,30 @@ It is worth noting the motivation of the constructions defined above.
 Most pairwise string alignment functions take two finite strings of symbols from the original alphabet and supply a new finite string of symbols from the original alphabet.
 We can represent this class of pairwise string alignment functions by letting $\Sigma^{*}$ be the set of all finite strings over the alphabet $\NEPowerset (\Sigma)$ and letting $\odot: \Sigma^{*} \times \Sigma^{*} \rightarrow \left(\NonNegReals,\; \Sigma^{*} \right)$.
 The results of $\odot$ can contain cases of ambiguity where it cannot be inferred which input elements correspond to which output elements, but the construction of $\otimes$ never produces these cases of ambiguity due to the tagging of each element.
-The preservation of this relationship between input and output is required for the algorithmic improvements presented below.
+The preservation of this non-ambiguous relationship between input and output is required for the algorithmic improvements presented below.
 
 
 \section*{Overview of the Implied Alignment Algorithm}
 
 The IA algorithm provides an MSA for a binary tree $\mathcal{T}$ of $n$ leaves, each leaf containing a string with symbols in $\Sigma$ and length at most $k$.
-To do so, we will traverse $\mathcal{T}$ twice.
-First, we perform a post-order traversal---i.e. a node is visited after its children---from the leaves to the root, assigning the results of $\otimes$ as a ``preliminary context'' decoration to each node.
-Second, we perform a pre-order traversal, from the root to the leaves, aligning each preliminary context with its parent to assign a ``final alignment'' decoration to each node.
+To generate this alignment, we will traverse $\mathcal{T}$ twice.
+First, we perform a post-order traversal---i.e. a node is visited after its children---from the leaves to the root---assigning the results of $\otimes$ as a ``preliminary context'' decoration to each node.
+Second, we perform a pre-order traversal---from the root to the leaves---aligning each preliminary context with its parent to assign a ``final alignment'' decoration to each node.
 
-The difficult part of using a binary string alignment function (like $\otimes$) to produce an MSA efficiently lies in how the output of binary operations are combined across the ``global scope'' of $\mathcal{T}$.
-When performing the post-order traversal, the only information known at a given node is what is contained in its subtree.
+Using a binary string alignment function (like $\otimes$) to produce an MSA efficiently relies on the output of binary operations combined across the ``global scope'' of $\mathcal{T}$.
+However, at each step in the post-order traversal, the only information known at a given node is the information contained in its subtree.
 Therefore, information for the entirety of $\mathcal{T}$ is only known at completion of the post-order traversal.
 When performing the subsequent pre-order traversal, we take the ``complete'' scope available at the root node and thread the information towards the leaves.
-At each post-order step we take the ``complete'' context threaded from the root and combine it with the preliminary context to assign the final alignment on that node.
+At each pre-order step, we take the ``complete'' context threaded from the root and combine it with the preliminary context derived during the post-order pass to assign the final alignment on that node.
 Thus, we collect all requisite information for an MSA during the post-order traversal and then apply that information during the pre-order traversal to derive the MSA.
 
 As noted above, the time complexity of the IA algorithm's pre-order traversal in previous work was $\mathcal{O}(k^2 * n^2)$.
 We are able to improve this by, during the post-order pass, tagging each element of a string on a node $v_x$ with information that notates on which subtree of $v_x$ that element originated.
 We can lift each symbol in $\Sigma$ into $\Sigma_{\Gamma}$ through the alignment process.
-After the post-order traversal each node in $\mathcal{T}$ will have a string in $\Sigma_{\Gamma}^{*}$.
-The elements of said strings are tagged with one of four options representing which child node the information of this element originated relative to that node.
-Those tagged \textbf{\texttt{BOTH}} originated from both subtrees, those tagged \textbf{\texttt{LEFT}} originated from the left subtree, those tagged \textbf{\texttt{RIGHT}} originated from the right subtree, and those tagged \textbf{\texttt{GAPPED}} originated from neither subtree (elsewhere in $\mathcal{T}$).
-Because elements tagged \textbf{\texttt{GAPPED}} originated from neither subtree, \textbf{\texttt{GAPPED}} elements cannot be created during the post-order, only added during the pre-order.
+Upon completion of the post-order traversal, each node in $\mathcal{T}$ will have a string in $\Sigma_{\Gamma}^{*}$.
+Each element of said strings are tagged with one of four options enumerated above, representing from which child node the information of that element originated, relative to that node.
+Those tagged \textbf{\texttt{BOTH}} originated from both subtrees, those tagged \textbf{\texttt{LEFT}} originated from the left subtree, those tagged \textbf{\texttt{RIGHT}} originated from the right subtree, and those tagged \textbf{\texttt{GAPPED}} originated from neither subtree (i.e., elsewhere in $\mathcal{T}$).
+Because elements tagged \textbf{\texttt{GAPPED}} originated from neither subtree, \textbf{\texttt{GAPPED}} those elements cannot be determined during the post-order, only derived during the pre-order.
 
 This tag on each element provides contextual information that allows for an efficient processing of the elements in the pre-order traversal.
 During the pre-order traversal, a node's preliminary context is ``zipped'' with the parent's alignment in order to derive its final alignment.
@@ -263,7 +262,7 @@ It is worth noting that this tagging can be represented as a succinct data struc
 \section*{An example heuristic function}
 
 We will provide an example definition of $\otimes$ in Algorithm \ref{Alg:pairwiseAlignment} sufficient for the IA algorithm, though there are other sufficient definitions of $\otimes$.
-The candidate function fitting the description of $\otimes$ we present will be defined similarly to the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
+The candidate function fitting the description of $\otimes$ we present will be defined as a extension of the Needleman-Wunsch \citep{Needleman1970} algorithm for pairwise string alignment.
 The algorithm is modified along the same the lines that DO modified the dynamic programming technique of \cite{Sankoff2000}, with an additional step taken to produce the tagged elements in the output alignment. Algorithm \ref{Alg:pairwiseAlignment} (described below) is used to generate the results presented in the Methods section.
 
 First, we decide deterministically which of the two input strings is assigned to the top (columns) of the alignment matrix and which string is assigned to the left side (rows).
@@ -272,25 +271,24 @@ The longer string is assigned to the columns of the alignment matrix, the shorte
 If the strings are the same length, we take the first string under the lexical ordering of their elements and assign it to the columns and assign the second string to the rows of the alignment matrix. 
 In the case that the strings are identical, the alignment is trivial.
 If the first string supplied to $\otimes$ was not assigned to the rows of the matrix, then we must swap the $\textbf{\texttt{LEFT}}$ and $\textbf{\texttt{RIGHT}}$ tags of the resulting string alignment before returning the result.
-This assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm.
-Commutativity of $\otimes$ ensures that the IA algorithm provides the same alignment results for isomorphic tree labeling (i.e. ensures label invariance).
+This consistency in assignment ensures the commutativity of $\otimes$, which is necessary to enforce consistency of the IA algorithm, i.e. that it provides the same alignment results for isomorphic tree labelings, guaranteeing label invariance.
  
-We now apply a memoized update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as the Needleman-Wunsch.
+We now apply a memoized update procedure \citep{cormen2001}, a common element of dynamic programming algorithms such as Needleman-Wunsch alignment.
 The subsequent ``traceback,'' however, is notably modified from the original Needleman-Wunsch procedure.
 The upward, leftward, and diagonal directional arrows used to produce the alignment are additionally used to tag each element as $\textbf{\texttt{LEFT}}$, $\textbf{\texttt{RIGHT}}$, or $\textbf{\texttt{BOTH}}$, respectively. 
 These tagged pairwise alignments will be consumed on the subsequent pre-order traversal of $\mathcal{T}$ when merging preliminary contexts.
 Storing this information for each element of the pairwise alignment allows a more efficient generation of the subsequent multiple string alignment, allowing for an asymptotic improvement over the previous IA algorithm.
-This additional tagging detail is the key difference between previous alignment methods and the one presented in this paper.
+This additional tagging detail is the key difference between previous alignment methods and the method presented in this paper.
 
 The example $\otimes$ presented in Algorithm \ref{Alg:pairwiseAlignment} is of $\Theta\left( k^2 \right)$ complexity in both time and space, where $k$ is the length of the longer string.
-For clarity, while this example function is presented as a modification of the well understood Needleman-Wunsch algorithm (without explicit memoization), this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
+For clarity, while this example function is presented as a modification of the well understood Needleman-Wunsch algorithm (by adding explicit memoization), this tagging approach can be incorporated into more sophisticated pairwise string alignment algorithms.
 For instance, by using the method described by \cite{Ukkonen1985100}, this algorithm's time complexity could be improved to $\mathcal{O}\left( k * s \right)$, where $s$ is the edit distance between the strings. 
 Alternatively, by using the method described by \cite{Hirschberg1975}, this algorithm could be improved to use $\mathcal{O}\left( k \right)$ space.
 Affine gap models \cite{Gotoh1982} can also be incorporated via the method of \cite{VaronandWheeler2012}.
 
-The operator $\sigma \,:\, \NEPowerset(\Sigma) \times \NEPowerset(\Sigma) \rightarrow \left(\NonNegReals,\, \NEPowerset(\Sigma) \right)$ presented in throughout the pseudocode represents a metric for determining the transition cost between symbols in $\NEPowerset (\Sigma)$.
-The metrics used in our data sets can be found in Table \ref{Tab:Metrics}. The metrics presented in Table \ref{Tab:Metrics} show the transition cost between elements of $\Sigma$.
-However, these metrics can be expanded to define the transition cost between elements of $\NEPowerset(\Sigma)$ in the manner described by \cite{VaronandWheeler2012}.
+The operator $\sigma \,:\, \NEPowerset(\Sigma) \times \NEPowerset(\Sigma) \rightarrow \left(\NonNegReals,\, \NEPowerset(\Sigma) \right)$ presented in  ref{Alg:pairwiseAlignment}, ref{Alg:matrixDefinition}, and ref{Alg:matrixTraceback} represents a metric for determining the transition cost between symbols in $\NEPowerset (\Sigma)$.
+The metrics used in our data sets can be found in Table \ref{Tab:Metrics}. The metrics presented in Table \ref{Tab:Metrics} show the transition costs between elements of $\Sigma$.
+However, these metrics can be expanded to define the transition costs between elements of $\NEPowerset(\Sigma)$ in the manner described by \cite{VaronandWheeler2012}.
 Note that $\sigma$ can also be a more complex metric than those presented here, for instance a metric with affine or logarithmic affine gap costs, and be compatible with the IA algorithm. For usage of $\sigma$, see Algorithms \ref{Alg:pairwiseAlignment}, \ref{Alg:matrixDefinition}, and \ref{Alg:matrixTraceback}.
 
 
