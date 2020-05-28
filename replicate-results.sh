@@ -41,8 +41,8 @@ python3 plot-figure.py replicate-results/csv/metazoa-11.postorder.csv replicate-
     --tree data-sets/pathological.tree \
     --tcm  data-sets/tcm-12.tcm \
     --output pathological-12 \
-    -n [4,8,16,32,64] \
-    -k [1%1,1%2,1%4,1%8,1%16]
+    -n [4,8,16,32,64,128,256] \
+    -k [1%1,1%2,1%4,1%8,1%16,1%32,1%64]
 python3 plot-figure.py replicate-results/csv/pathological-12.preorder.csv  replicate-results/png/pathological-12-preorder.png
 python3 plot-figure.py replicate-results/csv/pathological-12.postorder.csv replicate-results/png/pathological-12-postorder.png
 
@@ -52,7 +52,7 @@ python3 plot-figure.py replicate-results/csv/pathological-12.postorder.csv repli
     --tree data-sets/pathological.tree \
     --tcm  data-sets/tcm-31.tcm \
     --output pathological-31 \
-    -n [4,8,16,32,64] \
-    -k [1%1,1%2,1%4,1%8,1%16]
+    -n [4,8,16,32,64,128,256] \
+    -k [1%1,1%2,1%4,1%8,1%16,1%32,1%64]
 python3 plot-figure.py replicate-results/csv/pathological-31.preorder.csv  replicate-results/png/pathological-31-preorder.png
 python3 plot-figure.py replicate-results/csv/pathological-31.postorder.csv replicate-results/png/pathological-31-postorder.png
