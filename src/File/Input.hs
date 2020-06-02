@@ -75,7 +75,7 @@ parseFileInput input = do
       Right parseData -> do
           (unifyTime', unifyResults)  <- runUnification (alphabetType input) parseData
           case toEither unifyResults of
-            Left  uErr -> pure . Left . fold1 . intersperse "\n" $ show <$> uErr
+            Left  uErr -> pure . Left . fold1 $ intersperse "\n" uErr
             Right (alphabet, matrix, tree) -> do
                 (tcmTime, tcm) <- precomputeTCM alphabet matrix
                 pure . Right $ FileInput

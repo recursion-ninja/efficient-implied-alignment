@@ -29,6 +29,7 @@ module Alignment.Pairwise.UnboxedUkkonen
   ) where
 
 import           Alignment.Pairwise.Internal (Direction(..), deleteGaps, insertGaps, measureCharacters, measureAndUngapCharacters)
+import           Control.DeepSeq
 import           Control.Monad.Loops         (iterateUntilM, whileM_)
 import           Control.Monad.ST
 import           Data.Alphabet
@@ -51,8 +52,9 @@ import qualified Data.Vector.Unboxed.Mutable as V
 import           Data.Word                   (Word16)
 import           Prelude                     hiding (lookup, zipWith)
 
---import Debug.Trace
-trace = const id
+import Debug.Trace
+--trace = const id
+tr' p s x = if p then trace (s <> ": " <> show x) x else x
 tr s x = trace (s <> ": " <> show x) x
 
 
@@ -249,12 +251,12 @@ buildInitialBandedMatrix
 buildInitialBandedMatrix gap cost lesserLeft longerTop o = fullMatrix
   where
     -- Note: "offset" cannot cause "width" to exceed "cols"
-    offset      = let o' = fromEnum o in  min o' $ cols - quasiDiagonalWidth
-    longerLen   = length longerTop
-    lesserLen   = length lesserLeft
-    rows        = length lesserLeft + 1
-    cols        = length longerTop  + 1
-    width       = quasiDiagonalWidth + (offset `shiftL` 1) -- Multiply by 2
+    offset    = let o' = fromEnum o in  min o' $ cols - quasiDiagonalWidth
+    longerLen = length longerTop
+    lesserLen = length lesserLeft
+    rows      = length lesserLeft + 1
+    cols      = length longerTop  + 1
+    width     = quasiDiagonalWidth + (offset `shiftL` 1) -- Multiply by 2
     quasiDiagonalWidth = differenceInLength + 1
       where
         differenceInLength = longerLen - lesserLen
@@ -273,7 +275,9 @@ buildInitialBandedMatrix gap cost lesserLeft longerTop o = fullMatrix
       ---------------------------------------
 
       -- Write to a single cell of the current vector and directional matrix simultaneously
-      let write !p ~(!c, !d) = M.unsafeWrite mCost p c *> M.unsafeWrite mDir p d
+      let write !p ~(!c, !d)
+            | p == (17,15) && trace (fold ["Writing to ", show p, " ", show c]) False = undefined
+            | otherwise = M.unsafeWrite mCost p c *> M.unsafeWrite mDir p d
 
       -- Write to an internal cell (not on a boundary) of the matrix.
       let internalCell leftElement insertCost i j
@@ -281,18 +285,20 @@ buildInitialBandedMatrix gap cost lesserLeft longerTop o = fullMatrix
             | leftElement == gap = (\x -> (x, UpArrow)) <$> M.unsafeRead mCost (i - 1, j)
             | otherwise = {-# SCC internalCell_expanding #-}
               let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
+                  p = (i,j)
+                  t = (17,16)
                   -- Preserve the gap in the top (longer) string
               in  if topElement == gap
                   then (\x -> (x, LeftArrow)) <$> M.unsafeRead mCost (i, j - 1)
-                  else let deleteCost = cost topElement gap
-                           alignCost  = cost topElement leftElement
-                       in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                              topCost  <- M.unsafeRead mCost (i - 1, j    )
-                              leftCost <- M.unsafeRead mCost (i    , j - 1)
-                              pure $ minimum
+                  else let deleteCost = tr' (p == t) "deleteCost" $ cost topElement gap
+                           alignCost  = tr' (p == t)  "alignCost" $ cost topElement leftElement
+                       in  do diagCost <- tr' (p == t) "diagCost" <$> M.unsafeRead mCost (i - 1, j - 1)
+                              topCost  <- tr' (p == t)  "topCost" <$> M.unsafeRead mCost (i - 1, j    )
+                              leftCost <- tr' (p == t) "leftCost" <$> M.unsafeRead mCost (i    , j - 1)
+                              pure . (\x -> if p == t then trace ("<:> " <> show x) x else x) $ minimum
                                   [ ( alignCost + diagCost, DiagArrow)
                                   , (deleteCost + leftCost, LeftArrow)
-                                  , (insertCost +  topCost, UpArrow  )
+                                  , ((tr' (p == t) "insertCost" insertCost) +  topCost, UpArrow  )
                                   ]
       
       -- Define how to compute the first cell of the first "offest" rows.
@@ -514,13 +520,25 @@ expandBandedMatrix gap cost lesserLeft longerTop mCost mDir po co = updateBand
                   topCost  <- M.unsafeRead mCost (i - 1, j    )
                   leftCost <- M.unsafeRead mCost (i    , j - 1)
                   oldCost  <- M.unsafeRead mCost (i    , j    )
-                  let e@(c,_) = minimum
+                  let e@(c,_) = minimum $ traceShowId
                                   [ ( alignCost + diagCost, DiagArrow)
                                   , (deleteCost + leftCost, LeftArrow)
                                   , (insertCost +  topCost, UpArrow  )
                                   ]
                   write (i,j) e
-                  pure (c == oldCost, j)
+                  let res = (c == oldCost, j+1)
+                  trace (unlines [ "recomputeCell" <> show (i,j)
+                                 , "  diagCost: " <> show diagCost
+                                 , "   topCost: " <> show  topCost
+                                 , "  leftCost: " <> show leftCost
+                                 , ""
+                                 , "  oldCost: " <> show oldCost
+                                 , "  newCost: " <> show c
+                                 , "  result:  " <> show res
+                                 ]
+                        ) $ pure ()
+                  pure res
+--                  pure (c /= oldCost, j+1)
 
       -- Define how to compute values to an entire row of the Ukkonen matrix.
       let extendRow i =
@@ -539,7 +557,7 @@ expandBandedMatrix gap cost lesserLeft longerTop mCost mDir po co = updateBand
                   | i <= cols - quasiDiagonalWidth - offset = rightBoundary
                   | otherwise = rightColumn
 
-                continueRecomputing (changed, j) = changed || j >= stop - 1
+                continueRecomputing (same, j) = same || j >= stop - 1
                 computeCell' ~(_,j) = computeCell leftElement insertCost i j
                 internalCell' j = internalCell leftElement insertCost i j >>= write (i,j)
                 recomputeUntilSame j = snd <$> iterateUntilM continueRecomputing computeCell' (False, j)
@@ -547,25 +565,53 @@ expandBandedMatrix gap cost lesserLeft longerTop mCost mDir po co = updateBand
                    start1 <- readSTRef headStop
                    start2 <- readSTRef tailStart
 
+                   let showBounds = trace (unlines
+                           [ "quasiDiagonalWidth: " <> show quasiDiagonalWidth
+                           , "prevOffset: " <> show prevOffset
+                           , "offset: " <> show offset
+                           , "width:  " <> show width
+                           , "start0: " <> show start0
+                           , "start1: " <> show start1
+                           , "start2: " <> show start2
+                           , "start3: " <> show start3
+                           , "goUpTo: " <> show goUpTo
+                           , "stop:   " <> show stop
+                           ])
+                           $ pure ()
+
+                   if i == 22
+                   then showBounds
+                   else pure ()
+
+                   if   start2 > start3
+                   then trace "!!! start2 > start 3 !!!" (pure ()) *> showBounds
+                   else pure ()
+
                    -- Conditionally write to the first cell of the Ukkonen band
                    if   i > prevOffset
                    then firstCell leftElement insertCost i start0 >>= write (i, start0)
                    else pure ()
 
                    for_ [start0+1 .. goUpTo] internalCell'
-                   leadStop  <- if goUpTo < start0
+                   leadStop  <- if (\x -> trace ("goUpTo < start0 = " <> show x) x) $ goUpTo < start0
                                 then pure start1
                                 else recomputeUntilSame $ goUpTo+1
                    headStop' <- if   leadStop >= start1
                                 then pure leadStop
                                 else recomputeUntilSame start1
-                   tailStop' <- recomputeUntilSame start2
-                   for_ [max (tailStop'+1) start3 .. stop-1] internalCell'
+                   tailStop' <- if start2 >= start3
+                                then pure start3
+                                else recomputeUntilSame start2
+                   trace (unlines [ "headStop': " <> show headStop'
+                                  , "tailStop': " <> show tailStop'
+                                  ]
+                         ) $ pure ()
+                   for_ [max (tailStop') start3 .. stop-1] internalCell'
 
                    -- Conditionally write to the last cell of the Ukkonen band
-                   if   tailStop' <= stop - 1
+                   if   tailStop' < stop
                    then lastCell leftElement insertCost i stop >>= write (i, stop)
-                   else pure ()
+                   else trace ("Skipping last cell for row " <> show i) $ pure ()
 
                    -- Update references for the next row
                    writeSTRef headStop headStop'
@@ -576,6 +622,7 @@ expandBandedMatrix gap cost lesserLeft longerTop mCost mDir po co = updateBand
       ---------------------------------------
 
       let start = quasiDiagonalWidth + prevOffset
+
       -- Extend the first row to seed subsequent rows.
       for_ [start .. min (cols - 1) (width - offset - 1)] $ \j ->
         let topElement    = symbolAlignmentMedian $ longerTop ! (j - 1)
@@ -775,7 +822,7 @@ traceback
   -> f SymbolContext          -- ^ First  (shorter) dynamic character
   -> f SymbolContext          -- ^ Second (longer)  dynamic character
   -> SymbolString
-traceback gap overlapFunction alignMatrix lesserChar longerChar = alignmentContext
+traceback gap overlapFunction alignMatrix lesserChar longerChar = force alignmentContext
   where
     f x y = fst $ overlapFunction x y
 
@@ -787,7 +834,7 @@ traceback gap overlapFunction alignMatrix lesserChar longerChar = alignmentConte
     rows      = lesserLen + 1
     cols      = longerLen + 1
 
-    startPoint = (rows - 1, cols - 1)
+    startPoint = trace "Traceback UNBOXED" (rows - 1, cols - 1)
 
     go !p@(~(!i, !j))
       | trace (show p) False = mempty
@@ -843,10 +890,10 @@ renderCostMatrix gapGroup lhs rhs cMat dMat = unlines
     (_,lesser,longer) = measureCharacters lhs rhs
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
-    toShownIntegers   = fmap renderContext . toList
+    toShownIntegers   = mapWithKey (\k -> (<> show ((k+1) `mod` 10)) . renderContext) . toList
     matrixTokens      = fmap (fmap showCell) . Z.toLists $ Z.zip cMat dMat
 --    showCell (0,DiagArrow) = ""
-    showCell (c,d)    = " " <> show c <> show d
+    showCell (c,d)    = show c <> show d
     maxPrefixWidth    = maxLengthOf lesserTokens
     maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ fold matrixTokens
     maxLengthOf       = maximum . fmap length
@@ -878,9 +925,9 @@ renderCostMatrix gapGroup lhs rhs cMat dMat = unlines
       where
         bar n = replicate (n+1) '━'
 
-    renderedRows = unlines . zipWith renderRow ("⁎":lesserTokens) $ matrixTokens
+    renderedRows = unlines . zipWithKey renderRow ("⁎":lesserTokens) $ matrixTokens
       where
-        renderRow e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
+        renderRow k e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
 
     renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
     renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"

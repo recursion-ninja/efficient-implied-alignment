@@ -76,10 +76,13 @@ import           Data.Word                   (Word8)
 import           Numeric.Extended.Natural
 import           Prelude                           hiding (lookup, zipWith)
 
---import Debug.Trace
-trace = const id
-traceShowId = id
-tr s x = trace (s <> ": " <> show x) x
+import Debug.Trace
+--trace = const id
+--traceShowId = id
+
+--tr s x = trace (s <> ": " <> show x) x
+tr' p s x = if p then trace (s <> ": " <> show x) x else x
+tr s = id 
 
 
 -- |
@@ -239,8 +242,8 @@ instance Lookup Matrix where
 --
 -- Reused internally by different implementations.
 {-# INLINEABLE directOptimization #-}
-{-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction Matrix              -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
-{-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction UkkonenMethodMatrix -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+-- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction Matrix              -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+-- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction UkkonenMethodMatrix -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 directOptimization
   :: ( Foldable f
      , Indexable f
@@ -264,7 +267,7 @@ directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
                 in  (0, Just $ f <$> ys)
             (Just xs, Just ys) ->
                 let traversalMatrix = matrixFunction overlapλ ys xs
-                in  second Just $ traceback traversalMatrix ys xs
+                in  second Just $ traceback (trace ("Boxed, Ukkonen:\n" <> renderCostMatrix gap ys xs traversalMatrix) traversalMatrix) ys xs
             _                  -> (0, Nothing)
 
         transformation    = if swapped then fmap reverseContext else id
@@ -405,20 +408,18 @@ deleteGaps gap bvs
       | otherwise   = (gaps, force $ Just newVector)
       where
         newVector = runST $ do
-            trace ("newLen: " <> show newLen) $ pure ()
+--            trace ("newLen: " <> show newLen) $ pure ()
             j <- newSTRef 0
             let isGapAtJ = do
                   j' <- readSTRef j
-                  trace ("j: ?? " <> show j') $ pure ()
-                  pure $ if j' >= charLen
-                         then False
-                         else symbolAlignmentMedian (bvs ! j') == gap
+--                  trace ("j: ?? " <> show j') $ pure ()
+                  pure $ not (j' >= charLen) && (symbolAlignmentMedian (bvs ! j') == gap)
 
             let g i = do
                   void $ whileM isGapAtJ (modifySTRef j succ)
                   j' <- readSTRef j
 --                  when $ j' < charLen) $ do
-                  trace ("j & i: " <> show j' <> " " <> show i) $ pure ()
+--                  trace ("j & i: " <> show j' <> " " <> show i) $ pure ()
                   modifySTRef j succ
                   pure $ bvs ! j'
                   
@@ -438,12 +439,13 @@ deleteGaps gap bvs
             gapLen  <- newSTRef 0
             gapRefs <- newSTRef []
 --            let showState = const $ pure ()
-{--}
+{--
             let showState i = do
                   ng <- readSTRef nonGaps
                   pg <- readSTRef prevGap
                   gl <- readSTRef gapLen
                   gr <- readSTRef gapRefs
+
                   let x = unlines
                            [ "i --> " <> show i
                            , "nonGaps: " <> show ng
@@ -452,12 +454,12 @@ deleteGaps gap bvs
                            , "gapRefs: " <> show gr
                            ]
                   trace x $ pure ()
-{--}
+--}
 
             for_ [0 .. charLen - 1] $ \i ->
               if symbolAlignmentMedian (bvs ! i)  == gap
-              then do trace ("gap at " <> show i) (pure ()) *> showState i *> modifySTRef gapLen succ *> writeSTRef prevGap True
-              else do showState i
+              then do {- trace ("gap at " <> show i) (pure ()) *> showState i *> -} modifySTRef gapLen succ *> writeSTRef prevGap True
+              else do -- showState i
                       gapBefore <- readSTRef prevGap
                       when gapBefore $ do
                         j <- readSTRef nonGaps
@@ -469,7 +471,7 @@ deleteGaps gap bvs
             
             gapBefore <- readSTRef prevGap
             when gapBefore $ do
-              trace "There were (apparently) gaps at the end of the gap removal loop" $ pure ()
+--              trace "There were (apparently) gaps at the end of the gap removal loop" $ pure ()
               j <- readSTRef nonGaps
               g <- readSTRef gapLen
               modifySTRef gapRefs ( (j,g): )
@@ -516,12 +518,13 @@ insertGaps gap lGaps rGaps meds
           rGap <- newSTRef 0
 --          rOff <- newSTRef 0
 
-          trace ("input median seq " <> show meds) $ pure ()
+--          trace ("input median seq " <> show meds) $ pure ()
 
           -- Write out to the mutable vectors
           for_ (IM.toAscList lGaps) $ uncurry (MUV.unsafeWrite lVec)
           for_ (IM.toAscList rGaps) $ uncurry (MUV.unsafeWrite rVec)
 
+{-
           let showState i = do
                   lv <- UV.unsafeFreeze lVec
                   rv <- UV.unsafeFreeze rVec
@@ -531,7 +534,7 @@ insertGaps gap lGaps rGaps meds
                   mp <- readSTRef mPtr
 --                  rp <- readSTRef rPtr
                   rg <- readSTRef rGap
---                  ro <- readSTRef rOff
+--                  ro <- readSTRef rOff          
                   let x = init $ unlines
                            [ ""
                            , "i --> " <> show i
@@ -546,18 +549,19 @@ insertGaps gap lGaps rGaps meds
                            , "rGap: " <> show rg
                            ]
                   trace x $ pure ()
+-}
 
           let align i = do
-                    trace "Aligning characters" $ pure ()
+--                    trace "Aligning characters" $ pure ()
                     m <- readSTRef mPtr
                     let e = meds !> m
                     let v = coerce e
                     MV.unsafeWrite mVec i v
                     modifySTRef mPtr succ
-                    when (isAlign e || isDelete e) $ do
+                    when (isAlign e || isDelete e) $
                       modifySTRef lGap succ
 --                      modifySTRef rGap succ
-                    when (isAlign e || isInsert e) $ do
+                    when (isAlign e || isInsert e) $
                       modifySTRef rGap succ
 --                      modifySTRef lGap succ
 
@@ -567,7 +571,7 @@ insertGaps gap lGaps rGaps meds
                 if   v == 0
                 then do -- when (k + o + fromEnum v <= p) $ modifySTRef lOff (+ fromEnum v)
                         align i
-                else do trace "Need to insert gap from Right char" $ pure ()
+                else do -- trace "Need to insert gap from Right char" $ pure ()
                         MV.unsafeWrite mVec i $ insertElement gap gap
 --                        MV.unsafeWrite mVec i $ deleteElement gap gap
 --                        modifySTRef rPtr succ
@@ -594,14 +598,14 @@ insertGaps gap lGaps rGaps meds
 -}
 
           for_ [0 .. newLength - 1] $ \i -> do
-            showState i
+--            showState i
             -- Check if we need to insert a gap from the left char
             lg <- tr "lGap" <$> readSTRef lGap
             v  <- if lg >= MUV.length lVec then pure 0 else MUV.unsafeRead lVec lg
             if   v == 0
             then do -- when (k + o + fromEnum v <= p) $ modifySTRef lOff (+ fromEnum v)
                     checkRightGapReinsertion i
-            else do trace "Need to insert gap from Left char" $ pure ()
+            else do -- trace "Need to insert gap from Left char" $ pure ()
                     MV.unsafeWrite mVec i $ deleteElement gap gap
 --                    MV.unsafeWrite mVec i $ insertElement gap gap
 --                    modifySTRef lPtr succ
@@ -651,16 +655,16 @@ needlemanWunschDefinition
   -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
   |  p == (0,0)                          = (            0, DiagArrow, gapGroup)
-  |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
-  |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
-  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
+--  |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
+--  |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
+--  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
   |  otherwise                           = (      minCost,    minDir, minState)
   where
     -- | Lookup with a default value of infinite cost.
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
+--    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
 
     topContext                    = (col - 1) `lookup`  topChar
     leftContext                   = (row - 1) `lookup` leftChar
@@ -672,13 +676,15 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
     ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
     ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gapGroup   leftElement
-    rightCost                     = rightOverlapCost + leftwardValue
-    diagCost                      =  diagOverlapCost + diagonalValue
-    downCost                      =  downOverlapCost +   upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
+    rightCost                     = tr' (p == (17,16)) "rightCost" $ (tr' (p == (17,16)) "rightOverlapCost" rightOverlapCost) + (tr' (p == (17,16)) "leftwardValue" leftwardValue)
+    diagCost                      = tr' (p == (17,16)) "diagCost"  $ (tr' (p == (17,16)) "diagOverlapCost"   diagOverlapCost) + (tr' (p == (17,16)) "diagonalValue" diagonalValue)
+    downCost                      = tr' (p == (17,16)) "downCost"  $ (tr' (p == (17,16)) "downOverlapCost"   downOverlapCost) + (tr' (p == (17,16)) "  upwardValue"   upwardValue)
+    (minCost, minState, minDir)   = (\x -> if p == (17,16) then trace ("<!> " <> show x) x else x) $
+                                    getMinimalCostDirection gapGroup
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
+
 
 {--}
 -- |
@@ -688,12 +694,10 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
 -- Useful for debugging purposes.
 {-# INLINEABLE renderCostMatrix #-}
 --{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
-{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
+--{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 renderCostMatrix
   :: ( Foldable f
-     , Foldable m
-     , Functor m
-     , Indexable m
+     , Lookup m
      , Key m ~ (Int, Int)
      )
   => SymbolAmbiguityGroup
@@ -712,10 +716,16 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
     toShownIntegers   = fmap renderContext . toList
-    matrixTokens      = showCell <$> mtx
+--    matrixTokens      = fmap showCell <$> mtx
+    matrixTokens      = (\x -> trace ("Rows in Rendering: " <> show (length x)) x) $
+                        [ (\j -> maybe "" showCell $ (i,j) `lookup` mtx)
+                           <$> [ 0 .. colCount - 1 ]
+
+                        | i <- [ 0 .. rowCount - 1 ]
+                        ]                                
     showCell (c,d,_)  = show c <> show d
-    maxPrefixWidth    = maxLengthOf lesserTokens
-    maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ toList matrixTokens
+    maxPrefixWidth    = maxLengthOf lesserTokens + 1
+    maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ fold matrixTokens
     maxLengthOf       = maximum . fmap length
 
     colCount = length longer + 1
@@ -745,14 +755,11 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
       where
         bar n = replicate (n+1) '━'
 
-    renderedRows = unlines . zipWith renderRow ("⁎":lesserTokens) $ getRows matrixTokens
+    renderedRows = unlines . (\x -> trace ("Rows in Rendering: " <> show (length x)) x)
+                 . zipWithKey renderRow ("⁎":lesserTokens)
+                 $ matrixTokens
       where
-        renderRow e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
-
-        getRows m = (`getRow'` m) <$> [0 .. rowCount - 1]
-        getRow' i m = g <$> [0 .. colCount - 1]
-          where
-            g j = fromMaybe "" $ (i,j) `lookup` m
+        renderRow k e cs = fold [" ", pad maxPrefixWidth (e <> show (k `mod` 10)), "┃ ", fold $ pad maxColumnWidth <$> cs ]
 
     renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
     renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
@@ -788,15 +795,16 @@ traceback
   -> f SymbolContext
   -> f SymbolContext
   -> (Word, Vector SymbolContext)
-traceback alignMatrix longerChar lesserChar = (unsafeToFinite cost, V.reverse $ V.unfoldr go lastCell)
+traceback alignMatrix longerChar lesserChar = force (unsafeToFinite cost, V.reverse $ V.unfoldr go lastCell)
   where
-      lastCell     = (row, col)
+      lastCell     = trace "Traceback ORIGINAL" (row, col)
       (cost, _, _) = alignMatrix ! lastCell
 
       col = length longerChar
       row = length lesserChar
 
       go currentCell@(!i, !j)
+        | trace (show currentCell) False = undefined
         | nextCell < (0,0) = (contextElement, Nothing)
         | otherwise        = (contextElement, Just nextCell)
         where
