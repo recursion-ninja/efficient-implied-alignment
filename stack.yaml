@@ -11,4 +11,4 @@ local-bin-path: bin
 
 require-stack-version: ">=2.3.1"
 
-resolver: lts-15.14
+resolver: lts-16.0
