@@ -36,10 +36,9 @@ import           Data.Char                                (isSpace)
 import           Data.Data
 import           Data.Foldable
 import           Data.List.NonEmpty                       (NonEmpty)
-import           Data.List.Utility                        (duplicates,
-                                                           mostCommon)
-import           Data.Matrix.ZeroIndexed                  (Matrix, ncols, nrows)
-import qualified Data.Matrix.ZeroIndexed                  as M (fromList)
+import           Data.List.Utility                        (duplicates, mostCommon)
+import           Data.Matrix                              (Matrix, cols, rows)
+import qualified Data.Matrix                              as M (fromList)
 import           Data.Maybe                               (catMaybes, fromJust)
 import           Data.Scientific                          (toBoundedInteger)
 import qualified Data.Text                                as T
@@ -208,17 +207,17 @@ validateTCMParseResult (TCMParseResult alphabet matrix)
   | otherwise    = pure $ TCM alphabet matrix
   where
     size         = V.length alphabet
-    rows         = nrows matrix
-    cols         = ncols matrix
-    dimMismatch  = size + 1 /= rows
-                || size + 1 /= cols
+    rows'        = rows matrix
+    cols'        = cols matrix
+    dimMismatch  = size + 1 /= rows'
+                || size + 1 /= cols'
     errorMessage = concat
         [ "The alphabet length is "
         , show size
         , " but the matrix dimensions are "
-        , show rows
+        , show rows'
         , " x "
-        , show cols
+        , show cols'
         , ". The expected matrix dimensions were "
         , show $ size + 1
         , " x "
@@ -266,23 +265,23 @@ validateAlphabet alphabet
 validateMatrix :: (MonadFail m, MonadParsec e s m) => [[Word]] -> m (Matrix Word)
 validateMatrix matrix
   | null matrix        = fail "No matrix specified"
-  | null matrixErrors  = pure . M.fromList rows cols $ concat matrix
+  | null matrixErrors  = pure . M.fromList (rows', cols') $ concat matrix
   | otherwise          = fails matrixErrors
   where
-    rows               = length matrix
-    cols               = fromJust . mostCommon $ length <$> matrix
+    rows'              = length matrix
+    cols'              = fromJust . mostCommon $ length <$> matrix
     badCols            = foldr getBadCols [] $ zip [(1::Int)..] matrix
-    getBadCols (n,e) a = let x = length e in if x /= cols then (n,x):a else a
-    colMsg (x,y)       = (:) (Just $ fold [ "Matrix row ", show x, " has ", show y, " columns but ", show cols, " columns were expected"])
+    getBadCols (n,e) a = let x = length e in if x /= cols' then (n,x):a else a
+    colMsg (x,y)       = (:) (Just $ fold [ "Matrix row ", show x, " has ", show y, " columns but ", show cols', " columns were expected"])
     matrixErrors       = catMaybes $ badRowCount : badColCount
     badColCount        = foldr colMsg [] badCols
-    badRowCount        = if   rows == cols
+    badRowCount        = if   rows' == cols'
                          then Nothing
                          else Just $ concat
                              [ "The matrix is not a square matrix. The matrix has "
-                             , show rows
+                             , show rows'
                              , " rows but "
-                             , show cols
+                             , show cols'
                              , " rows were expected"
                              ]
 

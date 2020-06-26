@@ -27,10 +27,14 @@ import           Alignment.Pairwise.Internal
 import           Data.Alphabet
 import           Data.Key
 import           Data.List.NonEmpty          (NonEmpty (..))
-import           Data.Matrix.ZeroIndexed     (matrix)
+import           Data.Matrix                 (fromList)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.NonEmpty
+
+--import Debug.Trace
+trace = const id
+tr s x = trace (s <> ": " <> show x) x
 
 
 -- |
@@ -53,7 +57,7 @@ naiveDO
   -> f SymbolContext              -- ^ First  dynamic character
   -> f SymbolContext              -- ^ Second dynamic character
   -> (Word, Vector SymbolContext) -- ^ The cost of the alignment and the alignment context
-naiveDO alphabet costStruct = directOptimization (overlap alphabet costStruct) (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
+naiveDO alphabet costStruct = directOptimization gap (overlap alphabet costStruct) undefined $ createNeedlemanWunchMatrix gap
   where
     gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
 
@@ -92,7 +96,7 @@ naiveDOMemo
   -> f SymbolContext
   -> f SymbolContext
   -> (Word, Vector SymbolContext)
-naiveDOMemo alphabet tcm = directOptimization tcm (renderCostMatrix gap) $ createNeedlemanWunchMatrix gap
+naiveDOMemo alphabet tcm = directOptimization gap tcm undefined $ createNeedlemanWunchMatrix gap
   where
     gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
 
@@ -118,11 +122,16 @@ createNeedlemanWunchMatrix
   -> f SymbolContext
   -> f SymbolContext
   -> NeedlemanWunchMatrix SymbolAmbiguityGroup
---createNeedlemanWunchMatrix topString leftString overlapFunction = trace renderedMatrix result
 createNeedlemanWunchMatrix gap overlapFunction topString leftString = result
   where
-    result             = matrix rows cols generatingFunction
-    rows               = length leftString + 1
-    cols               = length topString  + 1
-    generatingFunction = needlemanWunschDefinition gap overlapFunction topString leftString result
+    result = fromList (rows', cols')
+        [ needlemanWunschDefinition gap overlapFunction topString leftString result (i,j)
+        | i <- [0 .. rows' - 1]
+        , j <- [0 .. cols' - 1]
+        ]
+    
+--    result             = matrix rows' cols' generatingFunction
+    rows'              = tr "createNeedlemanWunchMatrix:rows'" $ length leftString + 1
+    cols'              = tr "createNeedlemanWunchMatrix:cols'" $ length topString  + 1
+--    generatingFunction = needlemanWunschDefinition gap overlapFunction topString leftString result
 --    renderedMatrix     = renderCostMatrix topString leftString result

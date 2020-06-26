@@ -16,8 +16,10 @@ module Alignment.Pairwise
   ( naiveDO
   , naiveDOMemo
   , ukkonenDO
+  , unboxedUkkonenDO
   ) where
 
 
 import           Alignment.Pairwise.NeedlemanWunsch
 import           Alignment.Pairwise.Ukkonen
+import           Alignment.Pairwise.UnboxedUkkonen

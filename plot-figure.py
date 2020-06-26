@@ -61,5 +61,5 @@ ax.view_init(40, 225)
 if len(sys.argv) < 3:
   plt.show()
 else:
-  plt.savefig(sys.argv[2])
+  plt.savefig(sys.argv[2], format='eps', dpi=1200)
 

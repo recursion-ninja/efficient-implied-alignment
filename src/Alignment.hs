@@ -21,6 +21,7 @@ module Alignment
   , naiveDO
   , naiveDOMemo
   , ukkonenDO
+  , unboxedUkkonenDO
   ) where
 
 

@@ -19,8 +19,8 @@ import           Data.Foldable
 import           Data.Key
 import           Data.List.NonEmpty      (NonEmpty (..))
 import qualified Data.List.NonEmpty      as NE
-import           Data.Matrix.ZeroIndexed (Matrix, unsafeGet)
-import qualified Data.Matrix.ZeroIndexed as M
+import           Data.Matrix             (Matrix, unsafeIndex)
+import qualified Data.Matrix             as M
 import           Data.Semigroup
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
@@ -56,17 +56,15 @@ buildSymbolChangeMatrix
   :: Matrix Word
   -> SymbolChangeMatrix Int
 buildSymbolChangeMatrix matrix = let m = force matrix
-                                 in  (\x y -> unsafeGet x y m)
+                                 in  curry (unsafeIndex m)
 --                                 in  (\x y -> getElem x y m)
 
 
 renderTCM :: Alphabet Char -> TransitionCostMatrix -> String
 renderTCM alphabet tcm = unlines . (headerRow:) $ fmap (foldMap render) listOfRows
   where
-    g (i,j)      = tcm (toEnum $ i + 1) (toEnum $ j + 1)
     len          = 1 `shiftL` length alphabet
-    m            = M.matrix (len-1) (len-1) g
-    listOfRows   = M.toLists m
+    listOfRows   = [ [ tcm (toEnum i) (toEnum j) | j <- [0, len - 1] ] | i <- [0, len - 1]]
     headerRow    = foldMap (\x -> fold ["|", renderMonospacedGroup alphabet (toEnum x),"|   "]) [1..len-1]
     render (x,y) = fold ["(", renderMonospacedGroup alphabet x, ",", show y,") "]
 
@@ -81,12 +79,13 @@ buildTransitionCostMatrix
   -> SymbolChangeMatrix Int
   -> TransitionCostMatrix
 buildTransitionCostMatrix alphabet scm =
-    let g (i,j) = overlap alphabet scm (toEnum i) (toEnum j)
---    let g (i,j) = overlap' (length alphabet) (\x y -> scm (fromEnum x) (fromEnum y)) $ toEnum i :| [toEnum j]
-        len     = 1 `shiftL` length alphabet
-        m       = M.matrix len len g
-    in  \i j -> unsafeGet (fromEnum i) (fromEnum j) m
---    in  \i j -> getElem (fromEnum i) (fromEnum j) m
+    let len = 1 `shiftL` length alphabet
+        m   = M.fromList (len, len)
+                  [ overlap alphabet scm (toEnum i) (toEnum j)
+                  | i <- [0 .. len - 1]
+                  , j <- [0 .. len - 1]
+                  ]
+    in  \i j -> unsafeIndex m (fromEnum i, fromEnum j)
 
 
 -- |

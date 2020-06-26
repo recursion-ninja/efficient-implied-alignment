@@ -41,7 +41,8 @@ Portability :  portable (I hope)
 
 module Main where
 
-import           Data.List
+import           Data.Key
+import           Data.List (intersperse)
 import           System.Environment
 import           System.IO
 
@@ -138,8 +139,8 @@ main =
         else hPutStr stderr "Arguments: "
         mapM_ (hPutStrLn stderr) args
         hPutStrLn stderr ""
-        let numTaxa = read (args !! 1) :: Int
-        let fraction = read (args !! 2) :: Double
+        let numTaxa = read (args ! 1) :: Int
+        let fraction = read (args ! 2) :: Double
         deletedTaxaHandle <- openFile (last args <> ".deleted") WriteMode
         inFileHandle <- openFile (head args) ReadMode
         inContents <- hGetContents inFileHandle
@@ -157,7 +158,7 @@ main =
         let newPairs = getNewPairs numTaxa numBases sequencePairList
         -- let deletedTaxa = intersperse " " $ fmap fst (drop numTaxa sequencePairList)
         let deletedPairs = drop numTaxa sequencePairList
-        let deletedTaxa = intersperse " " . fmap tail $ fmap fst deletedPairs
+        let deletedTaxa = intersperse " " $ fmap (tail . fst) deletedPairs
         hPutStrLn stderr $ show (length deletedTaxa) <> " deleted taxa"
         mapM_ (hPutStr deletedTaxaHandle) deletedTaxa
         hClose deletedTaxaHandle

@@ -60,7 +60,7 @@ ukkonenDO
   -> (Word, Vector SymbolContext)
 ukkonenDO alphabet overlapFunction lhs rhs
   | noGainFromUkkonenMethod = naiveDOMemo alphabet overlapFunction lhs rhs
-  | otherwise               = directOptimization overlapFunction (renderCostMatrix gapGroup) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
+  | otherwise               = directOptimization gapGroup overlapFunction (renderCostMatrix gapGroup) (createUkkonenMethodMatrix coefficient alphabet) lhs rhs
   where
     gap       = gapSymbol alphabet
     gapGroup  = encodeAmbiguityGroup alphabet $ gap:|[]
@@ -147,7 +147,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
 
     -- We start the offset at two rather than at one so that the first doubling
     -- isn't trivially small.
-    startOffset = 2
+    startOffset = 2 + gapsPresentInInputs
 
     -- If we are filling up 3/4 of the matrix, quit Ukkonen method and just do standard Neeleman-Wunsch.
     stopOffset  = (3 * lesserLen - 1) `div` 4
@@ -187,7 +187,7 @@ createUkkonenMethodMatrix minimumIndelCost alphabet overlapFunction longerTop le
         offset | quasiDiagonalWidth + inOffset >= lesserLen = maximumOffset
                | otherwise = inOffset
 
-        ukkonenMatrix      = Ribbon.generate rows cols generatingFunction $ toEnum offset
+        ukkonenMatrix      = Ribbon.generate rows cols generatingFunction  $ toEnum offset
 
         generatingFunction = needlemanWunschDefinition gapGroup overlapFunction longerTop lesserLeft ukkonenMatrix
 

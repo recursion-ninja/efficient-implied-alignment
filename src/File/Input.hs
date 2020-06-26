@@ -23,7 +23,7 @@ import           Data.Key
 import           Data.List.NonEmpty               (NonEmpty (..), intersperse)
 import           Data.Map                         (Map)
 import qualified Data.Map                         as M
-import           Data.Matrix.ZeroIndexed          (Matrix)
+import           Data.Matrix                      (Matrix)
 import           Data.Maybe
 import           Data.Pointed
 import           Data.Semigroup
@@ -147,7 +147,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
       x:xs -> Left $ x:|xs
   where
     symbolSet :: Set Char
-    symbolSet = foldMap point $ VU.toList symbolList
+    symbolSet = (point '-' <>) . foldMap point $ VU.toList symbolList
 
     f :: Identifier -> CharacterSequence -> [String]
     f i s =

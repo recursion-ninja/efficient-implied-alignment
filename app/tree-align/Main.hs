@@ -56,7 +56,8 @@ runInput = do
             postorder'    = postorderTraverse stringAligner
             preorder'     = preorderTraverse
 --            stringAligner = postorderLogic (naiveDOMemo alphabet tcm)
-            stringAligner = ukkonenDO alphabet tcm
+--            stringAligner = ukkonenDO alphabet tcm
+            stringAligner = unboxedUkkonenDO alphabet tcm
         in  do
 --          putStrLn $ renderTCM alphabet tcm
           when (verbose opts) $ mapM_ putStrLn
@@ -73,8 +74,9 @@ runInput = do
                                                   pure x
 
           let alignmentCost = getNodeDatum postorderResult ^. subtreeCost
-          putStrLn $ renderAlignment inputRenderer inputRenderer postorderResult
-          putStrLn ""
+          when (verbose opts) $ do
+              putStrLn $ renderAlignment inputRenderer inputRenderer postorderResult
+              putStrLn ""
           putStrLn $ "Alignment Cost: " <> show alignmentCost
 
 

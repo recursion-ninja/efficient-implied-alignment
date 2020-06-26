@@ -38,17 +38,21 @@ Portability :  portable (I hope)
 module Main where
 
 import           Data.Foldable
-import           Data.List
+import           Data.Key
+import           Data.List (isPrefixOf)
 import           Data.List.Split
 import           Data.Maybe
 import           System.Environment
 import           System.IO
 
+
 newickControlChars :: String
 newickControlChars = ")(:; ,"
 
+
 otherNewickChars :: String
 otherNewickChars = "\r\n ;"
+
 
 -- | removeBranchLengths takes Newick/ENeweick and strips out branch lengths
 removeBranchLengths :: String -> String
@@ -60,6 +64,7 @@ removeBranchLengths inString =
             outString = reassemble "," secondSplit
         in
         outString
+
 
 -- | reassemble takes [String] and adds arg between elements and returns String
 reassemble :: String -> [String] -> String
@@ -80,6 +85,7 @@ splitParen inList =
         in
             outList : splitParen (tail inList)
 
+
 -- | splitColon takes list of String and splits each one on ':'deletes branch
 -- length after it
 splitColon ::[String] -> [String]
@@ -91,15 +97,17 @@ splitColon inList =
         in
             outList : splitColon (tail inList)
 
+
 -- | find substring in string
 findNameInString :: String -> String -> Int -> Maybe Int
 findNameInString subString fullString pos
   | null subString = error "Null name to find"
   | null fullString = Nothing
   | subString `isPrefixOf` fullString = --ensures full name (e.g seq1 and seq10)
-  if (fullString !! length subString)  `elem` newickControlChars then Just pos
+  if (fullString ! length subString)  `elem` newickControlChars then Just pos
   else findNameInString subString (tail fullString) (pos + 1)
   | otherwise = findNameInString subString (tail fullString) (pos + 1)
+
 
 -- | makeNewTree Takes input parts of tree and checks for ',' before deleitng and gluing together
 makeNewTree :: String -> String -> String
@@ -111,6 +119,7 @@ makeNewTree firstPart secondPart
   | (last firstPart == ',') && (head secondPart /= ',') = deleteAndGlue (init firstPart) secondPart
   | otherwise = deleteAndGlue firstPart secondPart
 
+
 -- | deleteAndGlue Takes appropriate firs and second parts deletes and glues together
 deleteAndGlue :: String -> String -> String
 deleteAndGlue firstPart secondPart
@@ -120,6 +129,7 @@ deleteAndGlue firstPart secondPart
   | (last firstPart /= '(') && (head secondPart == ')') = deleteLeftParen firstPart (tail secondPart)
   | otherwise = error "Error in tree format--perhaps not dichotomous"
 
+
 -- | getRightPos finds corresponding right paren ')'
 getRightPos :: String -> Int -> Int -> Int
 getRightPos curString pos counter
@@ -128,6 +138,7 @@ getRightPos curString pos counter
   | head curString == ')' = getRightPos (tail curString) (pos + 1) (counter - 1)
   | head curString == '(' = getRightPos (tail curString) (pos + 1) (counter + 1)
   | otherwise = getRightPos (tail curString) (pos + 1) counter
+
 
 -- | getLeftPos finds corresponding Left paren ')'
 getLeftPos :: String -> Int -> Int -> Int
@@ -220,14 +231,14 @@ main =
        mapM_ (hPutStrLn stderr) args
        hPutStrLn stderr ""
        let operation = head args
-       let inNewick = args !! 1
+       let inNewick = args ! 1
        if   operation == "add" || operation == "delete"
        then hPutStrLn stderr $ unwords [ "Newick will", operation, "taxon/a" ]
        else error $ unwords [ "Operation", operation, "is unrecognized, must be 'add' or 'delete'"]
-       hPutStrLn stderr $ unwords [ "Openning newick  treefile", inNewick, "and taxon/a to be added/deleted from file",  args !! 2 ]
+       hPutStrLn stderr $ unwords [ "Openning newick  treefile", inNewick, "and taxon/a to be added/deleted from file",  args ! 2 ]
        hPutStrLn stderr "Warning--Tree must be dichotomous for deletion"
        treeFileHandle <- openFile inNewick ReadMode
-       deleteTaxaHandle <- openFile (args !! 2) ReadMode
+       deleteTaxaHandle <- openFile (args ! 2) ReadMode
        rawTreeStuff <- hGetContents treeFileHandle --init so remove last empty String
        let rawTreeFile = init $ splitOn ";" rawTreeStuff
        hPutStrLn stderr $ unwords [ "Input of",  show $ length rawTreeFile, "trees" ]
@@ -239,7 +250,7 @@ main =
        let deleteTaxa = words deleteTaxaRaw
        let op = if   operation == "delete"
                then removeTaxonFromNewick deleteTaxa
-               else addTaxon2Newick (head deleteTaxa) (deleteTaxa !! 1)
+               else addTaxon2Newick (head deleteTaxa) (deleteTaxa ! 1)
        mapM_ putStrLn $ appendString ";\n" . op <$> cleanTreeFile
 
         --let newTree = removeTaxonFromNewick cleanTreeFile (tail $ tail args)
