@@ -76,9 +76,9 @@ import           Data.Word                   (Word8)
 import           Numeric.Extended.Natural
 import           Prelude                           hiding (lookup, zipWith)
 
-import Debug.Trace
---trace = const id
---traceShowId = id
+--import Debug.Trace
+trace = const id
+traceShowId = id
 
 --tr s x = trace (s <> ": " <> show x) x
 tr' p s x = if p then trace (s <> ": " <> show x) x else x
@@ -301,7 +301,7 @@ measureCharacters lhs rhs =
 -- /O(k)/ for input strings of equal length, where /k/ is the shared prefix of
 -- both characters.
 --
--- Returns the string that is longer first, shorter second, and notes whether or
+-- Returns the string that is shorter first, longer second, and notes whether or
 -- not the inputs were swapped to place the strings in this ordering.
 --
 -- Handles equal length characters by considering the lexicographically larger
@@ -657,14 +657,14 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
   |  p == (0,0)                          = (            0, DiagArrow, gapGroup)
 --  |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
 --  |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
---  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
+  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
   |  otherwise                           = (      minCost,    minDir, minState)
   where
     -- | Lookup with a default value of infinite cost.
     {-# INLINE (!?) #-}
     (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
---    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
+    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
 
     topContext                    = (col - 1) `lookup`  topChar
     leftContext                   = (row - 1) `lookup` leftChar
@@ -712,7 +712,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     , renderedRows
     ]
   where
-    (_,longer,lesser) = measureCharacters lhs rhs
+    (_,lesser,longer) = measureCharacters lhs rhs
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
     toShownIntegers   = fmap renderContext . toList

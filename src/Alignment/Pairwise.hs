@@ -31,8 +31,10 @@ import Alignment.Pairwise.Ukkonen
 import Alignment.Pairwise.UnboxedUkkonen
 
 import Data.Alphabet
+import Data.Alphabet.IUPAC
 import Data.Foldable
 import Data.Key
+import Data.List.NonEmpty                 (NonEmpty)
 import Data.SymbolString
 import Data.Vector.Instances              ()
 import Data.Vector.NonEmpty               hiding (filter)
@@ -75,8 +77,27 @@ comparativeDO alphabet overlapFunction lhs rhs
       , ""
 --      , "  " <> show a1
 --      , "  " <> show a2
+      , "|" <> renderWith symbolAlignmentLeft  a1 
+      , "|" <> renderWith symbolAlignmentRight a1 
+      , ""
+      , "|" <> renderWith symbolAlignmentLeft  a2
+      , "|" <> renderWith symbolAlignmentRight a2 
+      , ""
       , "|" <> renderSmartly alphabet a1
       , "|" <> renderSmartly alphabet a2
       , "|" <> toList (zipWith (\x y -> if x == y then ' ' else '^') a1 a2)
       , ""
       ]
+
+    renderWith :: (SymbolContext -> Maybe SymbolAmbiguityGroup) -> SymbolString -> String
+    renderWith f = foldMap toList . interpretAmbiguityAsDNA
+      where
+        interpretAmbiguityAsDNA :: SymbolString -> [NonEmpty Char]
+        interpretAmbiguityAsDNA = encodeIUPAC iupacToDna . fmap (maybe gap getAmbiguityAsDNA . f) . toList
+
+        gap = pure $ gapSymbol dnaAlphabet
+
+        getAmbiguityAsDNA :: SymbolAmbiguityGroup -> NonEmpty Char
+        getAmbiguityAsDNA = decodeAmbiguityGroup dnaAlphabet
+
+        dnaAlphabet = fromSymbols ['A','C','G','T','-']

@@ -38,6 +38,7 @@ import           Data.Vector.Instances              ()
 import           Data.Vector.NonEmpty               hiding (filter)
 import           Numeric.Extended.Natural
 
+import Debug.Trace
 
 -- |
 -- /O( (n - m + 1 ) * log(n - m + 1) )/, /n/ >= /m/
@@ -65,7 +66,7 @@ ukkonenDO alphabet overlapFunction lhs rhs
     gap       = gapSymbol alphabet
     gapGroup  = encodeAmbiguityGroup alphabet $ gap:|[]
 
-    (_, longer, lesser) = measureCharacters lhs rhs
+    (_, lesser, longer) = measureCharacters lhs rhs
 
     -- If the longer character is 50% larger than the shorter character, then
     -- there is no point in using the barriers. Rather, we fill the full matrix
@@ -86,7 +87,8 @@ ukkonenDO alphabet overlapFunction lhs rhs
     -- > lesserLen <= 4
     --     OR
     -- > coefficient == 0
-    noGainFromUkkonenMethod =     lesserLen <= 4
+    noGainFromUkkonenMethod = trace (fold ["long len: ", show longerLen, "\nless len: ", show lesserLen]) $
+                                  lesserLen <= 4
                            || 2 * longerLen >= 3 * lesserLen
                            || coefficient == 0
       where
