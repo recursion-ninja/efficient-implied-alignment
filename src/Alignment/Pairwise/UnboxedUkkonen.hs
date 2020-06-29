@@ -636,14 +636,14 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
             trace (fold ["Computing range [", show x, ", ", show y, "]"]) $ pure ()
             for_ [x .. y] $ \j -> do
               (same, _) <- computeCell leftElement insertCost i j
-              when (not same) $ writeSTRef lastDiff j
+              unless same $ writeSTRef lastDiff j
             readSTRef lastDiff
 
       -- Define how to compute values to an entire row of the Ukkonen matrix.
       let extendRow i =
             -- Precomute some values that will be used for the whole row
             let start0 =  max 0          $ i - offset
-                start3 =  min (cols    ) $ i + width - offset - prevOffset - 1
+                start3 =  min  cols      $ i + width - offset - prevOffset - 1
                 goUpTo =  max 0          ( i - prevOffset) - 1
                 stop   =  min (cols - 1) $ i + width - offset - 1
                 leftElement = symbolAlignmentMedian $ lesserLeft ! (i - 1)

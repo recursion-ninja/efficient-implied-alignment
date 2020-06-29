@@ -413,7 +413,7 @@ deleteGaps gap bvs
             let isGapAtJ = do
                   j' <- readSTRef j
 --                  trace ("j: ?? " <> show j') $ pure ()
-                  pure $ not (j' >= charLen) && (symbolAlignmentMedian (bvs ! j') == gap)
+                  pure $ j' < charLen && (symbolAlignmentMedian (bvs ! j') == gap)
 
             let g i = do
                   void $ whileM isGapAtJ (modifySTRef j succ)
