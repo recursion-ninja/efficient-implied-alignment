@@ -55,7 +55,6 @@ runInput = do
 
             postorder'    = postorderTraverse stringAligner
             preorder'     = preorderTraverse
---            stringAligner = postorderLogic (naiveDOMemo alphabet tcm)
 --            stringAligner = ukkonenDO alphabet tcm
             stringAligner = unboxedUkkonenDO alphabet tcm
 --            stringAligner = comparativeDO alphabet tcm

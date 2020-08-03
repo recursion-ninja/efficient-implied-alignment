@@ -63,12 +63,10 @@ import           Data.SymbolString
 import           Data.TCM
 import qualified Data.Vector.Generic         as G
 import qualified Data.Vector.Generic.Mutable as M
---import           Data.Vector.NonEmpty
 import qualified Data.Vector.Primitive       as P
 import qualified Data.Vector.Unboxed         as U
 import qualified Data.Vector                           as EV
 import qualified Data.Vector.Mutable                   as MV
-import qualified Data.Vector.Unboxed                   as UV
 import qualified Data.Vector.Unboxed.Mutable           as MUV
 import           Data.Vector.NonEmpty                  (Vector)
 import qualified Data.Vector.NonEmpty                  as V
@@ -77,12 +75,17 @@ import           Numeric.Extended.Natural
 import           Prelude                           hiding (lookup, zipWith)
 
 --import Debug.Trace
+trace :: b -> a -> a
 trace = const id
+
+traceShowId :: a -> a
 traceShowId = id
 
---tr s x = trace (s <> ": " <> show x) x
+tr' :: Show p => Bool -> [Char] -> p -> p
 tr' p s x = if p then trace (s <> ": " <> show x) x else x
-tr s = id 
+
+tr :: p -> a -> a
+tr s x = trace (s <> ": " <> show x) x
 
 
 -- |
@@ -408,22 +411,18 @@ deleteGaps gap bvs
       | otherwise   = (gaps, force $ Just newVector)
       where
         newVector = runST $ do
---            trace ("newLen: " <> show newLen) $ pure ()
             j <- newSTRef 0
             let isGapAtJ = do
                   j' <- readSTRef j
---                  trace ("j: ?? " <> show j') $ pure ()
                   pure $ j' < charLen && (symbolAlignmentMedian (bvs ! j') == gap)
 
-            let g i = do
+            let g = do
                   void $ whileM isGapAtJ (modifySTRef j succ)
                   j' <- readSTRef j
---                  when $ j' < charLen) $ do
---                  trace ("j & i: " <> show j' <> " " <> show i) $ pure ()
                   modifySTRef j succ
                   pure $ bvs ! j'
                   
-            V.generateM newLen g -- $ const g
+            V.generateM newLen $ const g
 
         gapCount = fromEnum . getSum $ foldMap Sum gaps
         charLen  = length bvs
@@ -433,12 +432,10 @@ deleteGaps gap bvs
 
         refs :: [(Int, Word)]
         refs = runST $ do
---            trace ("Input char: " <> show bvs) $ pure ()
             nonGaps <- newSTRef 0
             prevGap <- newSTRef False
             gapLen  <- newSTRef 0
             gapRefs <- newSTRef []
---            let showState = const $ pure ()
 {--
             let showState i = do
                   ng <- readSTRef nonGaps
@@ -471,7 +468,6 @@ deleteGaps gap bvs
             
             gapBefore <- readSTRef prevGap
             when gapBefore $ do
---              trace "There were (apparently) gaps at the end of the gap removal loop" $ pure ()
               j <- readSTRef nonGaps
               g <- readSTRef gapLen
               modifySTRef gapRefs ( (j,g): )
@@ -511,14 +507,8 @@ insertGaps gap lGaps rGaps meds
           lVec <- MUV.replicate (gapVecLen lGaps) 0
           rVec <- MUV.replicate (gapVecLen rGaps) 0
           lGap <- newSTRef 0
---          lOff <- newSTRef 0
---          lPtr <- newSTRef 0
           mPtr <- newSTRef 0
---          rPtr <- newSTRef 0
           rGap <- newSTRef 0
---          rOff <- newSTRef 0
-
---          trace ("input median seq " <> show meds) $ pure ()
 
           -- Write out to the mutable vectors
           for_ (IM.toAscList lGaps) $ uncurry (MUV.unsafeWrite lVec)
@@ -529,30 +519,21 @@ insertGaps gap lGaps rGaps meds
                   lv <- UV.unsafeFreeze lVec
                   rv <- UV.unsafeFreeze rVec
                   lg <- readSTRef lGap
---                  lo <- readSTRef lOff
---                  lp <- readSTRef lPtr
                   mp <- readSTRef mPtr
---                  rp <- readSTRef rPtr
                   rg <- readSTRef rGap
---                  ro <- readSTRef rOff          
                   let x = init $ unlines
                            [ ""
                            , "i --> " <> show i
                            , "lVec: " <> show lv
                            , "rVec: " <> show rv
                            , "lGap: " <> show lg
---                           , "lOff: " <> show lo
---                           , "lPtr: " <> show lp
                            , "mPtr: " <> show mp
---                           , "rPtr: " <> show rp
---                           , "rOff: " <> show ro
                            , "rGap: " <> show rg
                            ]
                   trace x $ pure ()
 -}
 
           let align i = do
---                    trace "Aligning characters" $ pure ()
                     m <- readSTRef mPtr
                     let e = meds !> m
                     let v = coerce e
@@ -569,67 +550,18 @@ insertGaps gap lGaps rGaps meds
                 rg <- tr "rGap" <$> readSTRef rGap
                 v  <- if rg >= MUV.length rVec then pure 0 else MUV.unsafeRead rVec rg
                 if   v == 0
-                then do -- when (k + o + fromEnum v <= p) $ modifySTRef lOff (+ fromEnum v)
-                        align i
-                else do -- trace "Need to insert gap from Right char" $ pure ()
-                        MV.unsafeWrite mVec i $ insertElement gap gap
---                        MV.unsafeWrite mVec i $ deleteElement gap gap
---                        modifySTRef rPtr succ
+                then align i
+                else do MV.unsafeWrite mVec i $ insertElement gap gap
                         MUV.unsafeWrite rVec rg $ v - 1
-{-                
-                case IM.lookupLE rg rGaps of
-                  -- A removed gap from the *right* may need to be inserted
-                  Just (k,v) -> do
-                    trace ("(k,v) = " <> show (k,v)) $ pure ()
-                    p <- tr "rPtr" <$> readSTRef rPtr 
-                    o <- tr "rOff" <$> readSTRef rOff
-                    trace ("k + fromEnum v + o = " <> show (k + fromEnum v + o)) $ pure ()
-                    if k + o + fromEnum v <= p -- - rg
-                    then do when (k + o + fromEnum v <= p) $ modifySTRef rOff (+ fromEnum v)
-                            align i
-                    -- Insert the removed gaps from the right
-                    else do trace "Need to insert gap from Right char" $ pure ()
-                            MV.unsafeWrite mVec i . splitElement $ insertElement gap gap
---                            MV.unsafeWrite mVec i . splitElement $ deleteElement gap gap
-                            modifySTRef rPtr succ
-
-                  -- No gaps to be inserted, just take aligned element from medians
-                  Nothing    -> align i
--}
 
           for_ [0 .. newLength - 1] $ \i -> do
---            showState i
             -- Check if we need to insert a gap from the left char
             lg <- tr "lGap" <$> readSTRef lGap
             v  <- if lg >= MUV.length lVec then pure 0 else MUV.unsafeRead lVec lg
             if   v == 0
-            then do -- when (k + o + fromEnum v <= p) $ modifySTRef lOff (+ fromEnum v)
-                    checkRightGapReinsertion i
-            else do -- trace "Need to insert gap from Left char" $ pure ()
-                    MV.unsafeWrite mVec i $ deleteElement gap gap
---                    MV.unsafeWrite mVec i $ insertElement gap gap
---                    modifySTRef lPtr succ
+            then checkRightGapReinsertion i
+            else do MV.unsafeWrite mVec i $ deleteElement gap gap
                     MUV.unsafeWrite lVec lg $ v - 1
-{-
-            case IM.lookupLE lg lGaps of
-              -- No gaps to insert yet, check the right char
-              Nothing    -> checkRightGapReinsertion i
-              -- A removed gap from the *left* may need to be inserted
-              Just (k,v) -> do
-                    trace ("(k,v) = " <> show (k,v)) $ pure ()
-                    p <- tr "lPtr" <$> readSTRef lPtr 
-                    o <- tr "lOff" <$> readSTRef lOff
-                    trace ("k + fromEnum v + o = " <> show (k + fromEnum v + o)) $ pure ()
-                    if not $ k + o + fromEnum v <= p -- - lg
-                    -- Insert the removed gaps from the left char
-                    then do trace "Need to insert gap from Left char" $ pure ()
-                            MV.unsafeWrite mVec i . splitElement $ deleteElement gap gap
---                            MV.unsafeWrite mVec i . splitElement $ insertElement gap gap
-                            modifySTRef lPtr succ
-                    -- No gap from the left char to insert, check the right char
-                    else do when (k + o + fromEnum v <= p) $ modifySTRef lOff (+ fromEnum v)
-                            checkRightGapReinsertion i
--}
 
           pure mVec
 
@@ -716,7 +648,6 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
     toShownIntegers   = fmap renderContext . toList
---    matrixTokens      = fmap showCell <$> mtx
     matrixTokens      = (\x -> trace ("Rows in Rendering: " <> show (length x)) x) $
                         [ (\j -> maybe "" showCell $ (i,j) `lookup` mtx)
                            <$> [ 0 .. colCount - 1 ]

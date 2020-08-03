@@ -38,7 +38,6 @@ import           Data.Vector.Instances              ()
 import           Data.Vector.NonEmpty               hiding (filter)
 import           Numeric.Extended.Natural
 
-import Debug.Trace
 
 -- |
 -- /O( (n - m + 1 ) * log(n - m + 1) )/, /n/ >= /m/
@@ -87,10 +86,11 @@ ukkonenDO alphabet overlapFunction lhs rhs
     -- > lesserLen <= 4
     --     OR
     -- > coefficient == 0
-    noGainFromUkkonenMethod = trace (fold ["long len: ", show longerLen, "\nless len: ", show lesserLen]) $
-                                  lesserLen <= 4
-                           || 2 * longerLen >= 3 * lesserLen
-                           || coefficient == 0
+    noGainFromUkkonenMethod = or
+        [     lesserLen <= 4
+        , 2 * longerLen >= 3 * lesserLen
+        , coefficient == 0
+        ]
       where
         longerLen = length longer
         lesserLen = length lesser

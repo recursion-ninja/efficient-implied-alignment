@@ -316,6 +316,7 @@ symbolAlignmentMedian (Insert  x   _) = x
 symbolAlignmentMedian (Gapping _    ) = undefined
 
 
+symbolAlignmentLeft :: SymbolContext -> Maybe SymbolAmbiguityGroup
 symbolAlignmentLeft   (Align   _ x _) = Just x
 symbolAlignmentLeft   (Delete  _ x  ) = Just x
 symbolAlignmentLeft   _               = Nothing

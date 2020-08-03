@@ -28,9 +28,9 @@ module Alignment.Pairwise.UnboxedUkkonen
   ( unboxedUkkonenDO
   ) where
 
-import           Alignment.Pairwise.Internal (Direction(..), deleteGaps, insertGaps, measureCharacters, measureAndUngapCharacters)
+import           Alignment.Pairwise.Internal (Direction(..), insertGaps, measureCharacters, measureAndUngapCharacters)
 import           Control.DeepSeq
-import           Control.Monad               (when)
+import           Control.Monad               (when, unless)
 import           Control.Monad.Loops         (iterateUntilM, whileM_)
 import           Control.Monad.ST
 import           Data.Alphabet
@@ -54,9 +54,19 @@ import           Data.Word                   (Word16)
 import           Prelude                     hiding (lookup, zipWith)
 
 --import Debug.Trace
+
+{--}
+trace :: b -> a -> a
 trace = const id
+
+traceShowId :: a -> a
 traceShowId = id
+{--}
+
+tr' :: Show p => Bool -> [Char] -> p -> p
 tr' p s x = if p then trace (s <> ": " <> show x) x else x
+
+tr :: Show a => [Char] -> a -> a
 tr s x = trace (s <> ": " <> show x) x
 
 
@@ -508,7 +518,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
         differenceInLength = longerLen - lesserLen
 
     
-    w  = width
+--    w  = width
     qd = quasiDiagonalWidth
 --    Δo = co - po
 
@@ -518,7 +528,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
       -- Allocate mutable state variables  --
       ---------------------------------------
 
-      headStop  <- newSTRef cols
+--      headStop  <- newSTRef cols
       tailStart <- newSTRef cols
 
       t0' <- newSTRef (-1)
@@ -633,7 +643,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
 
       let recomputeRange leftElement insertCost i x y = do
             lastDiff <- newSTRef 0
-            trace (fold ["Computing range [", show x, ", ", show y, "]"]) $ pure ()
+            trace (fold ["For row ", show i, "\nComputing range [", show x, ", ", show y, "]"]) $ pure ()
             for_ [x .. y] $ \j -> do
               (same, _) <- computeCell leftElement insertCost i j
               unless same $ writeSTRef lastDiff j
@@ -660,14 +670,13 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                 e0 = goUpTo
                 b1 = start3
                 e1 = stop
-                
 
-                continueRecomputing (same, j) = same || j >= stop - 1
+                continueRecomputing (same, j) = same || j >= stop
                 computeCell' ~(_,j) = computeCell leftElement insertCost i j
                 internalCell' j = internalCell leftElement insertCost i j >>= write (i,j)
                 recomputeUntilSame j = snd <$> iterateUntilM continueRecomputing computeCell' (False, j)
             in  do -- Get the starts from the previous iteration
-                   start1 <- readSTRef headStop
+--                   start1 <- readSTRef headStop
                    start2 <- readSTRef tailStart
 
                    let showBounds = do
@@ -691,7 +700,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                            ])
                            $ pure ()
 
-                   if i > 0
+                   if i < 0
                    then showBounds
                    else pure ()
 
@@ -730,9 +739,10 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                    trace (fold ["Computing range [", show (b0 + 1), ", ", show e0, "] (", if null [b0+1 .. e0] then "null" else show (length [b0+1 .. e0]), ")"]) $ pure ()
                    for_ [b0+1 .. e0] internalCell'
 
-                   -- Next, we assign to s0 the value t0 from the previous row.
+                   -- Next, we assign to s0 the value t0 + 1 from the previous row.
                    -- The cell t0 is up to where the values were recomputed in
-                   -- the previous row.
+                   -- the previous row. We add 1 to t0 because the a cell in the
+                   -- current row might use t0 in a *diagonal* computation.
                    -- We recompute the cells in the range [e0 + 1, s0].
                    -- We assign to t0 the last cell in the range [s1, s2] which
                    -- was updated for the next row.
@@ -757,10 +767,10 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                    -- 12 ┃                   ▒▒ ▒▒ ▒▒ ▒▒ ██ ██ ██ ██ ██ ██ ██
                    --
                    --
-                   s0 <- readSTRef t0'
+                   s0 <- (\x -> min (x+1) e1) <$> readSTRef t0'
                    writeSTRef t0' (-1)
                    trace (fold ["Is s0 > e0? ", show s0, " > ", show e0, " = ", show (s0 > e0)]) $ pure ()
-                   when (s0 > e0) $
+                   when (s0 > e0 && toEnum i > po) $
                        recomputeRange leftElement insertCost i (e0+1) s0 >>= writeSTRef t0'
                    t0 <- readSTRef t0'
 
@@ -861,7 +871,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                    -- 10 ┃             ▒▒ ▒▒ ▒▒ ▒▒ ██ ██ ██ ██ ██ ██ ██ ██ ██
                    -- 11 ┃                ▒▒ ▒▒ ▒▒ ▒▒ ██ ██ ██ ██ ██ ██ ██ ██
                    -- 12 ┃                   ▒▒ ▒▒ ▒▒ ▒▒ ██ ██ ██ ██ ██ ██ ██
-                   --                   
+                   --
                    s1 <- readSTRef t1'
 --                   trace (fold ["Is s0 > e0? ", show s0, " > ", show e0, " = ", show (s0 > e0)]) $ pure ()
                    t1 <- recomputeRange leftElement insertCost i s1 $ b1 - 1
@@ -1232,7 +1242,7 @@ renderCostMatrix gapGroup lhs rhs cMat dMat = unlines
 
     renderedRows = unlines . zipWithKey renderRow ("⁎":lesserTokens) $ matrixTokens
       where
-        renderRow k e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
+        renderRow _k e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
 
     renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
     renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"

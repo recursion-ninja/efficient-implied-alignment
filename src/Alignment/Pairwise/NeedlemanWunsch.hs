@@ -33,7 +33,11 @@ import           Data.TCM
 import           Data.Vector.NonEmpty
 
 --import Debug.Trace
+
+trace :: b -> a -> a
 trace = const id
+
+tr :: Show a => [Char] -> a -> a
 tr s x = trace (s <> ": " <> show x) x
 
 
