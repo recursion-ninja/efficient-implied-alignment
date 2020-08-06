@@ -74,19 +74,6 @@ import           Data.Word                   (Word8)
 import           Numeric.Extended.Natural
 import           Prelude                           hiding (lookup, zipWith)
 
---import Debug.Trace
-trace :: b -> a -> a
-trace = const id
-
-traceShowId :: a -> a
-traceShowId = id
-
-tr' :: Show p => Bool -> [Char] -> p -> p
-tr' p s x = if p then trace (s <> ": " <> show x) x else x
-
-tr :: p -> a -> a
-tr s x = trace (s <> ": " <> show x) x
-
 
 -- |
 -- Which direction to align the character at a given matrix point.
@@ -270,7 +257,7 @@ directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
                 in  (0, Just $ f <$> ys)
             (Just xs, Just ys) ->
                 let traversalMatrix = matrixFunction overlapλ ys xs
-                in  second Just $ traceback (trace ("Boxed, Ukkonen:\n" <> renderCostMatrix gap ys xs traversalMatrix) traversalMatrix) ys xs
+                in  second Just $ traceback traversalMatrix ys xs
             _                  -> (0, Nothing)
 
         transformation    = if swapped then fmap reverseContext else id
@@ -324,20 +311,20 @@ measureNullableCharacters lhs rhs
   where
     lhsOrdering =
         -- First, compare inputs by length.
-        case trace "Comparing lengths" $ comparing (maybe 0 length) lhs rhs of
+        case comparing (maybe 0 length) lhs rhs of
           -- If the inputs are equal length,
           -- Then compare by the (arbitary) lexicographical ordering of the median states.
-          EQ -> let x = trace (unwords ["Equal lengths of", show (length lhs), "==", show (length rhs)]) $ maybe [] toList lhs
+          EQ -> let x = maybe [] toList lhs
                     y = maybe [] toList rhs
                     f = fmap symbolAlignmentMedian
-                in  case trace "comparing medians" $ f x `compare` f y of
+                in  case f x `compare` f y of
                       -- If the input median states have the same ordering,
                       -- Lastly, we compare by the lexicographic ordering of the "tagged triples."
                       --
                       -- If they are equal after this step,
                       -- Then the inputs are representationally equal.
                       -- Actually, honest to goodness 100% equal!
-                      EQ -> trace "Comparing representations" $ x `compare` y
+                      EQ -> x `compare` y
                       v  -> v
           v  -> v
 
@@ -376,8 +363,8 @@ measureAndUngapCharacters
   -> f SymbolContext
   -> (Bool, IntMap Word, IntMap Word, Maybe SymbolString, Maybe SymbolString)
 measureAndUngapCharacters gap char1 char2
-  | swapInputs = traceShowId (True , gapsChar2, gapsChar1, ungappedChar2, ungappedChar1)
-  | otherwise  = traceShowId (False, gapsChar1, gapsChar2, ungappedChar1, ungappedChar2)
+  | swapInputs = (True , gapsChar2, gapsChar1, ungappedChar2, ungappedChar1)
+  | otherwise  = (False, gapsChar1, gapsChar2, ungappedChar1, ungappedChar2)
   where
     (gapsChar1, ungappedChar1) = deleteGaps gap char1
     (gapsChar2, ungappedChar2) = deleteGaps gap char2
@@ -386,8 +373,8 @@ measureAndUngapCharacters gap char1 char2
           ungappedLen1 = maybe 0 length ungappedChar1
           ungappedLen2 = maybe 0 length ungappedChar2
       in  case ungappedLen1 `compare` ungappedLen2 of
-            EQ | ungappedLen1 == 0 -> needToSwap . trace "Comparing gapped inputs" $ measureNullableCharacters (Just char1)  (Just char2)
-            _                      -> needToSwap . trace "Comparing ungapped inputs" $ measureNullableCharacters ungappedChar1 ungappedChar2
+            EQ | ungappedLen1 == 0 -> needToSwap $ measureNullableCharacters (Just char1)  (Just char2)
+            _                      -> needToSwap $ measureNullableCharacters ungappedChar1 ungappedChar2
 
 
 -- |
@@ -436,28 +423,11 @@ deleteGaps gap bvs
             prevGap <- newSTRef False
             gapLen  <- newSTRef 0
             gapRefs <- newSTRef []
-{--
-            let showState i = do
-                  ng <- readSTRef nonGaps
-                  pg <- readSTRef prevGap
-                  gl <- readSTRef gapLen
-                  gr <- readSTRef gapRefs
-
-                  let x = unlines
-                           [ "i --> " <> show i
-                           , "nonGaps: " <> show ng
-                           , "prevGap: " <> show pg
-                           , "gapLen:  " <> show gl
-                           , "gapRefs: " <> show gr
-                           ]
-                  trace x $ pure ()
---}
 
             for_ [0 .. charLen - 1] $ \i ->
               if symbolAlignmentMedian (bvs ! i)  == gap
-              then do {- trace ("gap at " <> show i) (pure ()) *> showState i *> -} modifySTRef gapLen succ *> writeSTRef prevGap True
-              else do -- showState i
-                      gapBefore <- readSTRef prevGap
+              then modifySTRef gapLen succ *> writeSTRef prevGap True
+              else do gapBefore <- readSTRef prevGap
                       when gapBefore $ do
                         j <- readSTRef nonGaps
                         g <- readSTRef gapLen
@@ -480,7 +450,6 @@ insertGaps
   :: ( Enum a
      , MUV.Unbox a
      , Num a
-     , Show a
      , Eq a
      )
   => SymbolAmbiguityGroup
@@ -488,17 +457,16 @@ insertGaps
   -> IntMap a
   -> Maybe SymbolString
   -> SymbolString
-insertGaps _ _ _ meds | trace ("insertGaps:meds " <> show meds) False = undefined
 insertGaps gap lGaps rGaps meds
-      | null lGaps && null rGaps = tr "insertGaps:newVector" $ fromJust meds -- No work needed
-      | otherwise                = tr "insertGaps:newVector" . force . coerce $ newVector
+      | null lGaps && null rGaps = fromJust meds -- No work needed
+      | otherwise                = force . coerce $ newVector
       where
         totalGaps = fromEnum . getSum . foldMap Sum
         gapVecLen = maybe 0 (succ . fst) . IM.lookupMax
-        mLength   = tr "insertGaps:mLength"   $ maybe 0 length meds
-        lGapCount = tr "insertGaps:lGapCount" $ totalGaps lGaps
-        rGapCount = tr "insertGaps:rGapCount" $ totalGaps rGaps
-        newLength = tr "insertGaps:newLength" $ lGapCount + rGapCount + mLength
+        mLength   = maybe 0 length meds
+        lGapCount = totalGaps lGaps
+        rGapCount = totalGaps rGaps
+        newLength = lGapCount + rGapCount + mLength
 
         xs !> i = maybe (error "Tried to index an empty alignment context when reinserting gaps") (!i) xs
         
@@ -514,25 +482,6 @@ insertGaps gap lGaps rGaps meds
           for_ (IM.toAscList lGaps) $ uncurry (MUV.unsafeWrite lVec)
           for_ (IM.toAscList rGaps) $ uncurry (MUV.unsafeWrite rVec)
 
-{-
-          let showState i = do
-                  lv <- UV.unsafeFreeze lVec
-                  rv <- UV.unsafeFreeze rVec
-                  lg <- readSTRef lGap
-                  mp <- readSTRef mPtr
-                  rg <- readSTRef rGap
-                  let x = init $ unlines
-                           [ ""
-                           , "i --> " <> show i
-                           , "lVec: " <> show lv
-                           , "rVec: " <> show rv
-                           , "lGap: " <> show lg
-                           , "mPtr: " <> show mp
-                           , "rGap: " <> show rg
-                           ]
-                  trace x $ pure ()
--}
-
           let align i = do
                     m <- readSTRef mPtr
                     let e = meds !> m
@@ -541,13 +490,11 @@ insertGaps gap lGaps rGaps meds
                     modifySTRef mPtr succ
                     when (isAlign e || isDelete e) $
                       modifySTRef lGap succ
---                      modifySTRef rGap succ
                     when (isAlign e || isInsert e) $
                       modifySTRef rGap succ
---                      modifySTRef lGap succ
 
           let checkRightGapReinsertion i = do
-                rg <- tr "rGap" <$> readSTRef rGap
+                rg <- readSTRef rGap
                 v  <- if rg >= MUV.length rVec then pure 0 else MUV.unsafeRead rVec rg
                 if   v == 0
                 then align i
@@ -556,7 +503,7 @@ insertGaps gap lGaps rGaps meds
 
           for_ [0 .. newLength - 1] $ \i -> do
             -- Check if we need to insert a gap from the left char
-            lg <- tr "lGap" <$> readSTRef lGap
+            lg <- readSTRef lGap
             v  <- if lg >= MUV.length lVec then pure 0 else MUV.unsafeRead lVec lg
             if   v == 0
             then checkRightGapReinsertion i
@@ -608,11 +555,10 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
     (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
     ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
     ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gapGroup   leftElement
-    rightCost                     = tr' (p == (17,16)) "rightCost" $ (tr' (p == (17,16)) "rightOverlapCost" rightOverlapCost) + (tr' (p == (17,16)) "leftwardValue" leftwardValue)
-    diagCost                      = tr' (p == (17,16)) "diagCost"  $ (tr' (p == (17,16)) "diagOverlapCost"   diagOverlapCost) + (tr' (p == (17,16)) "diagonalValue" diagonalValue)
-    downCost                      = tr' (p == (17,16)) "downCost"  $ (tr' (p == (17,16)) "downOverlapCost"   downOverlapCost) + (tr' (p == (17,16)) "  upwardValue"   upwardValue)
-    (minCost, minState, minDir)   = (\x -> if p == (17,16) then trace ("<!> " <> show x) x else x) $
-                                    getMinimalCostDirection gapGroup
+    rightCost                     = rightOverlapCost +  leftwardValue
+    diagCost                      =  diagOverlapCost +  diagonalValue
+    downCost                      =  downOverlapCost +    upwardValue
+    (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
                                       ( diagCost,  diagChar)
                                       (rightCost, rightChar)
                                       ( downCost,  downChar)
@@ -648,8 +594,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
     longerTokens      = toShownIntegers longer
     lesserTokens      = toShownIntegers lesser
     toShownIntegers   = fmap renderContext . toList
-    matrixTokens      = (\x -> trace ("Rows in Rendering: " <> show (length x)) x) $
-                        [ (\j -> maybe "" showCell $ (i,j) `lookup` mtx)
+    matrixTokens      = [ (\j -> maybe "" showCell $ (i,j) `lookup` mtx)
                            <$> [ 0 .. colCount - 1 ]
 
                         | i <- [ 0 .. rowCount - 1 ]
@@ -686,7 +631,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
       where
         bar n = replicate (n+1) '━'
 
-    renderedRows = unlines . (\x -> trace ("Rows in Rendering: " <> show (length x)) x)
+    renderedRows = unlines
                  . zipWithKey renderRow ("⁎":lesserTokens)
                  $ matrixTokens
       where
@@ -728,14 +673,13 @@ traceback
   -> (Word, Vector SymbolContext)
 traceback alignMatrix longerChar lesserChar = force (unsafeToFinite cost, V.reverse $ V.unfoldr go lastCell)
   where
-      lastCell     = trace "Traceback ORIGINAL" (row, col)
+      lastCell     = (row, col)
       (cost, _, _) = alignMatrix ! lastCell
 
       col = length longerChar
       row = length lesserChar
 
       go currentCell@(!i, !j)
-        | trace (show currentCell) False = undefined
         | nextCell < (0,0) = (contextElement, Nothing)
         | otherwise        = (contextElement, Just nextCell)
         where

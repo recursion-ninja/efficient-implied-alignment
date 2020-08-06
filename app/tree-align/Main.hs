@@ -44,22 +44,17 @@ runInput = do
 
             inputRenderer :: PreliminaryNode -> ShortText -> String
             inputRenderer  x i = unwords [ padR maxLabelLen (toString i <> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
---            prelimRenderer x _ = mconcat [ padR maxLabelLen     "?:" , " ", renderSingleton alphabet $ x ^. preliminaryString ]
 
             leafRenderer :: FinalizedNode -> ShortText -> String
-            leafRenderer   x i = unwords [ padR maxLabelLen (toString i <> ":"), padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
+            leafRenderer   x i = unwords [ padR maxLabelLen (toString i <> ":"), padL 5 . show $ x ^. localCost, renderSingleton alphabet $ x ^. alignedString ]
 
             nodeRenderer :: FinalizedNode -> p -> String
-            nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet $ x ^. alignedString ]
---            nodeDiffer     x _ = unwords [ padR maxLabelLen     "?:" , {- padL 5 . show $ x ^. subtreeCost, -} renderSingleton alphabet x ]
+            nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, renderSingleton alphabet $ x ^. alignedString ]
 
             postorder'    = postorderTraverse stringAligner
             preorder'     = preorderTraverse
---            stringAligner = ukkonenDO alphabet tcm
             stringAligner = unboxedUkkonenDO alphabet tcm
---            stringAligner = comparativeDO alphabet tcm
         in  do
---          putStrLn $ renderTCM alphabet tcm
           when (verbose opts) $ mapM_ putStrLn
               [ ""
               , renderAlphabet alphabet
@@ -88,10 +83,7 @@ runInput = do
               mapM_ putStrLn
                 [ "Output Alignment:"
                 , ""
---                , renderPhylogeny inputRenderer postorderResult
---                , ""
                 , renderAlignment nodeRenderer leafRenderer preorderResult
---                , renderAlignment nodeDiffer nodeDiffer diffTree
                 , ""
                 , "Alignment Cost: " <> show alignmentCost
                 , ""
