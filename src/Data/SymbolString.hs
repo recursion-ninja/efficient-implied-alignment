@@ -27,6 +27,8 @@ module Data.SymbolString
   , filterGaps
   , reverseContext
   , symbolAlignmentMedian
+  , symbolAlignmentLeft
+  , symbolAlignmentRight
   , renderAligns
   , renderLikeDNA
   , renderMonospacedGroup
@@ -312,6 +314,18 @@ symbolAlignmentMedian (Align   x _ _) = x
 symbolAlignmentMedian (Delete  x _  ) = x
 symbolAlignmentMedian (Insert  x   _) = x
 symbolAlignmentMedian (Gapping _    ) = undefined
+
+
+symbolAlignmentLeft :: SymbolContext -> Maybe SymbolAmbiguityGroup
+symbolAlignmentLeft   (Align   _ x _) = Just x
+symbolAlignmentLeft   (Delete  _ x  ) = Just x
+symbolAlignmentLeft   _               = Nothing
+
+
+symbolAlignmentRight :: SymbolContext -> Maybe SymbolAmbiguityGroup
+symbolAlignmentRight  (Align   _ _ x) = Just x
+symbolAlignmentRight  (Insert  _   x) = Just x
+symbolAlignmentRight  _               = Nothing
 
 
 reverseContext :: SymbolContext -> SymbolContext

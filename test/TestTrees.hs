@@ -36,6 +36,10 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 
+stringAligner op = postorderLogic $ unboxedUkkonenDO defaultAlphabet op
+--stringAligner op = postorderLogic $ ukkonenDO defaultAlphabet op
+
+
 main :: IO ()
 main = runTests
 
@@ -75,7 +79,7 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
     assertBool errorMsg (alignedString `elem` outputStrings)
 
   where
-    postorder' = postorder stringAligner
+    postorder' = postorder $ stringAligner op
     preorder'  = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
 
     medianStateFinalizer = preorderInternalLogic
@@ -85,7 +89,7 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
         count = length . head . toList $ snd <$> x
         f z = unifyInput defaultAlphabet z y
 
-    stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
+--    stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
     leafRendererA :: FinalizedNode -> ShortText -> String
     leafRendererA x i = fold [ toString i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
 

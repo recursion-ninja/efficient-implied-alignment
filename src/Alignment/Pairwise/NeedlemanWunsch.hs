@@ -19,7 +19,6 @@
 
 module Alignment.Pairwise.NeedlemanWunsch
   ( naiveDO
---  , naiveDOConst
   , naiveDOMemo
   ) where
 
@@ -31,10 +30,6 @@ import           Data.Matrix                 (fromList)
 import           Data.SymbolString
 import           Data.TCM
 import           Data.Vector.NonEmpty
-
---import Debug.Trace
-trace = const id
-tr s x = trace (s <> ": " <> show x) x
 
 
 -- |
@@ -60,24 +55,6 @@ naiveDO
 naiveDO alphabet costStruct = directOptimization gap (overlap alphabet costStruct) undefined $ createNeedlemanWunchMatrix gap
   where
     gap = encodeAmbiguityGroup alphabet $ gapSymbol alphabet :| []
-
-
-{-
--- |
--- The same as 'naiveDO' except that the "cost structure" parameter is ignored.
--- Instead a constant cost is used.
-naiveDOConst
-  :: ( Foldable f
-     , Indexable f
-     , Key f ~ Int
-     , Ord s
-     )
-  => (SymbolAmbiguityGroup s -> SymbolAmbiguityGroup s -> Word)
-  -> f (SymbolContext s)
-  -> f (SymbolContext s)
-  -> (Word, NonEmpty (SymbolContext s))
-naiveDOConst _ = directOptimization overlapConst createNeedlemanWunchMatrix
--}
 
 
 -- |
@@ -129,9 +106,6 @@ createNeedlemanWunchMatrix gap overlapFunction topString leftString = result
         | i <- [0 .. rows' - 1]
         , j <- [0 .. cols' - 1]
         ]
-    
---    result             = matrix rows' cols' generatingFunction
-    rows'              = tr "createNeedlemanWunchMatrix:rows'" $ length leftString + 1
-    cols'              = tr "createNeedlemanWunchMatrix:cols'" $ length topString  + 1
---    generatingFunction = needlemanWunschDefinition gap overlapFunction topString leftString result
---    renderedMatrix     = renderCostMatrix topString leftString result
+
+    rows' = length leftString + 1
+    cols' = length topString  + 1

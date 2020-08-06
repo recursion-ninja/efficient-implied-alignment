@@ -129,8 +129,6 @@ deriveAlignment
   -> SymbolString -- ^ Child  Alignment
 deriveAlignment pAlignment pContext cContext = alignment
   where
---    gap = Gapping
-
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
     extractVector e@ (x,ys,zs) =
@@ -193,6 +191,7 @@ deriveAlignment pAlignment pContext cContext = alignment
               case y of
                 Delete {} -> (Gapping v : acc, x:xs,   ys)
                 _         -> (        x : acc,   xs,   ys)
+
           Insert _ v ->
               case y of
                 Insert {} -> (        x : acc,   xs,   ys)
