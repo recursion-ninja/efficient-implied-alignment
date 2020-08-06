@@ -3,7 +3,7 @@
 
 [![DOI:10.1186/s12859-020-03595-2](https://zenodo.org/badge/DOI/10.1186/s12859-020-03595-2.svg)](https://doi.org/10.1186/s12859-020-03595-2)
 
-This repository hosts the pre-print manuscript for the *Efficient Implied Alignment* paper, an program `implied-align` implementing the algorithm described in the paper, and a script to replicate the results of the paper.
+This repository hosts the program `implied-align` implementing the algorithm described in the paper *Efficient Implied Alignment* and a script to replicate the results of the paper.
 
 ### Installation of `implied-align`
 
@@ -38,10 +38,10 @@ For convience of replicating the results of the paper, a "replicate-results" scr
 ./replicate-results.sh
 ```
 
-This will create a `replicate-results` directory, with sub directories `csv`, `data`, `png`, `taxa`, and `tree`. 
+This will create a `replicate-results` directory, with sub directories `csv`, `data`, `img`, `taxa`, and `tree`. 
  
  - The `taxa` directory holds temporary files used in pruning the data-sets. 
  - The `data` & `tree` directories hold the pruned input files for the data-sets.
  - The `csv` directory holds the timing information measured during the replication of the results.
- - The `png` directory holds the generted images from the results.
+ - The `img` directory holds the generted images from the results.
  
