@@ -1,30 +1,30 @@
 # Efficient Implied Alignment
 
-This repository hosts the pre-print manuscript for the *Efficient Implied Alignment* paper, an program `tree-align` implementing the algorithm described in the paper, and a script to replicate the results of the paper.
+This repository hosts the pre-print manuscript for the *Efficient Implied Alignment* paper, an program `implied-align` implementing the algorithm described in the paper, and a script to replicate the results of the paper.
 
-### Installation of `tree-align`
+### Installation of `implied-align`
 
-You can build and install `tree-align` from source using the Haskell build system `stack`
+You can build and install `implied-align` from source using the Haskell build system `stack`
 
 To install `stack`, run the following:
 ```
 $ wget -qO- https://get.haskellstack.org/ | sh
 ```
 
-Once you have the build system installed, ask `stack` to install `tree-align` by runnning the following command from the source directory of this project:
+Once you have the build system installed, ask `stack` to install `implied-align` by runnning the following command from the source directory of this project:
 
 ```
 $ stack install
 ```
 
-After the `stack install` command has completed, the `tree-align` binary will be placed in this project's `bin` directory.
+After the `stack install` command has completed, the `implied-align` binary will be placed in this project's `bin` directory.
 
-### Running `tree-align`
+### Running `implied-align`
 
-The `tree-align` program takes a number of command line arguments to specify inputs and outputs. For more information run the following command:
+The `implied-align` program takes a number of command line arguments to specify inputs and outputs. For more information run the following command:
 
 ```
-$ tree-align --help
+$ implied-align --help
 ```
 
 ### Replicating results of the paper

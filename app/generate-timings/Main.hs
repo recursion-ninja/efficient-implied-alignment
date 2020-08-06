@@ -370,7 +370,7 @@ timeFilePoint
 timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
     prefix <- makeAbsolute "."
     binDir <- makeAbsolute binaryDirectory
-    let binFilePath  = binDir </> "tree-align"
+    let binFilePath  = binDir </> "implied-align"
         tcmFilePath  = prefix </> tcmPath
         dataFilePath = prefix </> fileDataPath fp
         treeFilePath = prefix </> fileTreePath fp

@@ -32,7 +32,7 @@ parseTimingParameters = customExecParser preferences $ info (helper <*> timingPa
 
     description = fold
         [ fullDesc
-        , headerDoc . Just $ string "\n  Generate timing results for tree-align"
+        , headerDoc . Just $ string "\n  Generate timing results for implied-align"
         , footerDoc $ Just mempty
         ]
 
