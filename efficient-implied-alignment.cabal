@@ -3,11 +3,11 @@ category:       Algorithms
 build-type:     Simple
 
 name:           efficient-implied-alignment
-version:        0.1.0
+version:        1.0.0
 
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
-copyright:      2018 Alex Washburn
+copyright:      2020 Alex Washburn
 license:        BSD-3-Clause
 license-file:   LICENSE
 
@@ -16,13 +16,13 @@ synopsis:       Proof of concept of efficient multiple string alignment
 description:    Using a commutative, binary string alignment operator and a
                 binary tree with strings on the leaf nodes, we can efficiently
                 derive the a multiple string alignment of the implied by the
-                binary tree. Requires a pot-order then preorder traversal.
+                binary tree. Requires a post-order then preorder traversal.
                 Post-order traversal should be worst case /O(n*k^2)/, average
                 case /O(n*k*log(k))/ and the pre-order traversal should be
                 /O(n*k)/.
 
-homepage:       https://github.com/githubuser/efficient-implied-alignment#readme
-bug-reports:    https://github.com/githubuser/efficient-implied-alignment/issues
+homepage:       https://github.com/recursion-ninja/efficient-implied-alignment#readme
+bug-reports:    https://github.com/recursion-ninja/efficient-implied-alignment/issues
                 
 extra-source-files:
     ChangeLog.md
@@ -30,7 +30,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/efficient-implied-alignment
+  location: https://github.com/recursion-ninja/efficient-implied-alignment
 
 
 -- A litany of GHC warnings designed to alert us during the build of any common
@@ -94,7 +94,6 @@ library
       base >=4.7 && <5
     , bimap
     , case-insensitive          
-    -- >=0.5.8 Required for Data.Map.restrictKeys
     , containers         >=0.5.8
     , deepseq
     , dlist          
@@ -102,7 +101,6 @@ library
     , integer-gmp
     , keys
     , lens
---    , matrix
     , matrices
     , megaparsec         >=8.0
     , monad-loops          
@@ -118,7 +116,6 @@ library
     , transformers
     , validation
     , vector
-    -- >=3.4 required for corrected definition of (!) & index
     , vector-instances >=3.4
 
   exposed-modules:
@@ -129,7 +126,6 @@ library
       Data.BTree            
       Data.Decoration
       Data.DecTree
---      Data.Matrix.ZeroIndexed
       Data.SymbolString
       Data.TCM
       Data.UserInput
