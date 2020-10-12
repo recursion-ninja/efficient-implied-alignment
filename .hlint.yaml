@@ -1,0 +1,56 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+
+# Optional rules
+- warn: { name: Use DerivingStrategies }
+
+# Custom warning hints
+- warn: { note: Prefer pure to reduce Monad constraint
+        , lhs: return x
+        , rhs: pure x
+        }
+- warn: { note: Use more general Foldable typeclass instance
+        , lhs: maybeToList x
+        , rhs: toList x
+        }
+- warn: { note: Use more general Indexable typeclass instance
+        , lhs: (!!)
+        , rhs: (!)
+        }
+- warn: { name: Prefer fold to mconcat
+        , lhs: mconcat
+        , rhs: fold
+        }
+- warn: { name: Prefer fold1 to sconcat
+        , lhs: sconcat
+        , rhs: fold1
+        }
+
+# Replace a $ b $ c with a . b $ c
+- group: { name: dollar, enabled: true }
+
+# Generalise map to fmap, ++ to <>
+- group: { name: generalise, enabled: true }
+
+# Generalise Maybe, Either functions to fold, foldMap
+- group: { name: generalise-for-conciseness, enabled: true }
+
+# The TupleSections language extension's syntax can be confusing, so we will ignore the hints
+- ignore: { name: Use tuple-section }
+
+# Reports language extensions that ARE used, but are implied by other langauge
+# extensions. Since this whole implied extension idea is dodgy, we don't eschew
+# the extra information regarding what extensions are currently enabled.
+- ignore: { name: Unused LANGUAGE pragma }
+
+
+# Ignore some builtin hint in test modules where we need to test the hint.
+# These hints are inapplicable within test modules since the test-suites are
+# testing the properties that the hint assumes to be true.
+- ignore: { name: Use || }
+
+- ignore: { name: Reduce duplication
+          , within:
+            [ Alignment.Pairwise.UnboxedUkkonen
+            ]
+          }
