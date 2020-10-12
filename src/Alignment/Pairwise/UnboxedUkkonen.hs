@@ -408,24 +408,6 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
 
       let (write, internalCell, leftColumn, leftBoundary, rightBoundary, rightColumn) = cellDefinitions gap longerTop cost tcm mCost mDir
 
-{-
-      let computeCell leftElement insertCost i j = {-# SCC recomputeCell #-}
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1) 
-                deleteCost = cost topElement    gap
-                (alignElem, alignCost) = tcm topElement leftElement
-            in do
-                  diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                  topCost  <- M.unsafeRead mCost (i - 1, j    )
-                  leftCost <- M.unsafeRead mCost (i    , j - 1)
-                  oldCost  <- M.unsafeRead mCost (i    , j    )
-                  let e@(c,_) = getMinimalResult gap alignElem
-                                  [ ( alignCost + diagCost, DiagArrow)
-                                  , (deleteCost + leftCost, LeftArrow)
-                                  , (insertCost +  topCost, UpArrow  )
-                                  ]
-                  write (i,j) e
-                  pure (c == oldCost, j+1)
--}
       let computeCell leftElement insertCost i j = {-# SCC recomputeCell #-} do
             e@(c,_) <-internalCell leftElement insertCost i j
             oldCost <- M.unsafeRead mCost (i    , j    )
