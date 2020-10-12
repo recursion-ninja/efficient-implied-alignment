@@ -1,0 +1,9 @@
+allow-newer:
+    base,
+    Cabal,
+    ghc-prim,
+    template-haskell
+
+packages: .
+
+with-compiler: ghc-8.10.2

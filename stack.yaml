@@ -1,6 +1,6 @@
 allow-newer: true
 
-compiler: ghc-8.10.1
+compiler: ghc-8.10.2
 
 compiler-check: match-exact
 
@@ -11,4 +11,4 @@ local-bin-path: bin
 
 require-stack-version: ">=2.3.1"
 
-resolver: lts-16.0
+resolver: lts-16.8
