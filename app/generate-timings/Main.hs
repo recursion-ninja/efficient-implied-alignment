@@ -298,12 +298,8 @@ generateTruncatedDataFile taxaNumPadder strLenPadder filePath counter taxaSize (
             , taxaFilePath
             ]
 
-    _ <- deleteFileIfExists taxaFilePath
-    _ <- deleteFileIfExists lessFilePath
+    p <- makeCleanProcess counter [taxaFilePath, lessFilePath] commandStr
 
-    let p = makeProcessFromCommand commandStr
-
-    printCounter counter
     putStrLn $ unwords [ taxaNumPadder taxaSize, strLenPadder strLength ]
 
     (_exitCode, stdOut, _stdErr) <- readCreateProcessWithExitCode p ""
@@ -339,11 +335,8 @@ generateTruncatedTreeFile taxaNumPadder filePath counter (taxaSize, taxaFilePath
             , taxaFilePath <.> "deleted"
             ]
 
-    _ <- deleteFileIfExists lessFilePath
+    p <- makeCleanProcess counter [lessFilePath] commandStr
 
-    let p = makeProcessFromCommand commandStr
-
-    printCounter counter
     putStrLn $ taxaNumPadder taxaSize
 
     (_exitCode, stdOut, _stdErr) <- readCreateProcessWithExitCode p ""
@@ -388,9 +381,8 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
             , "/dev/null"
             ]
 
-    let p = makeProcessFromCommand commandStr
+    p <- makeCleanProcess counter [] commandStr
 
-    printCounter counter
 --    putStrLn $ fileDataPath fp
     putStrLn $ unwords [ taxaNumPadder $ taxaCount fp
                        ,  strLenPadder $ stringLength fp
@@ -400,6 +392,14 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
 
     let (postOrder, preOrder) = parseRuntimes stdOut
     pure $ force (taxaCount fp, stringLength fp, postOrder, preOrder)
+
+
+makeCleanProcess :: IORef (Word, Word) -> [FilePath] -> String -> IO CreateProcess
+makeCleanProcess counter files commandStr = do
+    traverse_ deleteFileIfExists files
+    let p = makeProcessFromCommand commandStr
+    printCounter counter
+    pure p
 
 
 makeProcessFromCommand :: String -> CreateProcess

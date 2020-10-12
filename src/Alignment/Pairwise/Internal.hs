@@ -19,7 +19,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE TypeFamilies          #-}
 
 -- To add Indexable/Lookup instances for Matrix
@@ -424,23 +423,23 @@ deleteGaps gap bvs
             gapLen  <- newSTRef 0
             gapRefs <- newSTRef []
 
+            let handleGapBefore op = do
+                    gapBefore <- readSTRef prevGap
+                    when gapBefore $ do
+                      j <- readSTRef nonGaps
+                      g <- readSTRef gapLen
+                      modifySTRef gapRefs ( (j,g): )
+                      op
+
             for_ [0 .. charLen - 1] $ \i ->
               if symbolAlignmentMedian (bvs ! i)  == gap
               then modifySTRef gapLen succ *> writeSTRef prevGap True
-              else do gapBefore <- readSTRef prevGap
-                      when gapBefore $ do
-                        j <- readSTRef nonGaps
-                        g <- readSTRef gapLen
-                        modifySTRef gapRefs ( (j,g): )
+              else do handleGapBefore $ do
                         writeSTRef  gapLen 0
                         writeSTRef prevGap False
                       modifySTRef nonGaps succ
-            
-            gapBefore <- readSTRef prevGap
-            when gapBefore $ do
-              j <- readSTRef nonGaps
-              g <- readSTRef gapLen
-              modifySTRef gapRefs ( (j,g): )
+
+            handleGapBefore $ pure ()
             readSTRef gapRefs
 
 

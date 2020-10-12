@@ -16,8 +16,6 @@
 {-# LANGUAGE ApplicativeDo       #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE DeriveFoldable      #-}
-{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -32,6 +30,7 @@ import           Alignment.Pairwise.Internal (Direction(..), insertGaps, measure
 import           Control.DeepSeq
 import           Control.Monad               (when, unless)
 import           Control.Monad.Loops         (iterateUntilM, whileM_)
+import           Control.Monad.Primitive
 import           Control.Monad.ST
 import           Data.Alphabet
 import           Data.Bits
@@ -243,16 +242,7 @@ buildInitialBandedMatrix
 buildInitialBandedMatrix gap tcm lesserLeft longerTop o = fullMatrix
   where
     -- Note: "offset" cannot cause "width" to exceed "cols"
-    offset    = let o' = fromEnum o in  min o' $ cols - quasiDiagonalWidth
-    cost x y  = snd $ tcm x y 
-    longerLen = length longerTop
-    lesserLen = length lesserLeft
-    rows      = length lesserLeft + 1
-    cols      = length longerTop  + 1
-    width     = quasiDiagonalWidth + (offset `shiftL` 1) -- Multiply by 2
-    quasiDiagonalWidth = differenceInLength + 1
-      where
-        differenceInLength = longerLen - lesserLen
+    (offset, cost, rows, cols, width, quasiDiagonalWidth) = ukkonenConstants tcm lesserLeft longerTop o
 
     fullMatrix = do
       
@@ -266,69 +256,7 @@ buildInitialBandedMatrix gap tcm lesserLeft longerTop o = fullMatrix
       ---------------------------------------
       -- Define some generalized functions --
       ---------------------------------------
-
-      -- Write to a single cell of the current vector and directional matrix simultaneously
-      let write !p ~(!c, !d) = M.unsafeWrite mCost p c *> M.unsafeWrite mDir p d
-
-      -- Write to an internal cell (not on a boundary) of the matrix.
-      let internalCell leftElement insertCost i j =
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                -- Preserve the gap in the top (longer) string
-            in  if topElement == gap
-                then (\x -> (x, LeftArrow)) <$> M.unsafeRead mCost (i, j - 1)
-                else let deleteCost = cost topElement gap
-                         (alignElem, alignCost) = tcm topElement leftElement
-                     in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                            topCost  <- M.unsafeRead mCost (i - 1, j    )
-                            leftCost <- M.unsafeRead mCost (i    , j - 1)
-                            pure $ getMinimalResult gap alignElem
-                                     [ ( alignCost + diagCost, DiagArrow)
-                                     , (deleteCost + leftCost, LeftArrow)
-                                     , (insertCost +  topCost, UpArrow  )
-                                     ]
-
-      -- Define how to compute the first cell of the first "offest" rows.
-      -- We need to ensure that there are only Up Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
-      -- since the diagonal and leftward values are "out of bounds."
-      let leftColumn _leftElement insertCost i j = {-# SCC leftColumn #-} do
-            firstPrevCost <- M.unsafeRead mCost (i - 1, j)
-            pure (insertCost + firstPrevCost, UpArrow)
-
-      -- Define how to compute the first cell of the remaining rows.
-      -- We need to ensure that there are no Left Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
-      -- since the leftward values are "out of bounds."
-      let leftBoundary leftElement insertCost i j =
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                (alignElem, alignCost) = tcm topElement leftElement
-            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                   topCost  <- M.unsafeRead mCost (i - 1, j    )
-                   pure $ getMinimalResult gap alignElem
-                            [ ( alignCost + diagCost, DiagArrow)
-                            , (insertCost +  topCost, UpArrow  )
-                            ]
-
-      -- Define how to compute the last cell of the first "rows - offest" rows.
-      -- We need to ensure that there are only Left Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
-      -- since the diagonal and upward values are "out of bounds."
-      let rightBoundary leftElement _insertCost i j = {-# SCC rightBoundary #-}
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                deleteCost = cost topElement gap
-                (alignElem, alignCost) = tcm topElement leftElement
-            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                   leftCost <- M.unsafeRead mCost (i    , j - 1)
-                   pure $ getMinimalResult gap alignElem
-                            [ ( alignCost + diagCost, DiagArrow)
-                            , (deleteCost + leftCost, LeftArrow)
-                            ]
-
-      -- Define how to compute the last cell of the last "offest" rows.
-      -- We need to ensure that there are no Up Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
-      -- since the upward values are "out of bounds."
-      let rightColumn = {-# SCC rightColumn #-} internalCell
+      let (write, internalCell, leftColumn, leftBoundary, rightBoundary, rightColumn) = cellDefinitions gap longerTop cost tcm mCost mDir
 
       -- Define how to compute values to an entire row of the Ukkonen matrix.
       let writeRow i =
@@ -456,21 +384,10 @@ expandBandedMatrix
   -> Word
   -> ST s ()
 expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
-  where
-    
+  where    
     -- Note: "offset" cannot cause "width + quasiDiagonalWidth" to exceed "2 * cols"
-    offset      = let o' = fromEnum co in  min o' $ cols - quasiDiagonalWidth
-    prevOffset  = fromEnum po
-    cost x y    = snd $ tcm x y 
-    longerLen   = length longerTop
-    lesserLen   = length lesserLeft
-    rows        = length lesserLeft + 1
-    cols        = length longerTop  + 1
-    width       = quasiDiagonalWidth + (offset `shiftL` 1) -- Multiply by 2
-    quasiDiagonalWidth = differenceInLength + 1
-      where
-        differenceInLength = longerLen - lesserLen
-    
+    (offset, cost, rows, cols, width, quasiDiagonalWidth) = ukkonenConstants tcm lesserLeft longerTop co
+    prevOffset = fromEnum po    
     w  = width
     qd = quasiDiagonalWidth
 
@@ -489,70 +406,9 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
       -- Define some generalized functions --
       ---------------------------------------
 
-      -- Write to a single cell of the current vector and directional matrix simultaneously
-      let write !p ~(!c, !d) = M.unsafeWrite mCost p c *> M.unsafeWrite mDir p d
+      let (write, internalCell, leftColumn, leftBoundary, rightBoundary, rightColumn) = cellDefinitions gap longerTop cost tcm mCost mDir
 
-      -- Write to an internal cell (not on a boundary) of the matrix.
-      let internalCell leftElement insertCost i j =
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                -- Preserve the gap in the top (longer) string
-            in  if topElement == gap
-                then (\x -> (x, LeftArrow)) <$> M.unsafeRead mCost (i, j - 1)
-                -- Normal Needleman-Wunsch Logic
-                else let  deleteCost = cost topElement    gap
-                          (alignElem, alignCost) = tcm topElement leftElement
-                     in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                            topCost  <- M.unsafeRead mCost (i - 1, j    )
-                            leftCost <- M.unsafeRead mCost (i    , j - 1)
-                            pure $ getMinimalResult gap alignElem
-                                [ ( alignCost + diagCost, DiagArrow)
-                                , (deleteCost + leftCost, LeftArrow)
-                                , (insertCost +  topCost, UpArrow  )
-                                ]
-
-      -- Define how to compute the first cell of the first "offest" rows.
-      -- We need to ensure that there are only Up Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
-      -- since the diagonal and leftward values are "out of bounds."
-      let leftColumn _leftElement insertCost i j = {-# SCC leftColumn #-} do
-            firstPrevCost <- M.unsafeRead mCost (i - 1, j)
-            pure (insertCost + firstPrevCost, UpArrow)
-
-      -- Define how to compute the first cell of the remaining rows.
-      -- We need to ensure that there are no Left Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
-      -- since the leftward values are "out of bounds."
-      -- Define how to compute the first cell of the remaining rows.
-      -- We need to ensure that there are no Left Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
-      -- since the leftward values are "out of bounds."
-      let leftBoundary leftElement insertCost i j =
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                (alignElem, alignCost) = tcm topElement leftElement
-            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                   topCost  <- M.unsafeRead mCost (i - 1, j    )
-                   pure $ getMinimalResult gap alignElem
-                       [ ( alignCost + diagCost, DiagArrow)
-                       , (insertCost +  topCost, UpArrow  )
-                       ]
-
-      -- Define how to compute the last cell of the first "rows - offest" rows.
-      -- We need to ensure that there are only Left Arrow values in the directional matrix.
-      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
-      -- since the diagonal and upward values are "out of bounds."
-      let rightBoundary leftElement _insertCost i j = {-# SCC rightBoundary #-}
-            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                deleteCost = cost topElement    gap
-                (alignElem, alignCost) = tcm topElement leftElement
-            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                   leftCost <- M.unsafeRead mCost (i    , j - 1)
-                   pure $ getMinimalResult gap alignElem
-                            [ ( alignCost + diagCost, DiagArrow)
-                            , (deleteCost + leftCost, LeftArrow)
-                            ]
-
-      let rightColumn = {-# SCC rightColumn #-} internalCell
-      
+{-
       let computeCell leftElement insertCost i j = {-# SCC recomputeCell #-}
             let topElement = symbolAlignmentMedian $ longerTop ! (j - 1) 
                 deleteCost = cost topElement    gap
@@ -569,6 +425,12 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                                   ]
                   write (i,j) e
                   pure (c == oldCost, j+1)
+-}
+      let computeCell leftElement insertCost i j = {-# SCC recomputeCell #-} do
+            e@(c,_) <-internalCell leftElement insertCost i j
+            oldCost <- M.unsafeRead mCost (i    , j    )
+            write (i,j) e
+            pure (c == oldCost, j+1)
 
       let recomputeRange leftElement insertCost i x y = do
             lastDiff <- newSTRef 0
@@ -766,11 +628,9 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
       -- Extend the first row to seed subsequent rows.
       for_ [start .. min (cols - 1) (w - offset - 1)] $ \j ->
         let topElement    = symbolAlignmentMedian $ longerTop ! (j - 1)
-        in  if False && topElement == gap
-            then ((\x -> (x, LeftArrow)) <$> M.unsafeRead mCost (0, j - 1)) >>= write (0,j)
-            else let firstCellCost = cost gap topElement
-                 in  do firstPrevCost <- M.unsafeRead mCost (0, j - 1)
-                        write (0,j) (firstCellCost + firstPrevCost, LeftArrow)
+            firstCellCost = cost gap topElement
+        in  do firstPrevCost <- M.unsafeRead mCost (0, j - 1)
+               write (0,j) (firstCellCost + firstPrevCost, LeftArrow)
 
       writeSTRef tailStart start
 
@@ -1040,3 +900,116 @@ renderCostMatrix gapGroup lhs rhs cMat dMat = unlines
       where
         len = length e
 --}
+
+ukkonenConstants
+  :: Foldable f
+  => (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word))
+  -> f a
+  -> f a
+  -> Word
+  -> (Int, SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> Word, Int, Int, Int, Int)
+ukkonenConstants tcm lesserLeft longerTop o =
+    (offset, cost, rows, cols, width, quasiDiagonalWidth)
+  where    
+    -- Note: "offset" cannot cause "width + quasiDiagonalWidth" to exceed "2 * cols"
+    offset      = let o' = fromEnum o in  min o' $ cols - quasiDiagonalWidth
+    cost x y    = snd $ tcm x y 
+    longerLen   = length longerTop
+    lesserLen   = length lesserLeft
+    rows        = length lesserLeft + 1
+    cols        = length longerTop  + 1
+    width       = quasiDiagonalWidth + (offset `shiftL` 1) -- Multiply by 2
+    quasiDiagonalWidth = differenceInLength + 1
+      where
+        differenceInLength = longerLen - lesserLen
+
+
+cellDefinitions
+  :: ( Indexable f
+     , Key f ~ Int
+     , PrimMonad s
+     )
+  => SymbolAmbiguityGroup
+  -> f SymbolContext
+  -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> Word)
+  -> (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word))
+  -> MMatrix (PrimState s) Word
+  -> MMatrix (PrimState s) Direction
+  -> ( (Int, Int) -> (Word, Direction) -> s ()
+     , SymbolAmbiguityGroup -> Word -> Int -> Int -> s (Word, Direction)
+     , SymbolAmbiguityGroup -> Word -> Int -> Int -> s (Word, Direction)
+     , SymbolAmbiguityGroup -> Word -> Int -> Int -> s (Word, Direction)
+     , SymbolAmbiguityGroup -> Word -> Int -> Int -> s (Word, Direction)
+     , SymbolAmbiguityGroup -> Word -> Int -> Int -> s (Word, Direction)
+     )
+cellDefinitions gap longerTop cost tcm mCost mDir =
+    (write, internalCell, leftColumn, leftBoundary, rightBoundary, rightColumn)
+  where
+      ---------------------------------------
+      -- Define some generalized functions --
+      ---------------------------------------
+
+      -- Write to a single cell of the current vector and directional matrix simultaneously
+      write !p ~(!c, !d) = M.unsafeWrite mCost p c *> M.unsafeWrite mDir p d
+
+      -- Write to an internal cell (not on a boundary) of the matrix.
+      internalCell leftElement insertCost i j =
+            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
+                -- Preserve the gap in the top (longer) string
+                -- NOTE: Should we still do this branch?
+            in  if topElement == gap
+                then (\x -> (x, LeftArrow)) <$> M.unsafeRead mCost (i, j - 1)
+                else let deleteCost = cost topElement gap
+                         (alignElem, alignCost) = tcm topElement leftElement
+                     in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
+                            topCost  <- M.unsafeRead mCost (i - 1, j    )
+                            leftCost <- M.unsafeRead mCost (i    , j - 1)
+                            pure $ getMinimalResult gap alignElem
+                                     [ ( alignCost + diagCost, DiagArrow)
+                                     , (deleteCost + leftCost, LeftArrow)
+                                     , (insertCost +  topCost, UpArrow  )
+                                     ]
+
+      -- Define how to compute the first cell of the first "offest" rows.
+      -- We need to ensure that there are only Up Arrow values in the directional matrix.
+      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
+      -- since the diagonal and leftward values are "out of bounds."
+      leftColumn _leftElement insertCost i j = {-# SCC leftColumn #-} do
+            firstPrevCost <- M.unsafeRead mCost (i - 1, j)
+            pure (insertCost + firstPrevCost, UpArrow)
+
+      -- Define how to compute the first cell of the remaining rows.
+      -- We need to ensure that there are no Left Arrow values in the directional matrix.
+      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
+      -- since the leftward values are "out of bounds."
+      leftBoundary leftElement insertCost i j =
+            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
+                (alignElem, alignCost) = tcm topElement leftElement
+            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
+                   topCost  <- M.unsafeRead mCost (i - 1, j    )
+                   pure $ getMinimalResult gap alignElem
+                            [ ( alignCost + diagCost, DiagArrow)
+                            , (insertCost +  topCost, UpArrow  )
+                            ]
+
+      -- Define how to compute the last cell of the first "rows - offest" rows.
+      -- We need to ensure that there are only Left Arrow values in the directional matrix.
+      -- We can also reduce the number of comparisons the first row makes from 3 to 1,
+      -- since the diagonal and upward values are "out of bounds."
+      rightBoundary leftElement _insertCost i j = {-# SCC rightBoundary #-}
+            let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
+                deleteCost = cost topElement gap
+                (alignElem, alignCost) = tcm topElement leftElement
+            in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
+                   leftCost <- M.unsafeRead mCost (i    , j - 1)
+                   pure $ getMinimalResult gap alignElem
+                            [ ( alignCost + diagCost, DiagArrow)
+                            , (deleteCost + leftCost, LeftArrow)
+                            ]
+
+      -- Define how to compute the last cell of the last "offest" rows.
+      -- We need to ensure that there are no Up Arrow values in the directional matrix.
+      -- We can also reduce the number of comparisons the first row makes from 3 to 2,
+      -- since the upward values are "out of bounds."
+      rightColumn = {-# SCC rightColumn #-} internalCell
+

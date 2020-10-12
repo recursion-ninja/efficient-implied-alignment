@@ -107,6 +107,7 @@ library
     , mtl
     , parser-combinators >=1.2
     , pointed
+    , primitive          >=0.7
     , QuickCheck
     , scientific
     , semigroupoids
