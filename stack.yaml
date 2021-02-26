@@ -1,14 +1,14 @@
 allow-newer: true
 
-compiler: ghc-8.10.2
+compiler: ghc-8.10.4
 
 compiler-check: match-exact
 
 extra-deps:
-  - lens-4.19.2
+ - lens-4.19.2
 
 local-bin-path: bin
 
 require-stack-version: ">=2.3.1"
 
-resolver: lts-16.8
+resolver: lts-16.31
