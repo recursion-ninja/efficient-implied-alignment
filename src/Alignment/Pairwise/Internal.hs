@@ -272,12 +272,12 @@ directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
 
 
 {-# INLINEABLE measureCharacters #-}
-{-# SPECIALISE measureCharacters :: Vector SymbolContext -> Vector SymbolContext -> (Bool, [SymbolContext], [SymbolContext]) #-}
+{-# SPECIALISE measureCharacters :: Vector SymbolContext -> Vector SymbolContext -> (Ordering, [SymbolContext], [SymbolContext]) #-}
 measureCharacters
   :: Foldable f
   => f SymbolContext
   -> f SymbolContext
-  -> (Bool, [SymbolContext], [SymbolContext])
+  -> (Ordering, [SymbolContext], [SymbolContext])
 measureCharacters lhs rhs =
     let f = maybe [] toList
         (b, x, y) = measureNullableCharacters (Just lhs) (Just rhs)
@@ -298,15 +298,15 @@ measureCharacters lhs rhs =
 --
 -- Handles equality of inputs by /not/ swapping.
 {-# INLINEABLE measureNullableCharacters #-}
-{-# SPECIALISE measureNullableCharacters :: Maybe (Vector SymbolContext) -> Maybe (Vector SymbolContext) -> (Bool, Maybe (Vector SymbolContext), Maybe (Vector SymbolContext)) #-}
+{-# SPECIALISE measureNullableCharacters :: Maybe (Vector SymbolContext) -> Maybe (Vector SymbolContext) -> (Ordering, Maybe (Vector SymbolContext), Maybe (Vector SymbolContext)) #-}
 measureNullableCharacters
   :: Foldable f
   => Maybe (f SymbolContext)
   -> Maybe (f SymbolContext)
-  -> (Bool, Maybe (f SymbolContext), Maybe (f SymbolContext))
+  -> (Ordering, Maybe (f SymbolContext), Maybe (f SymbolContext))
 measureNullableCharacters lhs rhs
-  | lhsOrdering == GT = ( True, rhs, lhs)
-  | otherwise         = (False, lhs, rhs)
+  | lhsOrdering == GT = (lhsOrdering, rhs, lhs)
+  | otherwise         = (lhsOrdering, lhs, rhs)
   where
     lhsOrdering =
         -- First, compare inputs by length.
@@ -367,13 +367,11 @@ measureAndUngapCharacters gap char1 char2
   where
     (gapsChar1, ungappedChar1) = deleteGaps gap char1
     (gapsChar2, ungappedChar2) = deleteGaps gap char2
+    needToSwap (v,_,_) = v == GT
     swapInputs =
-      let needToSwap (x,_,_) = x
-          ungappedLen1 = maybe 0 length ungappedChar1
-          ungappedLen2 = maybe 0 length ungappedChar2
-      in  case ungappedLen1 `compare` ungappedLen2 of
-            EQ | ungappedLen1 == 0 -> needToSwap $ measureNullableCharacters (Just char1)  (Just char2)
-            _                      -> needToSwap $ measureNullableCharacters ungappedChar1 ungappedChar2
+        case measureNullableCharacters ungappedChar1 ungappedChar2 of
+            (EQ,_,_) -> needToSwap $ measureCharacters char1 char2
+            x        -> needToSwap x
 
 
 -- |
