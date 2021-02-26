@@ -98,10 +98,10 @@ data Direction = DiagArrow | LeftArrow | UpArrow
   deriving (Eq, Ord)
 
 
-data instance U.MVector s Direction = MV_Direction (P.MVector s Word8)
+newtype instance U.MVector s Direction = MV_Direction (P.MVector s Word8)
 
 
-data instance U.Vector   Direction  = V_Direction  (P.Vector    Word8)
+newtype instance U.Vector   Direction  = V_Direction  (P.Vector    Word8)
 
 
 instance U.Unbox Direction
@@ -279,7 +279,7 @@ measureCharacters
   -> f SymbolContext
   -> (Ordering, [SymbolContext], [SymbolContext])
 measureCharacters lhs rhs =
-    let f = maybe [] toList
+    let f = foldMap toList
         (b, x, y) = measureNullableCharacters (Just lhs) (Just rhs)
     in  (b, f x, f y)
 
@@ -313,8 +313,8 @@ measureNullableCharacters lhs rhs
         case comparing (maybe 0 length) lhs rhs of
           -- If the inputs are equal length,
           -- Then compare by the (arbitary) lexicographical ordering of the median states.
-          EQ -> let x = maybe [] toList lhs
-                    y = maybe [] toList rhs
+          EQ -> let x = foldMap toList lhs
+                    y = foldMap toList rhs
                     f = fmap symbolAlignmentMedian
                 in  case f x `compare` f y of
                       -- If the input median states have the same ordering,
@@ -465,6 +465,9 @@ insertGaps gap lGaps rGaps meds
         rGapCount = totalGaps rGaps
         newLength = lGapCount + rGapCount + mLength
 
+        ins = insertElement gap gap
+        del = deleteElement gap gap
+
         xs !> i = maybe (error "Tried to index an empty alignment context when reinserting gaps") (!i) xs
         
         newVector = EV.create $ do
@@ -480,32 +483,30 @@ insertGaps gap lGaps rGaps meds
           for_ (IM.toAscList rGaps) $ uncurry (MUV.unsafeWrite rVec)
 
           let align i = do
-                    m <- readSTRef mPtr
-                    let e = meds !> m
-                    let v = coerce e
-                    MV.unsafeWrite mVec i v
-                    modifySTRef mPtr succ
-                    when (isAlign e || isDelete e) $
-                      modifySTRef lGap succ
-                    when (isAlign e || isInsert e) $
-                      modifySTRef rGap succ
+                m <- readSTRef mPtr
+                let e = meds !> m
+                let v = coerce e
+                MV.unsafeWrite mVec i v
+                modifySTRef mPtr succ
+                when (isAlign e || isDelete e) $
+                  modifySTRef lGap succ
+                when (isAlign e || isInsert e) $
+                  modifySTRef rGap succ
 
-          let checkRightGapReinsertion i = do
-                rg <- readSTRef rGap
-                v  <- if rg >= MUV.length rVec then pure 0 else MUV.unsafeRead rVec rg
+          let insertGapWith i e gapRef gapVec = do
+                rg <- readSTRef gapRef
+                v  <- if rg >= MUV.length gapVec then pure 0 else MUV.unsafeRead gapVec rg
                 if   v == 0
-                then align i
-                else do MV.unsafeWrite mVec i $ insertElement gap gap
-                        MUV.unsafeWrite rVec rg $ v - 1
+                then pure False
+                else do MV.unsafeWrite mVec i e
+                        MUV.unsafeWrite gapVec rg $ v - 1
+                        pure True
 
           for_ [0 .. newLength - 1] $ \i -> do
-            -- Check if we need to insert a gap from the left char
-            lg <- readSTRef lGap
-            v  <- if lg >= MUV.length lVec then pure 0 else MUV.unsafeRead lVec lg
-            if   v == 0
-            then checkRightGapReinsertion i
-            else do MV.unsafeWrite mVec i $ deleteElement gap gap
-                    MUV.unsafeWrite lVec lg $ v - 1
+            written <- insertGapWith i ins lGap lVec
+            unless written $ do
+              written' <- insertGapWith i del rGap rVec
+              unless written' $ align i
 
           pure mVec
 
