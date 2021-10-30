@@ -28,7 +28,7 @@ tested-with:
     GHC == 8.8.4
     GHC == 8.10.4
     GHC == 9.0.1
-                
+
 extra-source-files:
     ChangeLog.md
     README.md
@@ -65,7 +65,7 @@ common ghc-flags
     -Wincomplete-patterns
     -Wincomplete-record-updates
     -Wincomplete-uni-patterns
---    -Wmissing-deriving-strategies          
+--    -Wmissing-deriving-strategies
     -Wmissing-fields
     -Wmissing-home-modules
     -Wmissing-monadfail-instances
@@ -102,17 +102,17 @@ library
   build-depends:
       base >=4.7 && <5
     , bimap
-    , case-insensitive          
+    , case-insensitive
     , containers         >=0.5.8
     , deepseq
-    , dlist          
+    , dlist
     , hashable
     , integer-gmp
     , keys
     , lens
     , matrices
     , megaparsec         >=8.0
-    , monad-loops          
+    , monad-loops
     , mtl
     , parser-combinators >=1.2
     , pointed
@@ -131,7 +131,7 @@ library
       Alignment.Pairwise
       Data.Alphabet
       Data.Alphabet.IUPAC
-      Data.BTree            
+      Data.BTree
       Data.Decoration
       Data.DecTree
       Data.SymbolString
@@ -172,7 +172,7 @@ library
 
   default-language: Haskell2010
 
-  
+
 executable implied-align
 
   import:  ghc-flags
@@ -181,9 +181,6 @@ executable implied-align
 
   hs-source-dirs:
       app/implied-align
-
-  ghc-options: -g
---               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
       efficient-implied-alignment
@@ -202,7 +199,7 @@ executable implied-align
 
   default-language: Haskell2010
 
-  
+
 executable generate-timings
 
   import:  ghc-flags
@@ -217,14 +214,14 @@ executable generate-timings
     , ansi-wl-pprint
     , base       >=4.7 && <5
     , containers         >=0.5.8
-    , Decimal          
+    , Decimal
     , deepseq
     , directory
-    , filepath                    
+    , filepath
     , keys
     , megaparsec         >=7.0
     , optparse-applicative
-    , process          
+    , process
     , semigroupoids
 
   default-language: Haskell2010
@@ -232,7 +229,7 @@ executable generate-timings
   other-modules:
     InputParser
     TimingParameters
-  
+
 executable newick-add-delete-taxon
 
   import:  ghc-flags
@@ -242,9 +239,6 @@ executable newick-add-delete-taxon
   hs-source-dirs:
       app
 
-  ghc-options: -g
---               -threaded -rtsopts -with-rtsopts=-N -g
-
   build-depends:
       base       >=4.7 && <5
     , keys
@@ -252,7 +246,7 @@ executable newick-add-delete-taxon
 
   default-language: Haskell2010
 
-  
+
 executable draw-pre-order-figure
 
   import:  ghc-flags
@@ -261,9 +255,6 @@ executable draw-pre-order-figure
 
   hs-source-dirs:
       app
-
-  ghc-options: -g
---               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
       base       >=4.7 && <5
@@ -274,7 +265,7 @@ executable draw-pre-order-figure
 
   default-language: Haskell2010
 
-  
+
 executable reduce-fasta
 
   import:  ghc-flags
@@ -290,7 +281,7 @@ executable reduce-fasta
 
   default-language: Haskell2010
 
-  
+
 test-suite test-align
 
   type: exitcode-stdio-1.0
