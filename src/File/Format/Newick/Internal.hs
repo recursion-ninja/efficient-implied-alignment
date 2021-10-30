@@ -34,17 +34,16 @@ module File.Format.Newick.Internal
   ) where
 
 
-import           Control.DeepSeq    (NFData)
-import           Data.Data
-import           Data.Foldable
-import           Data.List.NonEmpty (NonEmpty (..))
-import           Data.String        (IsString (fromString))
-import           Data.Text          (Text)
-import           Data.Text.Short    (ShortText, toString)
-import qualified Data.Text.Short    as T
-import           Data.Tree
-import           Data.Vector        (Vector, fromList, fromListN)
-import           GHC.Generics       (Generic)
+import Control.DeepSeq    (NFData)
+import Data.Data
+import Data.Foldable hiding (null)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.String        (IsString (fromString))
+import Data.Text          (Text, null, unpack)
+import Data.Tree
+import Data.Vector        (Vector, fromList, fromListN)
+import GHC.Generics       (Generic)
+import Prelude hiding (null)
 
 
 {----
@@ -79,7 +78,7 @@ type NewickForest = NonEmpty NewickNode
 data  NewickNode
     = NewickNode
     { childNodes     :: {-# UNPACK #-} !(Vector NewickNode)
-    , internalName   :: {-# UNPACK #-} !ShortText
+    , internalName   :: {-# UNPACK #-} !Text
     , internalLength :: !(Maybe Double)
     }
     deriving stock    (Data, Eq, Generic, Ord, Typeable)
@@ -88,7 +87,7 @@ data  NewickNode
 
 -- |
 -- Apply a transformation over the leaf labels of a 'newickNode'.
-mapLeafLabels :: (ShortText -> ShortText) -> NewickNode -> NewickNode
+mapLeafLabels :: (Text -> Text) -> NewickNode -> NewickNode
 mapLeafLabels f (NewickNode d x y) = NewickNode (mapLeafLabels f <$> d) x y
 
 
@@ -106,9 +105,9 @@ descendants (NewickNode x _ _) = toList x
 --
 -- > isLeaf ==> isJust . newickLabel
 {-# INLINE newickLabel #-}
-newickLabel :: NewickNode -> Maybe ShortText
+newickLabel :: NewickNode -> Maybe Text
 newickLabel (NewickNode _ x _)
-  | T.null x  = Nothing
+  | null x    = Nothing
   | otherwise = Just x
 
 
@@ -134,8 +133,11 @@ instance Show NewickNode where
 
     show (NewickNode d n b) = fold [name, len, " ", show d]
       where
-        name = (\x -> if null x then "Node" else x) $ toString n
-        len  = maybe "" (\x -> ':' : show x) b
+        name :: String
+        name | null n    = "Node"
+             | otherwise = unpack n
+        len :: String
+        len  = maybe "" ((':':) . show) b
 
 
 -- |
@@ -146,7 +148,7 @@ instance Show NewickNode where
 renderNewickForest :: NewickForest -> Text
 renderNewickForest = fromString . drawForest . unfoldForest f . toList
   where
-    f = (,) <$> maybe "X" toString . newickLabel <*> descendants
+    f = (,) <$> maybe "X" unpack . newickLabel <*> descendants
 
 
 -- |
@@ -154,7 +156,7 @@ renderNewickForest = fromString . drawForest . unfoldForest f . toList
 --
 -- > null nodes ==> isJust . label
 {-# INLINEABLE newickNode #-}
-newickNode :: [NewickNode] -> Maybe ShortText -> Maybe Double -> Maybe NewickNode
+newickNode :: [NewickNode] -> Maybe Text -> Maybe Double -> Maybe NewickNode
 newickNode nodes label length' =
   case (nodes, label) of
     (  [], Nothing) -> Nothing
@@ -165,4 +167,4 @@ newickNode nodes label length' =
 -- Determines whether a given 'NewickNode' is a leaf node in the tree.
 {-# INLINEABLE isLeaf #-}
 isLeaf :: NewickNode -> Bool
-isLeaf (NewickNode x y _) = null x && not (T.null y)
+isLeaf (NewickNode x y _) =  length x == 0 && not (null y)

@@ -23,7 +23,7 @@ import           Data.Semigroup.Foldable
 import           Data.Set                (Set)
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Text.Short         (ShortText, toString)
+import           Data.Text               (Text, unpack)
 import           Data.Validation
 import           File.Input
 import           SampleData
@@ -88,13 +88,13 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
     stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
 
     inputRenderer x i = fold
-        [ toString i
+        [ unpack i
         , ": "
         , renderSingleton defaultAlphabet $ x ^. preliminaryString
         ]
 
     leafRendererA x i = fold
-        [ toString i
+        [ unpack i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -113,7 +113,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
 
     leafRendererB x i = fold
-        [ toString i
+        [ unpack i
         , ": "
 --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString
@@ -132,7 +132,7 @@ runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
         ]
 
     leafRendererC x i = fold
-        [ toString i
+        [ unpack i
         , ": "
         , renderSymbolString defaultAlphabet $ x ^. preliminaryString
 --        , renderString       defaultAlphabet $ x ^.   finalizedString

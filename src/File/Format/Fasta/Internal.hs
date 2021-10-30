@@ -25,7 +25,6 @@ import           Data.Char              (isSpace)
 import           Data.String
 import qualified Data.Text              as T
 import qualified Data.Text.Lazy         as LT
-import           Data.Text.Short        (ShortText)
 import           Data.Void
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
@@ -34,7 +33,7 @@ import           Text.Megaparsec.Custom
 
 -- |
 -- Unique identifier for a taxa
-type Identifier        = ShortText
+type Identifier        = T.Text
 
 
 -- |

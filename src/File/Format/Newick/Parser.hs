@@ -33,7 +33,6 @@ import           Data.Scientific                          (toRealFloat)
 import           Data.String
 import qualified Data.Text                                as T
 import qualified Data.Text.Lazy                           as LT
-import           Data.Text.Short                          (ShortText)
 import           Data.Void
 import           Prelude                                  hiding (lookup)
 import           Text.Megaparsec                          hiding (label, sepBy1)
@@ -133,10 +132,10 @@ newickLeafDefinition = do
 -- |
 -- Defines the label for a '(BTree () ())' which can be either quoted or unquoted.
 {-# INLINEABLE newickLabelDefinition #-}
-{-# SPECIALISE newickLabelDefinition :: Parsec Void  T.Text ShortText #-}
-{-# SPECIALISE newickLabelDefinition :: Parsec Void LT.Text ShortText #-}
-{-# SPECIALISE newickLabelDefinition :: Parsec Void  String ShortText #-}
-newickLabelDefinition :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => m ShortText
+{-# SPECIALISE newickLabelDefinition :: Parsec Void  T.Text T.Text #-}
+{-# SPECIALISE newickLabelDefinition :: Parsec Void LT.Text T.Text #-}
+{-# SPECIALISE newickLabelDefinition :: Parsec Void  String T.Text #-}
+newickLabelDefinition :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => m T.Text
 newickLabelDefinition = (quotedLabel <|> unquotedLabel) <* whitespace
 
 
@@ -145,10 +144,10 @@ newickLabelDefinition = (quotedLabel <|> unquotedLabel) <* whitespace
 -- of two single quotes ("''") to denote an escaped quotation character
 -- in the quoted label rather than signifying the end of the quoted label
 {-# INLINEABLE quotedLabel #-}
-{-# SPECIALISE quotedLabel :: Parsec Void  T.Text ShortText #-}
-{-# SPECIALISE quotedLabel :: Parsec Void LT.Text ShortText #-}
-{-# SPECIALISE quotedLabel :: Parsec Void  String ShortText #-}
-quotedLabel :: forall e s m . (MonadFail m, MonadParsec e s m, Token s ~ Char) => m ShortText
+{-# SPECIALISE quotedLabel :: Parsec Void  T.Text T.Text #-}
+{-# SPECIALISE quotedLabel :: Parsec Void LT.Text T.Text #-}
+{-# SPECIALISE quotedLabel :: Parsec Void  String T.Text #-}
+quotedLabel :: forall e s m . (MonadFail m, MonadParsec e s m, Token s ~ Char) => m T.Text
 quotedLabel = do
     _ <- char '\''
     x <- quotedLabelData
@@ -177,10 +176,10 @@ quotedLabel = do
 -- format. However, if a user really want to put '<' & '>' characters in
 -- a node label, they can always put such characters in a quoted label.
 {-# INLINEABLE unquotedLabel #-}
-{-# SPECIALISE unquotedLabel :: Parsec Void  T.Text ShortText #-}
-{-# SPECIALISE unquotedLabel :: Parsec Void LT.Text ShortText #-}
-{-# SPECIALISE unquotedLabel :: Parsec Void  String ShortText #-}
-unquotedLabel :: forall e s m . (MonadParsec e s m, Token s ~ Char) => m ShortText
+{-# SPECIALISE unquotedLabel :: Parsec Void  T.Text T.Text #-}
+{-# SPECIALISE unquotedLabel :: Parsec Void LT.Text T.Text #-}
+{-# SPECIALISE unquotedLabel :: Parsec Void  String T.Text #-}
+unquotedLabel :: forall e s m . (MonadParsec e s m, Token s ~ Char) => m T.Text
 unquotedLabel =
   fromString . chunkToTokens (Proxy :: Proxy s) <$> noneOfThese invalidUnquotedLabelChars
 

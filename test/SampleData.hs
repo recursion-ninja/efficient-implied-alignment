@@ -35,7 +35,7 @@ import           Data.Set                     (Set)
 import           Data.String                  (IsString (..))
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Text.Short              (ShortText)
+import           Data.Text                    (Text)
 import           Data.Validation
 import           Data.Vector.Unboxed.NonEmpty (Vector)
 import qualified Data.Vector.Unboxed.NonEmpty as V
@@ -46,7 +46,7 @@ type LeafInput    = NonEmpty (Vector Char)
 
 type LeafOutputs  = NonEmpty LeafInput
 
-type StringValues = Map ShortText (LeafInput, LeafOutputs)
+type StringValues = Map Text (LeafInput, LeafOutputs)
 
 type TreeInput    = BTree () ()
 

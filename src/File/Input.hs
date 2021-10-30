@@ -31,7 +31,7 @@ import           Data.Semigroup.Foldable
 import           Data.Set                         (Set)
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Text.Short                  (ShortText, toString)
+import           Data.Text                        (Text, unpack)
 import           Data.UserInput
 import           Data.Validation
 import qualified Data.Vector.NonEmpty             as V
@@ -118,7 +118,7 @@ runUnification alphaType (dataVal, treeVal, tcmVal) = timeOp $ do
                         Standard -> id
                         DNA      -> decodeIUPAC iupacToDna
                         RNA      -> decodeIUPAC iupacToRna
-        leafDataMap :: Map ShortText CharacterSequence
+        leafDataMap :: Map Text CharacterSequence
         leafDataMap = fmap VU.fromNonEmpty . alphaChange <$> fastaToMap dataVal
         badSymbols  = validateSymbolsAndAlphabet tcmVal leafDataMap
         badLinking  = first (fmap show) $ unifyInput alphabet leafDataMap treeVal
@@ -131,7 +131,7 @@ precomputeTCM alphabet matrix = timeOp $ do
     pure . force $ buildTransitionCostMatrix alphabet scm
 
 
-fastaToMap :: FastaParseResult -> Map ShortText (V.Vector (NonEmpty Char))
+fastaToMap :: FastaParseResult -> Map Text (V.Vector (NonEmpty Char))
 fastaToMap = foldMap (M.singleton <$> fastaLabel <*> reformSequence . fastaSymbols)
   where
     reformSequence v =
@@ -155,7 +155,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
           []   -> []
           x:xs -> [preamble <> unlines (x:xs)]
       where
-        preamble = "For leaf " <> toString i <> ", the following symbols were found but not specified in the alphabet: "
+        preamble = "For leaf " <> unpack i <> ", the following symbols were found but not specified in the alphabet: "
 
         g :: Int -> VU.Vector Char -> Maybe String
         g k v =
@@ -172,7 +172,7 @@ validateSymbolsAndAlphabet (TCM symbolList _) m = fromEither $
 
 unifyInput
   :: ( Foldable1 f
-     , Key c ~ ShortText
+     , Key c ~ Text
      , Keyed c
      , Lookup c
      , Traversable c
@@ -183,17 +183,17 @@ unifyInput
   -> Validation (NonEmpty UnificationError) (BTree b PreliminaryNode)
 unifyInput alphabet dataCollection genericTree = validatedDataSet *> initializedTree
   where
-    leafTagSet :: Set ShortText
+    leafTagSet :: Set Text
     leafTagSet     = foldMap point leafTaggedTree
     dataSetKeys    = mapWithKey const dataCollection
     leafTaggedTree = setLeafLabels genericTree
 
     validatedDataSet = traverse f dataSetKeys
       where
-        f :: ShortText -> Validation (NonEmpty UnificationError) ()
+        f :: Text -> Validation (NonEmpty UnificationError) ()
         f k = validate err isInLeafSet k $> ()
           where
-            err = pure . DataLabelMissingInLeafSet $ toString k
+            err = pure . DataLabelMissingInLeafSet $ unpack k
 
             isInLeafSet x
               | x `elem` leafTagSet = Just x
@@ -201,10 +201,10 @@ unifyInput alphabet dataCollection genericTree = validatedDataSet *> initialized
 
     initializedTree = traverse f leafTaggedTree
       where
-        f :: ShortText -> Validation (NonEmpty UnificationError) PreliminaryNode
+        f :: Text -> Validation (NonEmpty UnificationError) PreliminaryNode
         f k = validationNel $
             case k `lookup` dataCollection of
-              Nothing -> Left . LeafLabelMissingInDataSet $ toString k
+              Nothing -> Left . LeafLabelMissingInDataSet $ unpack k
               Just xs -> let !ss = buildSymbolString xs
                          in  Right $ PreliminaryNode 0 0 ss
           where

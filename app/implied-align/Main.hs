@@ -16,7 +16,7 @@ import           Data.Key
 import           Data.List.NonEmpty      (intersperse)
 import           Data.Semigroup.Foldable
 import           Data.SymbolString
-import           Data.Text.Short         (ShortText, toString)
+import           Data.Text               (Text, unpack)
 import           File.Input
 import           File.Output
 import           InputParser
@@ -40,13 +40,13 @@ runInput = do
             tcm      = inputTCM      fileInput
             tree     = inputTree     fileInput
 
-            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length $ toString k]) tree
+            maxLabelLen        = succ . maximum $ foldMapWithKey (\k _ -> [length $ unpack k]) tree
 
-            inputRenderer :: PreliminaryNode -> ShortText -> String
-            inputRenderer  x i = unwords [ padR maxLabelLen (toString i <> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
+            inputRenderer :: PreliminaryNode -> Text -> String
+            inputRenderer  x i = unwords [ padR maxLabelLen (unpack i <> ":"), renderSmartly alphabet $ x ^. preliminaryString ]
 
-            leafRenderer :: FinalizedNode -> ShortText -> String
-            leafRenderer   x i = unwords [ padR maxLabelLen (toString i <> ":"), padL 5 . show $ x ^. localCost, renderSingleton alphabet $ x ^. alignedString ]
+            leafRenderer :: FinalizedNode -> Text -> String
+            leafRenderer   x i = unwords [ padR maxLabelLen (unpack i <> ":"), padL 5 . show $ x ^. localCost, renderSingleton alphabet $ x ^. alignedString ]
 
             nodeRenderer :: FinalizedNode -> p -> String
             nodeRenderer   x _ = unwords [ padR maxLabelLen     "?:" , padL 5 . show $ x ^. localCost, renderSingleton alphabet $ x ^. alignedString ]

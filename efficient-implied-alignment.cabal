@@ -23,6 +23,11 @@ description:    Using a commutative, binary string alignment operator and a
 
 homepage:       https://github.com/recursion-ninja/efficient-implied-alignment#readme
 bug-reports:    https://github.com/recursion-ninja/efficient-implied-alignment/issues
+
+tested-with:
+    GHC == 8.8.4
+    GHC == 8.10.4
+    GHC == 9.0.1
                 
 extra-source-files:
     ChangeLog.md
@@ -80,6 +85,10 @@ common ghc-flags
     -Wunused-matches
     -Wwrong-do-bind
 
+  if impl(ghc >= 8.10)
+    ghc-options:
+      -Wderiving-defaults
+      -Wunused-packages
 
 
 library
@@ -111,9 +120,7 @@ library
     , QuickCheck
     , scientific
     , semigroupoids
-    , semigroups
     , text               >=1.2
-    , text-short
     , transformers
     , validation
     , vector
@@ -179,15 +186,15 @@ executable implied-align
 --               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
-      ansi-wl-pprint
+      efficient-implied-alignment
+    , ansi-wl-pprint
     , base       >=4.7 && <5
-    , efficient-implied-alignment
     , deepseq
     , keys
     , lens
     , optparse-applicative
     , semigroupoids
-    , text-short
+    , text
 
   other-modules:
       Paths_efficient_implied_alignment
@@ -205,24 +212,19 @@ executable generate-timings
   hs-source-dirs:
       app/generate-timings
 
-  ghc-options: -g
---               -threaded -rtsopts -with-rtsopts=-N -g
-
   build-depends:
-      ansi-wl-pprint
+      efficient-implied-alignment
+    , ansi-wl-pprint
     , base       >=4.7 && <5
-    , efficient-implied-alignment
     , containers         >=0.5.8
     , Decimal          
     , deepseq
     , directory
     , filepath                    
     , keys
-    , lens
     , megaparsec         >=7.0
     , optparse-applicative
     , process          
-    , scientific          
     , semigroupoids
 
   default-language: Haskell2010
@@ -244,22 +246,9 @@ executable newick-add-delete-taxon
 --               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
-      ansi-wl-pprint
-    , base       >=4.7 && <5
-    , efficient-implied-alignment
-    , deepseq
-    , directory
-    , filepath                    
+      base       >=4.7 && <5
     , keys
-    , lens
-    , megaparsec         >=7.0
-    , MissingH          
-    , optparse-applicative
-    , process          
-    , scientific          
-    , semigroupoids
     , split
-    , vector
 
   default-language: Haskell2010
 
@@ -277,25 +266,11 @@ executable draw-pre-order-figure
 --               -threaded -rtsopts -with-rtsopts=-N -g
 
   build-depends:
-      ansi-wl-pprint
-    , base       >=4.7 && <5
-    , efficient-implied-alignment
-    , deepseq
-    , diagrams
+      base       >=4.7 && <5
     , diagrams-lib
     , diagrams-svg
-    , directory
-    , filepath                    
     , keys
     , lens
-    , megaparsec         >=7.0
-    , MissingH
-    , optparse-applicative
-    , process          
-    , scientific          
-    , semigroupoids
-    , split
-    , vector
 
   default-language: Haskell2010
 
@@ -309,24 +284,9 @@ executable reduce-fasta
   hs-source-dirs:
       app
 
-  ghc-options: -g
---               -threaded -rtsopts -with-rtsopts=-N -g
-
   build-depends:
-      ansi-wl-pprint
-    , base       >=4.7 && <5
-    , efficient-implied-alignment
-    , deepseq
-    , directory
-    , filepath                    
+      base       >=4.7 && <5
     , keys
-    , lens
-    , megaparsec         >=7.0
-    , optparse-applicative
-    , process          
-    , scientific          
-    , semigroupoids
-    , split
 
   default-language: Haskell2010
 
@@ -352,7 +312,7 @@ test-suite test-align
     , matrices
     , pointed
     , semigroupoids
-    , text-short
+    , text
     , validation
 
   other-modules:
@@ -376,7 +336,6 @@ test-suite test-trees
   build-depends:
       efficient-implied-alignment
     , base       >=4.7 && <5
-    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -386,7 +345,7 @@ test-suite test-trees
     , semigroupoids
     , tasty
     , tasty-hunit
-    , text-short
+    , text
     , validation
 
   other-modules:
@@ -411,7 +370,6 @@ test-suite test-suite
       efficient-implied-alignment
     , base       >=4.7 && <5
     , bimap
-    , efficient-implied-alignment
     , containers >=0.5.8
     , deepseq
     , keys
@@ -425,7 +383,7 @@ test-suite test-suite
     , tasty-hunit
     , tasty-quickcheck
     , tasty-smallcheck
-    , text-short
+    , text
     , validation
 
   other-modules:

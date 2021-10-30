@@ -24,7 +24,7 @@ import           Data.Semigroup.Foldable
 import           Data.Set                     (Set)
 import           Data.SymbolString
 import           Data.TCM
-import           Data.Text.Short              (ShortText, toString)
+import           Data.Text                    (Text, unpack)
 import           Data.Validation
 import qualified Data.Vector.NonEmpty         as V
 import           Data.Vector.Unboxed.NonEmpty (Vector)
@@ -49,7 +49,7 @@ runTests = defaultMain . testGroup "Test Trees" $ runTest <$> sampleDataSets
 
 runTest
   :: ( TestName
-     , Map ShortText (           NonEmpty (Vector Char)
+     , Map Text (           NonEmpty (Vector Char)
                      , NonEmpty (NonEmpty (Vector Char))
                      )
      , BTree b a
@@ -90,14 +90,14 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
         f z = unifyInput defaultAlphabet z y
 
 --    stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
-    leafRendererA :: FinalizedNode -> ShortText -> String
-    leafRendererA x i = fold [ toString i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
+    leafRendererA :: FinalizedNode -> Text -> String
+    leafRendererA x i = fold [ unpack i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString ]
 
     nodeRendererA :: HasAlignedString s (V.Vector SymbolContext) => s -> p -> String
     nodeRendererA x _ = fold [            "?: ", renderSingleton defaultAlphabet $ x ^. alignedString ]
 
-    inputRenderer :: PreliminaryNode -> ShortText -> String
-    inputRenderer x i = fold [ toString i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
+    inputRenderer :: PreliminaryNode -> Text -> String
+    inputRenderer x i = fold [ unpack i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString ]
 
     strDistance :: Eq a => [a] -> [a] -> Int
     strDistance x y = length . filter (uncurry (/=)) $ zip x y
