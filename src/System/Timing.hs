@@ -21,7 +21,7 @@ import           System.CPUTime
 
 
 -- | CPU time with picosecond resolution
-newtype CPUTime = CPUTime Integer
+newtype CPUTime = CPUTime Natural
 
 
 instance NFData CPUTime where
@@ -50,40 +50,40 @@ instance Show CPUTime where
         day     = 24   *  hour
 
 
-zeroPad :: Int -> Integer -> String
+zeroPad :: Int -> Natural -> String
 zeroPad k i = replicate (k - length shown) '0' <> shown
   where
     shown = show i
 
 
-timeOp :: MonadIO m => m a -> m (CPUTime, a)
+timeOp :: (MonadIO m, NFData a) => m a -> m (CPUTime, a)
 timeOp ioa = do
     t1 <- liftIO getCPUTime
-    a  <- ioa
+    a  <- force <$> ioa
     t2 <- liftIO getCPUTime
-    let t = CPUTime (t2 - t1)
+    let t = CPUTime . fromIntegral $ t2 - t1
     pure (t, a)
 
 
 fromPicoseconds :: Natural -> CPUTime
-fromPicoseconds = CPUTime . toInteger
+fromPicoseconds = CPUTime
 
 
 fromMicroseconds :: Natural -> CPUTime
-fromMicroseconds = CPUTime . (*1000000000) .  toInteger
+fromMicroseconds = CPUTime . (*1000000)
 
 
 fromMilliseconds :: Natural -> CPUTime
-fromMilliseconds = CPUTime . (*1000000) .  toInteger
+fromMilliseconds = CPUTime . (*1000000000)
 
 
 toPicoseconds :: CPUTime -> Natural
-toPicoseconds (CPUTime x) = fromInteger x
+toPicoseconds (CPUTime x) = x
 
 
 toMicroseconds :: CPUTime -> Natural
-toMicroseconds (CPUTime x) = fromInteger $ x `div` 1000000
+toMicroseconds (CPUTime x) = x `div` 1000000
 
 
 toMilliseconds :: CPUTime -> Natural
-toMilliseconds (CPUTime x) = fromInteger $ x `div` 1000000000
+toMilliseconds (CPUTime x) = x `div` 1000000000

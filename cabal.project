@@ -6,4 +6,4 @@ allow-newer:
 
 packages: .
 
-with-compiler: ghc-8.10.2
+with-compiler: ghc-8.10.7

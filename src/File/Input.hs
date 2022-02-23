@@ -107,7 +107,9 @@ runFileParsers input = timeOp $ do
 
 
 runUnification
-  :: MonadIO m
+  :: ( MonadIO m
+     , NFData b
+     )
   => AlphabetType
   -> (FastaParseResult, BTree b a, TCM)
   -> m (CPUTime, Validation (NonEmpty String) (Alphabet Char, Matrix Word, BTree b PreliminaryNode))
