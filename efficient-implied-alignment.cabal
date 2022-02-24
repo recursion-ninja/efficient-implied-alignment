@@ -3,7 +3,7 @@ category:       Algorithms
 build-type:     Simple
 
 name:           efficient-implied-alignment
-version:        1.0.0
+version:        1.1.0
 
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
@@ -26,8 +26,9 @@ bug-reports:    https://github.com/recursion-ninja/efficient-implied-alignment/i
 
 tested-with:
     GHC == 8.8.4
-    GHC == 8.10.4
-    GHC == 9.0.1
+    GHC == 8.10.7
+    GHC == 9.0.2
+    GHC == 9.2.1
 
 extra-source-files:
     ChangeLog.md
@@ -68,7 +69,6 @@ common ghc-flags
 --    -Wmissing-deriving-strategies
     -Wmissing-fields
     -Wmissing-home-modules
-    -Wmissing-monadfail-instances
     -Wmissing-signatures
     -Wnoncanonical-monad-instances
     -Wnoncanonical-monoid-instances
@@ -90,7 +90,6 @@ common ghc-flags
       -Wderiving-defaults
       -Wunused-packages
 
-
 library
 
   import:
@@ -107,7 +106,6 @@ library
     , deepseq
     , dlist
     , hashable
-    , integer-gmp
     , keys
     , lens
     , matrices
@@ -121,7 +119,6 @@ library
     , scientific
     , semigroupoids
     , text               >=1.2
-    , transformers
     , validation
     , vector
     , vector-instances >=3.4
@@ -261,7 +258,6 @@ executable draw-pre-order-figure
     , diagrams-lib
     , diagrams-svg
     , keys
-    , lens
 
   default-language: Haskell2010
 

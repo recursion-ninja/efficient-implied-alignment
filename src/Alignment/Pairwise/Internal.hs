@@ -468,7 +468,7 @@ insertGaps gap lGaps rGaps meds
         ins = insertElement gap gap
         del = deleteElement gap gap
 
-        xs !> i = maybe (error "Tried to index an empty alignment context when reinserting gaps") (!i) xs
+        xs !> i = maybe (error "Tried to index an empty alignment context when reinserting gaps") (! i) xs
         
         newVector = EV.create $ do
           mVec <- MV.unsafeNew newLength

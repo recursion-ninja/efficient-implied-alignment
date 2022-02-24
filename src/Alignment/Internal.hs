@@ -131,7 +131,7 @@ deriveAlignment pAlignment pContext cContext = alignment
   where
     alignment = extractVector {-- . traceResult --} $ foldlWithKey f ([], toList cContext, toList pContext) pAlignment
 
-    extractVector e@ (x,ys,zs) =
+    extractVector e@(x,ys,zs) =
         case (ys, zs) of
           ([],[]) -> fromNonEmpty . NE.fromList $ reverse x
           _       -> error $ unlines
