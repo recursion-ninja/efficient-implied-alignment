@@ -1,9 +1,8 @@
-allow-newer:
-    base,
-    Cabal,
-    ghc-prim,
-    template-haskell
+installdir: ./bin
+
+install-method: copy
 
 packages: .
 
 with-compiler: ghc-9.2.1
+
