@@ -8,21 +8,14 @@
 
 dir-bin         := ./bin
 dir-data        := replicate-results
-bin-aln         := implied-align
-bin-aln-path    := $(dir-bin)/$(bin-aln)
-bin-gen         := generate-timings
-bin-gen-path    := $(dir-bin)/$(bin-gen)
+programs-needed := generate-timings implied-align newick-add-delete-taxon reduce-fasta
+programs-placed := $(addprefix $(dir-bin)/,$(programs-needed))
 measure-script  := measure-scaling-performance.sh
 measure-dataset := $(dir-bin)/$(measure-script) using
-prerequisites   := $(bin-aln-path) $(bin-aln-path) ensure-python ensure-workspace
-
+prerequisites   := $(programs-placed) ensure-python ensure-workspace
 
 # All synonyms for replicating the paper's results.
-replicate: results
-
-reproduce: results
-
-results:   fungi metazoa pathological
+replicate reproduce results: fungi metazoa pathological
 
 
 # Install dependencies required to replicate results.
@@ -45,16 +38,20 @@ ensure-workspace:
 
 
 # Build binaries
-require := ensure-haskell $(wildcard app/**/*.hs) $(wildcard src/**/*.hs)
-install := ghcup run --ghc 9.2.1 --cabal 3.6.2.0 -- \
-		cabal update &&	cabal install $(bin-gen) $(bin-aln) \
-		--installdir=$(dir-bin) --install-method=copy
+project := cabal.project efficient-implied-alignment.cabal
+sources := $(wildcard app/**/*.hs) $(wildcard src/**/*.hs)
+require := ensure-haskell $(project) $(sources)
+compile := ghcup run --ghc 9.2.1 --cabal 3.6.2.0 --
 
-$(bin-aln-path): $(require)
-	@$(install)
+install: $(refresh) $(require)
+	@$(compile) cabal install \
+		$(programs-needed) --installdir=$(dir-bin) --install-method=copy
 
-$(bin-gen-path): $(require)
-	@$(install)
+refresh:
+	@$(compile) cabal update
+
+$(programs-placed):
+	@$(MAKE) --no-print-directory install
 
 
 # Generate timing data of data sets
@@ -95,7 +92,21 @@ measure:
 
 # Clean up after replicating results
 clean:
-	@rm -fr replicate-results
-	@rm -fr dist-newstyle
-	@rm -f  $(bin-aln-path)
-	@rm -f  $(bin-gen-path)
+	rm -fr replicate-results
+	rm -fr dist-newstyle
+	rm -f  $(programs-placed)
+
+.PHONY: \
+clean \
+ensure-haskell \
+ensure-python \
+ensure-workspace \
+fungi \
+install \
+measure \
+metazoa \
+pathological \
+refresh \
+replicate \
+reproduce \
+results

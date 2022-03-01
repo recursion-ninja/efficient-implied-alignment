@@ -1,4 +1,4 @@
-cabal-version:  2.2
+cabal-version:  3.0
 category:       Algorithms
 build-type:     Simple
 
@@ -7,9 +7,9 @@ version:        1.1.1
 
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
-copyright:      2020 Alex Washburn
+copyright:      2019 Alex Washburn
 license:        BSD-3-Clause
-license-file:   LICENSE
+license-file:   doc/LICENSE
 
 synopsis:       Proof of concept of efficient multiple string alignment
 
@@ -21,7 +21,7 @@ description:    Using a commutative, binary string alignment operator and a
                 case /O(n*k*log(k))/ and the pre-order traversal should be
                 /O(n*k)/.
 
-homepage:       https://github.com/recursion-ninja/efficient-implied-alignment#readme
+homepage:       https://github.com/recursion-ninja/efficient-implied-alignment
 bug-reports:    https://github.com/recursion-ninja/efficient-implied-alignment/issues
 
 tested-with:
@@ -32,6 +32,7 @@ tested-with:
 
 extra-source-files:
     doc/CHANGELOG.md
+    doc/LICENSE
     doc/README.md
 
 source-repository head
