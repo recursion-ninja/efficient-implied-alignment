@@ -1,5 +1,12 @@
 # Revision history for commutative-multi-string-alignment
 
+## 1.1.1 -- 2022-03-01
+
+* Refactoring replicate results script
+* Droppping `stack` build support
+
+
+
 ## 1.1.0 -- 2022-02-23
 
 * Added support for GHC `9.0.*` and `9.2.*`

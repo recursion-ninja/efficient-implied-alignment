@@ -380,6 +380,7 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
             , "--output"
             , "/dev/null"
             ]
+    putStrLn commandStr
 
     p <- makeCleanProcess counter [] commandStr
 
