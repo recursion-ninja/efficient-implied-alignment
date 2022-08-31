@@ -10,20 +10,19 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# Language FlexibleContexts #-}
 
 module Alignment
-  ( postorderLogic
-  , preorderInternalLogic
-  , preorderLeafLogic
-  , preorderRootLogic
-  , PairwiseAlignment
-  , naiveDO
-  , naiveDOMemo
-  , ukkonenDO
-  , unboxedUkkonenDO
-  ) where
+    ( PairwiseAlignment
+    , naiveDO
+    , naiveDOMemo
+    , postorderLogic
+    , preorderInternalLogic
+    , preorderLeafLogic
+    , preorderRootLogic
+    , ukkonenDO
+    , unboxedUkkonenDO
+    ) where
 
-
-import           Alignment.Internal
-import           Alignment.Pairwise
+import Alignment.Internal
+import Alignment.Pairwise

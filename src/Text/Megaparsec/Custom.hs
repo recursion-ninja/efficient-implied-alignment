@@ -12,48 +12,49 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ApplicativeDo       #-}
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# Language ApplicativeDo #-}
+{-# Language BangPatterns #-}
+{-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language ScopedTypeVariables #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
 
 module Text.Megaparsec.Custom
-  ( (<:>)
-  , anythingTill
---  , comment
-  , double
-  , endOfLine
-  , fails
-  , inlinedSpaceChar
-  , inlinedSpace
-  , isInlinedSpace
-  , noneOfThese
-  , someOfThese
-  , somethingTill
-  , string''
---  , runParserOnFile
---  , parseWithDefaultErrorType
-  ) where
+    ( anythingTill
+    , (<:>)
+      --  , comment
+    , double
+    , endOfLine
+    , fails
+    , inlinedSpace
+    , inlinedSpaceChar
+    , isInlinedSpace
+    , noneOfThese
+    , someOfThese
+    , somethingTill
+    , string''
+    ) where
 
-import           Data.CaseInsensitive       (FoldCase)
-import           Data.Char                  (isSpace)
+import Data.CaseInsensitive (FoldCase)
+import Data.Char (isSpace)
 --import           Data.Either                       (either)
-import           Data.Foldable
-import           Data.Functor               (void, ($>))
-import           Data.List                  (sort)
-import           Data.List.NonEmpty         (NonEmpty (..), nonEmpty)
-import           Data.Maybe                 (mapMaybe)
-import           Data.Proxy
-import qualified Data.Set                   as S
-import qualified Data.Text                  as T
-import qualified Data.Text.Lazy             as LT
-import           Data.Vector.Unboxed        (Unbox, Vector, (!))
-import qualified Data.Vector.Unboxed        as V
-import           Data.Void
-import           Text.Megaparsec
-import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as LEX
+import Data.Foldable
+import Data.Functor (void, ($>))
+import Data.List (sort)
+import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
+import Data.Maybe (mapMaybe)
+import Data.Proxy
+import Data.Set (Set)
+import Data.Set qualified as S
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as LT
+import Data.Vector.Unboxed (Unbox, Vector, (!))
+import Data.Vector.Unboxed qualified as V
+import Data.Void
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Text.Megaparsec.Char.Lexer qualified as LEX
 
 
 -- |
@@ -63,8 +64,8 @@ import qualified Text.Megaparsec.Char.Lexer as LEX
 {-# SPECIALISE (<:>) :: Parsec Void  T.Text a -> Parsec Void  T.Text [a] -> Parsec Void  T.Text [a] #-}
 {-# SPECIALISE (<:>) :: Parsec Void LT.Text a -> Parsec Void LT.Text [a] -> Parsec Void LT.Text [a] #-}
 {-# SPECIALISE (<:>) :: Parsec Void  String a -> Parsec Void  String [a] -> Parsec Void  String [a] #-}
-(<:>)  :: Applicative f => f a -> f [a] -> f [a]
-(<:>)  a b = (:)  <$> a <*> b
+(<:>) :: Applicative f => f a -> f [a] -> f [a]
+(<:>) a b = (:) <$> a <*> b
 
 
 {-
@@ -78,18 +79,19 @@ import qualified Text.Megaparsec.Char.Lexer as LEX
 
 -- |
 -- Parse a string-like chunk.
-{-# INLINEABLE string'' #-}
+{-# INLINABLE string'' #-}
 {-# SPECIALISE string'' :: String -> Parsec Void  T.Text  T.Text #-}
 {-# SPECIALISE string'' :: String -> Parsec Void LT.Text LT.Text #-}
 {-# SPECIALISE string'' :: String -> Parsec Void  String  String #-}
-string'' :: forall e s m. (FoldCase (Tokens s), MonadParsec e s m, Token s ~ Char) => String -> m (Tokens s)
+string''
+    :: forall e s m . (FoldCase (Tokens s), MonadParsec e s m, Token s ~ Char) => String -> m (Tokens s)
 string'' = string' . tokensToChunk (Proxy :: Proxy s)
 
 
 -- |
 -- @anythingTill end@ consumes zero or more characters until @end@ is matched,
 -- leaving @end@ in the stream.
-{-# INLINEABLE anythingTill #-}
+{-# INLINABLE anythingTill #-}
 {-# SPECIALISE anythingTill :: Parsec Void  T.Text a -> Parsec Void  T.Text String #-}
 {-# SPECIALISE anythingTill :: Parsec Void LT.Text a -> Parsec Void LT.Text String #-}
 {-# SPECIALISE anythingTill :: Parsec Void  String a -> Parsec Void  String String #-}
@@ -97,14 +99,14 @@ anythingTill :: MonadParsec e s m => m a -> m [Token s]
 anythingTill c = do
     ahead <- optional . try $ lookAhead c
     case ahead of
-      Just _  -> pure []
-      Nothing -> somethingTill c
+        Just _  -> pure []
+        Nothing -> somethingTill c
 
 
 -- |
 -- @somethingTill end@ consumes one or more characters until @end@ is matched,
 -- leaving @end@ in the stream.
-{-# INLINEABLE somethingTill #-}
+{-# INLINABLE somethingTill #-}
 {-# SPECIALISE somethingTill :: Parsec Void  T.Text a -> Parsec Void  T.Text String #-}
 {-# SPECIALISE somethingTill :: Parsec Void LT.Text a -> Parsec Void LT.Text String #-}
 {-# SPECIALISE somethingTill :: Parsec Void  String a -> Parsec Void  String String #-}
@@ -158,16 +160,16 @@ noneOfThese xs =
 
 -- |
 -- Flexibly parses a 'Double' value represented in a variety of forms.
-{-# INLINEABLE double #-}
+{-# INLINABLE double #-}
 {-# SPECIALISE double :: Parsec Void  T.Text Double #-}
 {-# SPECIALISE double :: Parsec Void LT.Text Double #-}
 {-# SPECIALISE double :: Parsec Void  String Double #-}
 double :: (MonadParsec e s m, Token s ~ Char) => m Double
 double = try real <|> fromIntegral <$> int
-  where
-     int  :: (MonadParsec e s m, Token s ~ Char) => m Integer
-     int  = LEX.signed space LEX.decimal
-     real = LEX.signed space LEX.float
+    where
+        int :: (MonadParsec e s m, Token s ~ Char) => m Integer
+        int  = LEX.signed space LEX.decimal
+        real = LEX.signed space LEX.float
 
 
 -- |
@@ -178,17 +180,17 @@ double = try real <|> fromIntegral <$> int
 {-# SPECIALISE endOfLine :: Parsec Void LT.Text () #-}
 {-# SPECIALISE endOfLine :: Parsec Void  String () #-}
 endOfLine :: (Enum (Token s), MonadParsec e s m) => m ()
-endOfLine = choice [ nl, try (cr *> nl), cr ] $> ()
-  where
-    newLineChar  = enumCoerce '\n'
-    carriageChar = enumCoerce '\r'
-    nl = single newLineChar  $> ()
-    cr = single carriageChar $> ()
+endOfLine = choice [nl, try (cr *> nl), cr] $> ()
+    where
+        newLineChar  = enumCoerce '\n'
+        carriageChar = enumCoerce '\r'
+        nl           = single newLineChar $> ()
+        cr           = single carriageChar $> ()
 
 
 -- |
 -- Accepts zero or more Failure messages.
-{-# INLINEABLE fails #-}
+{-# INLINABLE fails #-}
 {-# SPECIALISE fails :: [String] -> Parsec Void  T.Text a #-}
 {-# SPECIALISE fails :: [String] -> Parsec Void LT.Text a #-}
 {-# SPECIALISE fails :: [String] -> Parsec Void  String a #-}
@@ -204,12 +206,13 @@ fails = failure Nothing . S.fromList . fmap Label . mapMaybe nonEmpty
 {-# SPECIALISE inlinedSpaceChar :: Parsec Void  String Char #-}
 inlinedSpaceChar :: (Token s ~ Char, MonadParsec e s m) => m (Token s)
 inlinedSpaceChar = token captureToken expItem
-  where
-    captureToken x
-      | isInlinedSpace x = Just x
-      | otherwise        = Nothing
+    where
+        captureToken x
+            | isInlinedSpace x = Just x
+            | otherwise        = Nothing
 
-    expItem = S.singleton . Label $ 'i':|"nline space"
+        expItem :: Set (ErrorItem t)
+        expItem = S.singleton . Label $ 'i' :| "nline space"
 
 
 -- |
@@ -317,17 +320,20 @@ enumCoerce = toEnum . fromEnum
 {-# SPECIALISE withinVec :: Vector Char -> Char -> Bool #-}
 withinVec :: (Ord a, Unbox a) => Vector a -> a -> Bool
 withinVec v e = go 0 (V.length v - 1)
-  where
+    where
     -- Perform a binary search on the unboxed vector
     -- to determine if a character is valid.
     --
     -- Equally fast, and uses less memory than a Set.
-    {-# INLINE go #-}
-    go !lo !hi
-      | lo > hi   = False
-      | otherwise = let !md = (hi + lo) `div` 2
-                        !z  = v ! md
-                    in  case z `compare` e of
-                          EQ -> True
-                          LT -> go    (md + 1) hi
-                          GT -> go lo (md - 1)
+        {-# INLINE go #-}
+        go !lo !hi
+            | lo > hi
+            = False
+            | otherwise
+            = let
+                  !md = (hi + lo) `div` 2
+                  !z  = v ! md
+              in  case z `compare` e of
+                  EQ -> True
+                  LT -> go (md + 1) hi
+                  GT -> go lo (md - 1)

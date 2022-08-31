@@ -1,52 +1,42 @@
+{-# Language ImportQualifiedPost #-}
+
 module Data.Alphabet.IUPAC
-  ( decodeIUPAC
-  , encodeIUPAC
-  -- * IUPAC alphabets
-  , isAlphabetAminoAcid
-  , isAlphabetDna
-  , isAlphabetRna
-  , iupacToAminoAcid
-  , iupacToDna
-  , iupacToRna
-  , module Data.Alphabet
-  ) where
+    ( decodeIUPAC
+    , encodeIUPAC
+      -- * IUPAC alphabets
+    , module Data.Alphabet
+    , isAlphabetAminoAcid
+    , isAlphabetDna
+    , isAlphabetRna
+    , iupacToAminoAcid
+    , iupacToDna
+    , iupacToRna
+    ) where
+
+import Control.Arrow ((***))
+import Data.Alphabet
+import Data.Bimap (Bimap)
+import Data.Bimap qualified as BM
+import Data.Foldable
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty qualified as NE
+import Data.Set qualified as Set
 
 
-import           Control.Arrow      ((***))
-import           Data.Alphabet
-import           Data.Bimap         (Bimap)
-import qualified Data.Bimap         as BM
-import           Data.Foldable
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Set           as Set
-
-
-decodeIUPAC
-  :: ( Functor f
-     , Ord a
-     )
-  => Bimap a a
-  -> f a
-  -> f a
+decodeIUPAC :: (Functor f, Ord a) => Bimap a a -> f a -> f a
 decodeIUPAC iupacCodes = fmap f
-  where
-    f e
-      | e `BM.member` iupacCodes = iupacCodes BM.! e
-      | otherwise = e
+    where
+        f e
+            | e `BM.member` iupacCodes = iupacCodes BM.! e
+            | otherwise                = e
 
 
-encodeIUPAC
-  :: ( Functor f
-     , Ord a
-     )
-  => Bimap a a
-  -> f a
-  -> f a
+encodeIUPAC :: (Functor f, Ord a) => Bimap a a -> f a -> f a
 encodeIUPAC iupacCodes = fmap f
-  where
-    f e
-      | e `BM.memberR` iupacCodes = iupacCodes BM.!> e
-      | otherwise = e
+    where
+        f e
+            | e `BM.memberR` iupacCodes = iupacCodes BM.!> e
+            | otherwise                 = e
 
 
 -- |
@@ -102,7 +92,6 @@ iupacToDna = toBimap
     , ('N', "ACGT")
     , ('-', "-")
     , ('?', "ACGT-")
-
     , ('a', "A-")
     , ('c', "C-")
     , ('g', "G-")
@@ -124,12 +113,12 @@ iupacToDna = toBimap
 -- | Substitutions for converting to a RNA sequence based on IUPAC codes.
 iupacToRna :: Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
 iupacToRna = BM.mapMonotonic setUpdate $ BM.mapMonotonicR setUpdate iupacToDna
-  where
-    setUpdate = fmap f
-      where
-        f x
-          | x == 'T'  = 'U'
-          | otherwise =  x
+    where
+        setUpdate = fmap f
+            where
+                f x
+                    | x == 'T'  = 'U'
+                    | otherwise = x
 
 
 -- |
@@ -167,16 +156,14 @@ isAlphabetRna = (`isAlphabetSubsetOf` "ACGU-")
 
 isAlphabetSubsetOf :: Alphabet Char -> String -> Bool
 isAlphabetSubsetOf alpha str = alphaSet `Set.isSubsetOf` strSet
-  where
-    alphaSet = Set.fromList $ toList alpha
-    strSet   = Set.fromList str
+    where
+        alphaSet = Set.fromList $ toList alpha
+        strSet   = Set.fromList str
 
 
-toBimap :: [(Char, String)] ->  Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
-toBimap = BM.fromList . fmap transform
-  where
-    transform = pure *** NE.fromList
-
-
-
+toBimap :: [(Char, String)] -> Bimap (AmbiguityGroup Char) (AmbiguityGroup Char)
+toBimap =
+    let transform :: Applicative f => (b, [a]) -> (f b, NonEmpty a)
+        transform = pure *** NE.fromList
+    in  BM.fromList . fmap transform
 

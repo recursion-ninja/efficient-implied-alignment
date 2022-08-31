@@ -1,12 +1,15 @@
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE TypeFamilies              #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language NoMonomorphismRestriction #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
 
-import           Data.Data
-import           Data.Key
-import           Diagrams.Backend.SVG.CmdLine
-import           Diagrams.Prelude             hiding (trace)
-import           Prelude                      hiding (zip)
+import Data.Data
+import Data.Key
+import Diagrams.Backend.SVG.CmdLine
+import Diagrams.Prelude hiding (trace)
+import Diagrams.TwoD.Text (Text)
+import Prelude hiding (zip)
 
 
 main :: IO ()
@@ -35,7 +38,8 @@ arrowLine = with & shaftStyle %~ lw 3
 
 arrowBent :: (Typeable n, RealFloat n) => ArrowOpts n
 arrowBent =
-    let shaft = trailFromVertices $ p2 <$> [ (0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
+    let shaft :: (Floating n, Ord n) => Trail V2 n
+        shaft = trailFromVertices $ p2 <$> [ (0, 0), (0, 1.5), (9, 1.5), (9, 3) ]
     in  with & arrowShaft .~ shaft
              & headLength .~ 12
              & shaftStyle %~ lw 3
@@ -48,7 +52,7 @@ data  AlignCell
     | Gapped
     | Spacing
     | Question
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 
 toSymbol :: AlignCell -> Char
@@ -63,7 +67,9 @@ toSymbol Question = '？'
 frames :: [Diagram B]
 frames = f <#$> ijks
   where
-    f k = (# named ("frame " <> show k)) . pad 1.4 . (<>box) . centerXY . makeAlignments
+    f :: Int -> (Word, Word, Word) -> QDiagram B V2 Double Any
+    f k = (# named ("frame " <> show k)) . pad 1.4 . (<> box) . centerXY . makeAlignments
+    
     box = phantom (rect 28 11 :: Diagram B) :: Diagram B
 
 
@@ -75,17 +81,27 @@ makeAlignments (i,j,k) = stackVertical
     , makeIndexPad         ||| derivedAt   i cAlign
     ]
   where
-    f   = withEnvelope box
+    f :: Monoid m => QDiagram b V2 Double m -> QDiagram b V2 Double m
+    f = withEnvelope box
+    
     box = phantom (rect 1 2 :: Diagram B) :: Diagram B
     makeIndexPad = box ||| box ||| box ||| box
     makeIndexLabel :: String -> Word -> Diagram B
     makeIndexLabel idx val = f smb ||| f eqs ||| f num ||| box
       where
         -- We make a different cell for each symbol to ensure "monospacing."
-        smb = txt idx
+        eqs
+          :: (Typeable n, RealFloat n, Renderable (Text n) b)
+          => QDiagram b V2 n Any
         eqs = txt "="
-        num = txt $ show val
+
+        txt
+          :: (Typeable n, RealFloat n, Renderable (Text n) b)
+          => String -> QDiagram b V2 n Any
         txt = scale 1.5 . bold . text
+        smb = txt idx
+
+        num = txt $ show val
 
 
 stackVertical
@@ -116,11 +132,11 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
   where
     (h,t) = splitAt (fromEnum i) xs
     cells
-      | all (==Spacing) t = h <> [Spacing]
-      | otherwise         = h <> filter (/=Spacing) t
+      | all (== Spacing) t = h <> [Spacing]
+      | otherwise         = h <> filter (/= Spacing) t
 
     cursorStop :: Word
-    cursorStop = toEnum . length . dropWhile (==Spacing) $ reverse cells
+    cursorStop = toEnum . length . dropWhile (== Spacing) $ reverse cells
 
     makeCell :: Diagram B -> Int -> AlignCell -> Diagram B
     makeCell a k e
@@ -141,7 +157,7 @@ alignmentAt i xs = foldlWithKey makeCell mempty cells
 
 
 cellText :: String -> Diagram B
-cellText = alignT . scale (5/3) . (<> phantom box) . bold . text
+cellText = alignT . scale (5 / 3) . (<> phantom box) . bold . text
   where
     box = square 0.25 :: Diagram B
 
@@ -177,8 +193,19 @@ grnLine = lineColor (sRGB   0 128   0)
 stp :: Diagram B
 stp = upper <> lower
   where
-    upper  = mkLine [origin, sqrt 2 ^& sqrt 2]
-    lower  = mkLine [0 ^& sqrt 2, sqrt 2 ^& 0]
+    upper
+      :: (Typeable n, RealFloat n, Renderable (Path V2 n) b)
+      => QDiagram b V2 n Any
+    upper = mkLine [origin, sqrt 2 ^& sqrt 2]
+
+    lower
+      :: (Typeable n, RealFloat n, Renderable (Path V2 n) b)
+      => QDiagram b V2 n Any
+    lower = mkLine [0 ^& sqrt 2, sqrt 2 ^& 0]
+
+    mkLine
+      :: (Typeable n, RealFloat n, Renderable (Path V2 n) b)
+      => [Point V2 n] -> QDiagram b V2 n Any
     mkLine = centerXY . lineWidth 2 . strokeLine . lineFromVertices
 
 
@@ -219,7 +246,9 @@ lPoints = p2 <$>
 
 labels :: [Diagram B]
 labels =
-    let lab = centerXY . scale 1.8 . pad 1.5 . bold . text
+    let lab :: (Typeable n, RealFloat n, Renderable (Text n) b)
+            => String -> QDiagram b V2 n Any
+        lab = centerXY . scale 1.8 . pad 1.5 . bold . text
     in  [ lab "Case 2"
         , lab "Case 3"
         , lab "Case 0"

@@ -1,12 +1,14 @@
-module Data.List.Utility
-  ( duplicates
-  , mostCommon
-  ) where
+{-# Language Safe #-}
 
-import           Data.Foldable
-import           Data.List     (sort, sortBy)
-import           Data.Map      (assocs, empty, insertWith)
-import           Data.Ord      (comparing)
+module Data.List.Utility
+    ( duplicates
+    , mostCommon
+    ) where
+
+import Data.Foldable
+import Data.List (sort, sortBy)
+import Data.Map (Map, assocs, empty, insertWith)
+import Data.Ord (comparing)
 
 
 {-
@@ -74,6 +76,7 @@ isSingleton = f . toList
     f  _  = False
 -}
 
+
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
 --
@@ -91,12 +94,12 @@ isSingleton = f . toList
 -- []
 duplicates :: (Foldable t, Ord a) => t a -> [a]
 duplicates = duplicates' . sort . toList
-  where
-    duplicates' []       = []
-    duplicates' [_]      = []
-    duplicates' (x:y:ys) = if   x == y
-                           then (x:) . duplicates $ dropWhile (==y) ys
-                           else duplicates (y:ys)
+    where
+        duplicates' :: Ord a => [a] -> [a]
+        duplicates' []  = []
+        duplicates' [_] = []
+        duplicates' (x : y : ys) =
+            if x == y then (x :) . duplicates $ dropWhile (== y) ys else duplicates (y : ys)
 
 
 -- |
@@ -113,10 +116,10 @@ duplicates = duplicates' . sort . toList
 -- Just 'D'
 mostCommon :: (Foldable t, Ord a) => t a -> Maybe a
 mostCommon xs
-  | null xs   = Nothing
-  | otherwise = case occurrences xs of
-                  []      -> Nothing
-                  (x,_):_ -> Just x
+    | null xs = Nothing
+    | otherwise = case occurrences xs of
+        []         -> Nothing
+        (x, _) : _ -> Just x
 
 
 -- |
@@ -134,18 +137,24 @@ mostCommon xs
 --
 -- >>> occurrences "AABCDDDEFGGT"
 -- [('D',3),('A',2),('G',2),('B',1),('C',1),('E',1),('F',1),('T',1)]
-occurrences :: (Foldable t, Ord a) => t a -> [(a,Int)]
+occurrences :: (Foldable t, Ord a) => t a -> [(a, Int)]
 occurrences = collateOccuranceMap . buildOccuranceMap
-  where
-    buildOccuranceMap = foldr occurrence empty
-      where
-        occurrence e = insertWith (const succ) e 1
-    collateOccuranceMap = sortBy comparator . assocs
-      where
-        comparator x y = descending $ comparing snd x y
-        descending LT = GT
-        descending GT = LT
-        descending x  = x
+    where
+
+        buildOccuranceMap =
+            let occurrence :: (Ord k, Enum a, Num a) => k -> Map k a -> Map k a
+                occurrence e = insertWith (const succ) e 1
+            in  foldr occurrence empty
+
+        collateOccuranceMap :: Ord v => Map k v -> [(k, v)]
+        collateOccuranceMap =
+            let comparator :: Ord v => (k, v) -> (k, v) -> Ordering
+                comparator x y = descending $ comparing snd x y
+
+                descending LT = GT
+                descending GT = LT
+                descending x  = x
+            in  sortBy comparator . assocs
 
 
 {-

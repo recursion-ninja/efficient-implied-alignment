@@ -10,72 +10,70 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE DeriveTraversable          #-}
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE TypeFamilies               #-}
-
+{-# Language DeriveDataTypeable #-}
+{-# Language DeriveFunctor #-}
+{-# Language DeriveTraversable #-}
+{-# Language DerivingStrategies #-}
+{-# Language GeneralizedNewtypeDeriving #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language RankNTypes #-}
+{-# Language ScopedTypeVariables #-}
+{-# Language TypeApplications #-}
+{-# Language TypeFamilies #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 module Data.Vector.Unboxed.NonEmpty
-  ( Unbox
-  , Vector(..)
-  -- * Construction
-  , fromNonEmpty
-  , generate
-  , singleton
-  , unfoldr
-  -- * Conversion
-  , toVector
-  , fromVector
-  , unsafeFromVector
-  -- * Deconstruction
-  , uncons
-  -- * Useful stuff
-  , (!)
-  , filter
-  , length
-  , reverse
-  , toList
-  , toNonEmpty
-  ) where
+    ( Unbox
+    , Vector (..)
+      -- * Construction
+    , fromNonEmpty
+    , generate
+    , singleton
+    , unfoldr
+      -- * Conversion
+    , fromVector
+    , toVector
+    , unsafeFromVector
+      -- * Deconstruction
+    , uncons
+      -- * Useful stuff
+    , filter
+    , length
+    , reverse
+    , toList
+    , toNonEmpty
+    , (!)
+    ) where
 
-
-import           Control.DeepSeq            hiding (force)
-import           Data.Coerce
-import           Data.Data
-import           Data.Functor.Alt
-import           Data.Functor.Bind
-import           Data.Functor.Classes
-import           Data.Functor.Extend
-import           Data.Hashable
-import           Data.List.NonEmpty         (NonEmpty)
-import qualified Data.List.NonEmpty         as NE
-import           Data.Pointed
-import           Data.Semigroup.Foldable    (Foldable1)
-import qualified Data.Semigroup.Foldable    as NE
-import           Data.Semigroup.Traversable
-import           Data.Vector.Instances      ()
-import           Data.Vector.Unboxed        (Unbox)
-import qualified Data.Vector.Unboxed        as V
-import           Prelude                    hiding (filter, length, reverse)
-import           Test.QuickCheck            hiding (generate)
+import Control.DeepSeq hiding (force)
+import Data.Coerce
+import Data.Data
+import Data.Functor.Alt
+import Data.Functor.Bind
+import Data.Functor.Classes
+import Data.Functor.Extend
+import Data.Hashable
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty qualified as NE
+import Data.Pointed
+import Data.Semigroup.Foldable (Foldable1)
+import Data.Semigroup.Foldable qualified as NE
+import Data.Semigroup.Traversable
+import Data.Vector.Instances ()
+import Data.Vector.Unboxed (Unbox)
+import Data.Vector.Unboxed qualified as V
+import Prelude hiding (filter, length, reverse)
+import Test.QuickCheck hiding (generate)
 
 
 -- |
 -- A sequence of values that are repeated multiple times in contiguous blocks.
-newtype Vector a = NEV { unwrap :: V.Vector a }
-  deriving stock   (Data, Eq, Ord) -- , Foldable, Traversable)
-  deriving newtype ( Hashable
-                   , NFData
-                   , Semigroup
-                   )
+newtype Vector a
+    = NEV { unwrap :: V.Vector a }
+    -- , Foldable, Traversable)
+    deriving stock (Data, Eq, Ord)
+    deriving newtype (Hashable, NFData, Semigroup)
 
 
 -- |
@@ -83,11 +81,11 @@ newtype Vector a = NEV { unwrap :: V.Vector a }
 instance (Arbitrary a, Unbox a) => Arbitrary (Vector a) where
 
     arbitrary = do
-      list   <- arbitrary
-      values <- case list of
-                  [] -> pure <$> arbitrary
-                  xs -> pure xs
-      pure . NEV $ V.fromList values
+        list   <- arbitrary
+        values <- case list of
+            [] -> pure <$> arbitrary
+            xs -> pure xs
+        pure . NEV $ V.fromList values
 
 
 instance (Show a, Unbox a) => Show (Vector a) where
@@ -124,7 +122,7 @@ fromNonEmpty = NEV . V.fromList . NE.toList . NE.toNonEmpty
 -- /O(n)/ Drop elements that do not satisfy the predicate
 {-# INLINE filter #-}
 filter :: Unbox a => (a -> Bool) -> Vector a -> Vector a
-filter f =  NEV . V.filter f . unwrap
+filter f = NEV . V.filter f . unwrap
 
 
 -- |
@@ -175,11 +173,9 @@ toNonEmpty = NE.fromList . V.toList . unwrap
 {-# INLINE unfoldr #-}
 unfoldr :: Unbox a => (b -> (a, Maybe b)) -> b -> Vector a
 unfoldr f = NEV . uncurry V.fromListN . go 0
-  where
+    where
 --  go :: Int -> b -> (Int, [a])
-    go n b =
-         let (v, mb) = f b
-         in  (v:) <$> maybe (n, []) (go (n+1)) mb
+          go n b = let (v, mb) = f b in (v :) <$> maybe (n, []) (go (n + 1)) mb
 
 
 -- |
@@ -188,8 +184,8 @@ unfoldr f = NEV . uncurry V.fromListN . go 0
 -- Construct a vector of the given length by applying the function to each index
 generate :: Unbox a => Int -> (Int -> a) -> Vector a
 generate n f
-  | n < 1     = error $ "Called Vector.Nonempty.generate on a non-positive dimension " <> show n
-  | otherwise = NEV $ V.generate n f
+    | n < 1     = error $ "Called Vector.Nonempty.generate on a non-positive dimension " <> show n
+    | otherwise = NEV $ V.generate n f
 
 
 -- |
@@ -206,8 +202,8 @@ toVector = unwrap
 -- Attempt to convert a 'V.Vector' to a non-empty 'Vector'.
 fromVector :: Unbox a => V.Vector a -> Maybe (Vector a)
 fromVector v
-  | V.null v  = Nothing
-  | otherwise = Just $ NEV v
+    | V.null v  = Nothing
+    | otherwise = Just $ NEV v
 
 
 -- |
@@ -217,10 +213,8 @@ fromVector v
 -- error if the vector received is empty.
 unsafeFromVector :: Unbox a => V.Vector a -> Vector a
 unsafeFromVector v
-  | V.null v  = error "NonEmpty.unsafeFromVector: empty vector"
-  | otherwise = NEV v
-
-
+    | V.null v  = error "NonEmpty.unsafeFromVector: empty vector"
+    | otherwise = NEV v
 
 
 -- | /O(n)/
@@ -229,9 +223,9 @@ unsafeFromVector v
 -- 'Vector' of the remaining elements, if any.
 uncons :: Unbox a => Vector a -> (a, Maybe (Vector a))
 uncons (NEV v) = (first, stream)
-  where
-    stream
-      | len == 1  = Nothing
-      | otherwise = Just . NEV $ V.slice 1 (len-1) v
-    first = v V.! 0
-    len   = V.length v
+    where
+        stream
+            | len == 1  = Nothing
+            | otherwise = Just . NEV $ V.slice 1 (len - 1) v
+        first = v V.! 0
+        len   = V.length v

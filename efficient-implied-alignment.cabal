@@ -25,10 +25,9 @@ homepage:       https://github.com/recursion-ninja/efficient-implied-alignment
 bug-reports:    https://github.com/recursion-ninja/efficient-implied-alignment/issues
 
 tested-with:
-    GHC == 8.8.4
     GHC == 8.10.7
     GHC == 9.0.2
-    GHC == 9.2.1
+    GHC == 9.2.4
 
 extra-source-files:
     doc/CHANGELOG.md
@@ -45,51 +44,51 @@ source-repository head
 common ghc-flags
 
   ghc-options:
+    -- Usability flags
+    -fdiagnostics-color=always
+    -fhide-source-paths
+    -j
+    -threaded
+    
     -- Optimization flags
     -O2
     -fexcess-precision
     -fexpose-all-unfoldings
     -flate-specialise
+    -fmax-simplifier-iterations=16
     -foptimal-applicative-do
+    -fspec-constr-count=8
+    -fspec-constr-keen
     -fspecialize-aggressively
     -fstatic-argument-transformation
-    -- Usability flags
-    -fdiagnostics-color=always
-    -fhide-source-paths
-    -j
+        
     -- Sanity check warnings
-    -Wall
-    -Wcompat
-    -Wdodgy-foreign-imports
-    -Wduplicate-exports
-    -Wempty-enumerations
-    -Widentities
-    -Wincomplete-patterns
-    -Wincomplete-record-updates
-    -Wincomplete-uni-patterns
---    -Wmissing-deriving-strategies
-    -Wmissing-fields
-    -Wmissing-home-modules
-    -Wmissing-signatures
-    -Wnoncanonical-monad-instances
-    -Wnoncanonical-monoid-instances
-    -Woverflowed-literals
-    -Woverlapping-patterns
-    -Wredundant-constraints
-    -Wsemigroup
-    -Wtabs
-    -Wunrecognised-warning-flags
-    -Wunused-binds
-    -Wunused-do-bind
-    -Wunused-foralls
-    -Wunused-imports
-    -Wunused-matches
-    -Wwrong-do-bind
+    --   1. Include all warnings by default
+    -Weverything
+    -Werror
+    --   2. Exclude the undesirable warnings
+    -Wno-all-missed-specialisations
+    -Wno-implicit-prelude
+    -Wno-inferred-safe-imports
+    -Wno-missing-import-lists
+    -Wno-missing-safe-haskell-mode
+    -Wno-monomorphism-restriction
+    -Wno-type-defaults
+    -Wno-unsafe
+    
+--  if impl(ghc >= 8.10)
+--    ghc-options:
+--      -Wderiving-defaults
+--      -Wunused-packages
 
-  if impl(ghc >= 8.10)
+  if impl(ghc >=9.2)
     ghc-options:
-      -Wderiving-defaults
-      -Wunused-packages
+      -Wno-missing-kind-signatures
+
+  if impl(ghc >=9.4)
+    ghc-options:
+      -Wredundant-strictness-flags
+
 
 library
 
@@ -100,7 +99,7 @@ library
       src
 
   build-depends:
-      base >=4.7 && <5
+      base               >=4.7 && <5
     , bimap
     , case-insensitive
     , containers         >=0.5.8
@@ -122,7 +121,7 @@ library
     , text               >=1.2
     , validation
     , vector
-    , vector-instances >=3.4
+    , vector-instances   >=3.4
 
   exposed-modules:
       Alignment
@@ -210,7 +209,7 @@ executable generate-timings
   build-depends:
       efficient-implied-alignment
     , ansi-wl-pprint
-    , base       >=4.7 && <5
+    , base               >=4.7 && <5
     , containers         >=0.5.8
     , Decimal
     , deepseq

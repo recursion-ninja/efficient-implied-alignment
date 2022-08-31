@@ -1,13 +1,11 @@
 module Main
-  ( main
-  ) where
+    ( main
+    ) where
 
-import qualified Alignment.Pairwise.Test as Pairwise
-import           Test.Tasty
+import Alignment.Pairwise.Test qualified as Pairwise
+import Test.Tasty
 
 
 main :: IO ()
-main = defaultMain $ testGroup "Alignment Test Suite"
-    [ Pairwise.testSuite
-    ]
+main = defaultMain $ testGroup "Alignment Test Suite" [Pairwise.testSuite]
 

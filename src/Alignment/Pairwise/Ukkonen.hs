@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 
 module Alignment.Pairwise.Ukkonen
-  ( ukkonenDO
-  ) where
+    ( ukkonenDO
+    ) where
 
-import           Alignment.Pairwise.Ukkonen.Internal
+import Alignment.Pairwise.Ukkonen.Internal

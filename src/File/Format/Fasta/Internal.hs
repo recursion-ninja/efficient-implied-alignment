@@ -12,28 +12,30 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ApplicativeDo    #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# Language ApplicativeDo #-}
+{-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
 
 module File.Format.Fasta.Internal
-  ( Identifier
-  , identifierLine
-  ) where
+    ( Identifier
+    , identifierLine
+    ) where
 
-import           Data.Char              (isSpace)
-import           Data.String
-import qualified Data.Text              as T
-import qualified Data.Text.Lazy         as LT
-import           Data.Void
-import           Text.Megaparsec
-import           Text.Megaparsec.Char
-import           Text.Megaparsec.Custom
+import Data.Char (isSpace)
+import Data.String
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as LT
+import Data.Void
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Text.Megaparsec.Custom
 
 
 -- |
 -- Unique identifier for a taxa
-type Identifier        = T.Text
+type Identifier = T.Text
 
 
 -- |
@@ -52,9 +54,9 @@ identifierLine = do
     _ <- optional (try commentBody <?> commentMessage x)
     _ <- endOfLine <?> lineEndMessage x
     pure $ fromString x
-  where
-    commentMessage x = "Invalid comment for following label: '" <> x <> "'"
-    lineEndMessage x = "There is no end-of-line after label: '" <> x <> "'"
+    where
+        commentMessage x = "Invalid comment for following label: '" <> x <> "'"
+        lineEndMessage x = "There is no end-of-line after label: '" <> x <> "'"
 
 
 -- |
@@ -81,13 +83,13 @@ validIdentifierChar c = (not . isSpace) c && c /= '$' && c /= ';'
 {-# SPECIALISE commentBody :: Parsec Void LT.Text LT.Text #-}
 {-# SPECIALISE commentBody :: Parsec Void  String  String #-}
 commentBody :: (MonadParsec e s m, Token s ~ Char) => m (Tokens s)
-commentBody  = do
-    _  <- inlinedSpace
-    _  <- optional $ char '$'
-    _  <- inlinedSpace
+commentBody = do
+    _ <- inlinedSpace
+    _ <- optional $ char '$'
+    _ <- inlinedSpace
     commentLine
-  where
+    where
     -- |
     -- Defines the line of a comment
-    commentLine :: (MonadParsec e s m, Token s ~ Char) => m (Tokens s)
-    commentLine = takeWhile1P (Just "Taxon comment content") $ \x -> x /= '\n' && x /= '\r'
+        commentLine :: (MonadParsec e s m, Token s ~ Char) => m (Tokens s)
+        commentLine = takeWhile1P (Just "Taxon comment content") $ \x -> x /= '\n' && x /= '\r'

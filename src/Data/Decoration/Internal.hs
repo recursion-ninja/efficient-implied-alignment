@@ -10,36 +10,42 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# Language DeriveGeneric #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language MultiParamTypeClasses #-}
 
-module Data.Decoration.Internal where
+module Data.Decoration.Internal
+    ( FinalizedInternalNode (FinalizedInternalNode)
+    , InitialInternalNode (InitialInternalNode)
+    ) where
 
-import           Control.DeepSeq
-import           Control.Lens
-import           Data.Decoration.Class
-import           Data.SymbolString
-import           GHC.Generics
-
-
-data InitialInternalNode
-   = InitialInternalNode
-   { _IIN_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _IIN_LocalCost         :: {-# UNPACK #-} !Word
-   , _IIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   } deriving (Eq, Generic)
+import Control.DeepSeq
+import Control.Lens
+import Data.Decoration.Class
+import Data.SymbolString
+import GHC.Generics
 
 
-data FinalizedInternalNode
-   = FinalizedInternalNode
-   { _FIN_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _FIN_LocalCost         :: {-# UNPACK #-} !Word
-   , _FIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   , _FIN_AlignedString     :: {-# UNPACK #-} !SymbolString
-   , _FIN_IsRoot            :: !Bool
-   } deriving (Eq, Generic)
+data  InitialInternalNode
+    = InitialInternalNode
+    { _IIN_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _IIN_LocalCost         :: {-# UNPACK #-} !Word
+    , _IIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    }
+    deriving stock (Eq, Generic)
+
+
+data  FinalizedInternalNode
+    = FinalizedInternalNode
+    { _FIN_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _FIN_LocalCost         :: {-# UNPACK #-} !Word
+    , _FIN_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    , _FIN_AlignedString     :: {-# UNPACK #-} !SymbolString
+    , _FIN_IsRoot            :: !Bool
+    }
+    deriving stock (Eq, Generic)
 
 
 instance NFData InitialInternalNode

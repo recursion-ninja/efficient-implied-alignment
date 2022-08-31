@@ -10,25 +10,25 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE MagicHash          #-}
-{-# LANGUAGE Strict             #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# Language DeriveGeneric #-}
+{-# Language DerivingStrategies #-}
+{-# Language MagicHash #-}
+{-# Language Strict #-}
+{-# Language TypeFamilies #-}
 
 module Numeric.Extended.Natural
-  ( ExtendedNatural()
-  , ExtendedNumber(..)
-  , Finite
-  ) where
+    ( ExtendedNatural ()
+    , ExtendedNumber (..)
+    , Finite
+    ) where
 
-import           Control.DeepSeq
-import           Data.Bits
-import           GHC.Exts
-import           GHC.Generics
-import           GHC.Integer.Logarithms
-import           Numeric.Extended.Internal
-import           Test.QuickCheck
+import Control.DeepSeq
+import Data.Bits
+import GHC.Exts
+import GHC.Generics
+import GHC.Integer.Logarithms
+import Numeric.Extended.Internal
+import Test.QuickCheck
 
 
 -- |
@@ -60,8 +60,9 @@ import           Test.QuickCheck
 --     operand subtraction with @infinity@ as the minuend, or division with
 --     @infinity@ as the denominator.
 --
-newtype ExtendedNatural = Cost Word
-  deriving stock (Eq, Generic, Ord)
+newtype ExtendedNatural
+    = Cost Word
+    deriving stock (Eq, Generic, Ord)
 
 
 type instance Finite ExtendedNatural = Word
@@ -69,9 +70,8 @@ type instance Finite ExtendedNatural = Word
 
 instance Arbitrary ExtendedNatural where
 
-    arbitrary = frequency [ (1, pure infinity), (19, Cost <$> finiteValue)]
-      where
-        finiteValue = arbitrary `suchThat` (/= maxBound)
+    arbitrary = frequency [(1, pure infinity), (19, Cost <$> finiteValue)]
+        where finiteValue = arbitrary `suchThat` (/= maxBound)
 
 
 instance Bounded ExtendedNatural where
@@ -91,25 +91,24 @@ instance Enum ExtendedNatural where
 
     {-# INLINE succ #-}
     succ val@(Cost x)
-      | val == infinity = infinity
-      | val == maxBound = maxBound
-      | otherwise       = Cost $ x + 1
+        | val == infinity = infinity
+        | val == maxBound = maxBound
+        | otherwise       = Cost $ x + 1
 
     {-# INLINE pred #-}
-    pred  val@(Cost x)
-      | val == infinity = infinity
-      | val == minBound = minBound
-      | otherwise       = Cost $ x - 1
-
+    pred val@(Cost x)
+        | val == infinity = infinity
+        | val == minBound = minBound
+        | otherwise       = Cost $ x - 1
 
 
 instance ExtendedNumber ExtendedNatural where
 
     unsafeToFinite = toWord
 
-    fromFinite = fromWord
+    fromFinite     = fromWord
 
-    infinity = Cost maxBound
+    infinity       = Cost maxBound
 
 
 instance NFData ExtendedNatural
@@ -118,33 +117,37 @@ instance NFData ExtendedNatural
 instance Num ExtendedNatural where
 
     lhs@(Cost x) + rhs@(Cost y)
-      | lhs    == infinity  = infinity
-      | rhs    == infinity  = infinity
-      | result >= infinity  = maxBound
-      | result <  maxima    = maxBound
-      | otherwise           = Cost result
-      where
-        maxima = max x y
-        result = x + y
+        | lhs == infinity    = infinity
+        | rhs == infinity    = infinity
+        | result >= infinity = maxBound
+        | result < maxima    = maxBound
+        | otherwise          = Cost result
+        where
+            maxima = max x y
+            result = x + y
 
     lhs@(Cost x) - rhs@(Cost y)
-      | lhs == infinity = infinity
-      | lhs <= rhs      = minBound
-      | otherwise       = Cost $ x - y
+        | lhs == infinity = infinity
+        | lhs <= rhs      = minBound
+        | otherwise       = Cost $ x - y
 
     lhs@(Cost x) * rhs@(Cost y)
+        |
       -- If either value is infinite,
       -- then the product is infinite
-      | lhs    == infinity  = infinity
-      | rhs    == infinity  = infinity
+          lhs == infinity
+        = infinity
+        | rhs == infinity
+        = infinity
+        |
 
       -- If both values are finite,
       -- then we consider the minimum number
       -- of possible bits in the product,
       -- and compare that to the number
       -- of bits in this machine's Word width.
-      | otherwise =
-          let minProductBits = bitsUsed x + bitsUsed y - 1
+          otherwise
+        = let minProductBits = bitsUsed x + bitsUsed y - 1
           in  case minProductBits `compare` wordWidth of
 
                 -- If the minimum possible number of bits to
@@ -164,17 +167,14 @@ instance Num ExtendedNatural where
                 -- First we compute the product directly.
                 -- Then we perform an expensive division operation
                 -- to determine if overflow occurred.
-                EQ -> let result = x * y
-                      in  if   result `quotRem` x /= (y,0)
-                          then maxBound
-                          else Cost result
+                EQ -> let result = x * y in if result `quotRem` x /= (y, 0) then maxBound else Cost result
 
     {-# INLINE abs #-}
     abs = id
 
     {-# INLINE signum #-}
     signum (Cost 0) = 0
-    signum        _ = 1
+    signum _        = 1
 
     fromInteger = Cost . fromInteger
 
@@ -187,11 +187,10 @@ instance Integral ExtendedNatural where
     toInteger = toInteger . toWord
 
     quotRem lhs@(Cost x) rhs@(Cost y)
-      | lhs == infinity = (infinity, minBound)
-      | rhs == infinity = (minBound, minBound)
-      | rhs == minBound = (infinity, minBound)
-      | otherwise       = let (q,r) = x `quotRem` y
-                          in  (Cost q, Cost r)
+        | lhs == infinity = (infinity, minBound)
+        | rhs == infinity = (minBound, minBound)
+        | rhs == minBound = (infinity, minBound)
+        | otherwise       = let (q, r) = x `quotRem` y in (Cost q, Cost r)
 
     divMod = quotRem
 
@@ -204,15 +203,15 @@ instance Real ExtendedNatural where
 instance Show ExtendedNatural where
 
     show (Cost input)
-      | input == maxBound = "∞"
-      | otherwise         = show input
+        | input == maxBound = "∞"
+        | otherwise         = show input
 
 
 {-# INLINE toWord #-}
 toWord :: ExtendedNatural -> Word
 toWord (Cost x)
-  | maxBound == x = x - 1
-  | otherwise     = x
+    | maxBound == x = x - 1
+    | otherwise     = x
 
 
 {-# INLINE fromWord #-}
@@ -229,8 +228,9 @@ wordWidth = finiteBitSize (minBound :: Word)
 -- Calculate the integer logarithm of a 'Word' to base 2 using efficient compiler
 -- builtins. This should translate into an assembly primitive on CISC chipsets.
 -- Might be slightly more expensive on RISC chipsets.
-{-# INLINE bitsUsed  #-}
+{-# INLINE bitsUsed #-}
 bitsUsed :: Word -> Int
 bitsUsed (W# w#)
-  |  isTrue# (w# `eqWord#` 0##) || isTrue# (w# `eqWord#` 1##) = 0 -- technically incorrect, but useful for us.
-  | otherwise = I# (wordLog2# w#) + 1
+    | isTrue# (w# `eqWord#` 0##) || isTrue# (w# `eqWord#` 1##) = 0
+    | -- technically incorrect, but useful for us.
+      otherwise                                                = I# (wordLog2# w#) + 1

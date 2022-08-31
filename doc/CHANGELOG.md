@@ -1,10 +1,18 @@
-# Revision history for commutative-multi-string-alignment
+# Revision history for `efficient-implied-alignment`
+
+
+## Unreleased Changes
+
+* Added support for GHC `9.4.*`
+* Added long list of "sanity check" warnings
+* Dropped support for GHC `8.8.*`
+* Corrected code which generated compilation warnings
+
 
 ## 1.1.1 -- 2022-03-01
 
 * Refactoring replicate results script
 * Droppping `stack` build support
-
 
 
 ## 1.1.0 -- 2022-02-23

@@ -1,13 +1,15 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language Safe #-}
+{-# Language TypeFamilies #-}
 
 module Data.UserInput
-  ( AlphabetType(..)
-  , UserInput(..)
-  , ExampleFileRequest(..)
-  ) where
+    ( AlphabetType (..)
+    , ExampleFileRequest (..)
+    , UserInput (..)
+    ) where
 
-import           Control.DeepSeq
+import Control.DeepSeq
 
 
 data  UserInput
@@ -19,15 +21,16 @@ data  UserInput
     , verbose      :: Bool
     , timing       :: Bool
     , alphabetType :: AlphabetType
---    , commandHelp :: ExampleFileRequest
-    } deriving (Show)
+      --    , commandHelp :: ExampleFileRequest
+    }
+    deriving stock Show
 
 
 data  AlphabetType
     = Standard
     | DNA
     | RNA
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 
 data  ExampleFileRequest
@@ -35,7 +38,7 @@ data  ExampleFileRequest
     | TreeFileRequest
     | TcmFileRequest
     | NoFileRequest
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 
 
 instance NFData AlphabetType where
@@ -55,5 +58,5 @@ instance NFData ExampleFileRequest where
 
 instance NFData UserInput where
 
-    rnf (UserInput a b c d e f g) = rnf a `seq` rnf b `seq` rnf c `seq`
-                                    rnf d `seq` rnf e `seq` rnf f `seq` rnf g
+    rnf (UserInput a b c d e f g) =
+        rnf a `seq` rnf b `seq` rnf c `seq` rnf d `seq` rnf e `seq` rnf f `seq` rnf g

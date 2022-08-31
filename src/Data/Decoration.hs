@@ -11,23 +11,23 @@
 -----------------------------------------------------------------------------
 
 module Data.Decoration
-  ( InitialInternalNode(InitialInternalNode)
-  , InitialLeaf(InitialLeaf)
-  , FinalizedInternalNode(FinalizedInternalNode)
-  , FinalizedLeaf(FinalizedLeaf)
-  , PreliminaryNode(PreliminaryNode)
-  , FinalizedNode (FinalizedNode)
-  , HasAlignedString(..)
-  , finalizedString
-  , inputString
-  , isRoot
-  , localCost
-  , outputString
-  , preliminaryString
-  , subtreeCost
-  ) where
+    ( FinalizedInternalNode (FinalizedInternalNode)
+    , FinalizedLeaf (FinalizedLeaf)
+    , FinalizedNode (FinalizedNode)
+    , HasAlignedString (..)
+    , InitialInternalNode (InitialInternalNode)
+    , InitialLeaf (InitialLeaf)
+    , PreliminaryNode (PreliminaryNode)
+    , finalizedString
+    , inputString
+    , isRoot
+    , localCost
+    , outputString
+    , preliminaryString
+    , subtreeCost
+    ) where
 
-import           Data.Decoration.Class
-import           Data.Decoration.Internal
-import           Data.Decoration.Leaf
-import           Data.Decoration.Node
+import Data.Decoration.Class
+import Data.Decoration.Internal
+import Data.Decoration.Leaf
+import Data.Decoration.Node

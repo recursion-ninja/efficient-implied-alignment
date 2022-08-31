@@ -10,14 +10,24 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language FunctionalDependencies #-}
+{-# Language MultiParamTypeClasses #-}
+{-# Language Safe #-}
 
-module Data.Decoration.Class where
+module Data.Decoration.Class
+    ( HasAlignedString (..)
+    , HasFinalizedString (..)
+    , HasInputString (..)
+    , HasIsRoot (..)
+    , HasLocalCost (..)
+    , HasOutputString (..)
+    , HasPreliminaryString (..)
+    , HasSubtreeCost (..)
+    ) where
 
-import           Control.Lens
+import Control.Lens
 
 
 class HasAlignedString s a | s -> a where

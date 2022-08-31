@@ -10,38 +10,44 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# Language DeriveGeneric #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language MultiParamTypeClasses #-}
 
-module Data.Decoration.Leaf where
+module Data.Decoration.Leaf
+    ( FinalizedLeaf (FinalizedLeaf)
+    , InitialLeaf (InitialLeaf)
+    ) where
 
-import           Control.DeepSeq
-import           Control.Lens
-import           Data.Decoration.Class
-import           Data.SymbolString
-import           GHC.Generics
-
-
-data InitialLeaf
-   = InitialLeaf
-   { _IL_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _IL_LocalCost         :: {-# UNPACK #-} !Word
-   , _IL_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   , _IL_InputString       :: {-# UNPACK #-} !SymbolString
-   } deriving (Eq, Generic)
+import Control.DeepSeq
+import Control.Lens
+import Data.Decoration.Class
+import Data.SymbolString
+import GHC.Generics
 
 
-data FinalizedLeaf
-   = FinalizedLeaf
-   { _FL_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _FL_LocalCost         :: {-# UNPACK #-} !Word
-   , _FL_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   , _FL_AlignedString     :: {-# UNPACK #-} !SymbolString
-   , _FL_InputString       :: {-# UNPACK #-} !SymbolString
-   , _FL_OutputString      :: {-# UNPACK #-} !SymbolString
-   } deriving (Eq, Generic)
+data  InitialLeaf
+    = InitialLeaf
+    { _IL_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _IL_LocalCost         :: {-# UNPACK #-} !Word
+    , _IL_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    , _IL_InputString       :: {-# UNPACK #-} !SymbolString
+    }
+    deriving stock (Eq, Generic)
+
+
+data  FinalizedLeaf
+    = FinalizedLeaf
+    { _FL_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _FL_LocalCost         :: {-# UNPACK #-} !Word
+    , _FL_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    , _FL_AlignedString     :: {-# UNPACK #-} !SymbolString
+    , _FL_InputString       :: {-# UNPACK #-} !SymbolString
+    , _FL_OutputString      :: {-# UNPACK #-} !SymbolString
+    }
+    deriving stock (Eq, Generic)
 
 
 instance NFData InitialLeaf

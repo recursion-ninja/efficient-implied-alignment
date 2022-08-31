@@ -29,26 +29,27 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies     #-}
+{-# Language FlexibleContexts #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
 
 module File.Format.Newick
-  ( NewickNode
-  , branchLength
-  , descendants
-  , isLeaf
-  , newickLabel
-  , newickStreamParser
-  ) where
+    ( NewickNode
+    , branchLength
+    , descendants
+    , isLeaf
+    , newickLabel
+    , newickStreamParser
+    ) where
 
-import           Data.BTree
-import           File.Format.Newick.Internal
-import           File.Format.Newick.Parser
-import           Text.Megaparsec
+import Data.BTree
+import File.Format.Newick.Internal
+import File.Format.Newick.Parser
+import Text.Megaparsec
 
 
 -- |
 -- Parses an entire stream into zero or more 'NewickForest's.
-{-# INLINEABLE newickStreamParser #-}
+{-# INLINABLE newickStreamParser #-}
 newickStreamParser :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => m (BTree () ())
 newickStreamParser = newickStandardDefinition <* eof

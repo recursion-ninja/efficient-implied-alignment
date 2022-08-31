@@ -14,64 +14,67 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# Language BangPatterns #-}
+{-# Language ConstraintKinds #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language MultiParamTypeClasses #-}
+{-# Language TypeFamilies #-}
+{-# Language TypeOperators #-}
+
 
 -- To add Indexable/Lookup instances for Matrix
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Alignment.Pairwise.Internal
-  ( Cost
-  , Direction(..)
-  , MatrixConstraint
-  , MatrixFunction
-  , NeedlemanWunchMatrix
-  -- * Direct Optimization primitive construction functions
-  , directOptimization
-  , measureCharacters
-  , measureAndUngapCharacters
-  , needlemanWunschDefinition
-  , renderCostMatrix
-  -- * Gap removal and reinsertion
-  , deleteGaps
-  , insertGaps
-  ) where
+    ( Cost
+    , Direction (..)
+    , MatrixConstraint
+    , MatrixFunction
+    , NeedlemanWunchMatrix
+      -- * Direct Optimization primitive construction functions
+    , directOptimization
+    , measureAndUngapCharacters
+    , measureCharacters
+    , needlemanWunschDefinition
+    , renderCostMatrix
+      -- * Gap removal and reinsertion
+    , deleteGaps
+    , insertGaps
+    ) where
 
-
-import           Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
-import           Control.DeepSeq
-import           Control.Monad.Loops                   (whileM)
-import           Control.Monad.State.Strict
-import           Control.Monad.ST
-import           Data.Bifunctor
-import           Data.Coerce
-import           Data.Foldable
-import           Data.IntMap                           (IntMap)
-import qualified Data.IntMap                           as IM
-import           Data.Key
-import           Data.Matrix                       (Matrix, dim, unsafeIndex)
-import           Data.Maybe                        (fromJust, fromMaybe)
-import           Data.Ord
-import           Data.Semigroup
-import           Data.STRef
-import           Data.SymbolString
-import           Data.TCM
-import qualified Data.Vector.Generic         as G
-import qualified Data.Vector.Generic.Mutable as M
-import qualified Data.Vector.Primitive       as P
-import qualified Data.Vector.Unboxed         as U
-import qualified Data.Vector                           as EV
-import qualified Data.Vector.Mutable                   as MV
-import qualified Data.Vector.Unboxed.Mutable           as MUV
-import           Data.Vector.NonEmpty                  (Vector)
-import qualified Data.Vector.NonEmpty                  as V
-import           Data.Word                   (Word8)
-import           Numeric.Extended.Natural
-import           Prelude                           hiding (lookup, zipWith)
+import Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
+import Control.DeepSeq
+import Control.Monad.Loops (whileM)
+import Control.Monad.ST
+import Control.Monad.State.Strict
+import Data.Bifunctor
+import Data.Coerce
+import Data.Foldable
+import Data.IntMap (IntMap)
+import Data.IntMap qualified as IM
+import Data.Key
+import Data.Matrix (Matrix, dim, unsafeIndex)
+import Data.Maybe (fromJust, fromMaybe)
+import Data.Ord
+import Data.STRef
+import Data.Semigroup
+import Data.SymbolString
+import Data.TCM
+import Data.Vector qualified as EV
+import Data.Vector.Generic qualified as G
+import Data.Vector.Generic.Mutable qualified as M
+import Data.Vector.Mutable qualified as MV
+import Data.Vector.NonEmpty (Vector)
+import Data.Vector.NonEmpty qualified as V
+import Data.Vector.Primitive qualified as P
+import Data.Vector.Unboxed qualified as U
+import Data.Vector.Unboxed.Mutable qualified as MUV
+import Data.Word (Word8)
+import Numeric.Extended.Natural
+import Prelude hiding (lookup, zipWith)
 
 
 -- |
@@ -94,8 +97,11 @@ import           Prelude                           hiding (lookup, zipWith)
 -- Using this 'Ord' instance, we can resolve ambiguous transformations in a
 -- deterministic way. Without loss of generality in determining the ordering,
 -- we choose the same biasing as the C code called from the FFI for consistency.
-data Direction = DiagArrow | LeftArrow | UpArrow
-  deriving (Eq, Ord)
+data  Direction
+    = DiagArrow
+    | LeftArrow
+    | UpArrow
+    deriving stock (Eq, Ord)
 
 
 newtype instance U.MVector s Direction = MV_Direction (P.MVector s Word8)
@@ -201,10 +207,7 @@ type MatrixConstraint m = (Indexable m, Key m ~ (Int, Int))
 -- |
 -- A parameterized function to generate an alignment matrix.
 type MatrixFunction m
-    =  TransitionCostMatrix
-    -> SymbolString
-    -> SymbolString
-    -> m (Cost, Direction, SymbolAmbiguityGroup)
+    = TransitionCostMatrix -> SymbolString -> SymbolString -> m (Cost, Direction, SymbolAmbiguityGroup)
 
 
 type instance Key Matrix = (Int, Int)
@@ -217,47 +220,40 @@ instance Indexable Matrix where
 
 instance Lookup Matrix where
 
-    lookup p@(i,j) m
-      | i < 0 || r <= i = Nothing
-      | j < 0 || c <= j = Nothing
-      | otherwise       = Just $ unsafeIndex m p
-      where
-        (r,c) = dim m
+    lookup p@(i, j) m
+        | i < 0 || r <= i = Nothing
+        | j < 0 || c <= j = Nothing
+        | otherwise       = Just $ unsafeIndex m p
+        where (r, c) = dim m
 
-  
+
 -- |
 -- Wraps the primitive operations in this module to a cohesive operation that is
 -- parameterized by an 'TransitionCostMatrix'.
 --
 -- Reused internally by different implementations.
-{-# INLINEABLE directOptimization #-}
+{-# INLINABLE directOptimization #-}
 -- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction Matrix              -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 -- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction UkkonenMethodMatrix -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 directOptimization
-  :: ( Foldable f
-     , Indexable f
-     , Key f ~ Int
-     , Key m ~ (Int, Int)
-     , MatrixConstraint m
-     )
-  => SymbolAmbiguityGroup
-  -> TransitionCostMatrix
-  -> (f SymbolContext -> f SymbolContext -> m (Cost, Direction, SymbolAmbiguityGroup) -> String)
-  -> MatrixFunction m
-  -> f SymbolContext
-  -> f SymbolContext
-  -> (Word, Vector SymbolContext)
+    :: (Foldable f, Indexable f, Key f ~ Int, MatrixConstraint m)
+    => SymbolAmbiguityGroup
+    -> TransitionCostMatrix
+    -> (f SymbolContext -> f SymbolContext -> m (Cost, Direction, SymbolAmbiguityGroup) -> String)
+    -> MatrixFunction m
+    -> f SymbolContext
+    -> f SymbolContext
+    -> (Word, Vector SymbolContext)
 directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
     let (swapped, gapsLesser, gapsLonger, shorterChar, longerChar) = measureAndUngapCharacters gap lhs rhs
-        (alignmentCost, ungappedAlignment) =
-          case (shorterChar, longerChar) of
+        (alignmentCost, ungappedAlignment)                         = case (shorterChar, longerChar) of
             (Nothing, Just ys) ->
                 let f x = let m = symbolAlignmentMedian x in insertElement (fst $ overlapλ m gap) m
                 in  (0, Just $ f <$> ys)
             (Just xs, Just ys) ->
                 let traversalMatrix = matrixFunction overlapλ ys xs
                 in  second Just $ traceback traversalMatrix ys xs
-            _                  -> (0, Nothing)
+            _ -> (0, Nothing)
 
         transformation    = if swapped then fmap reverseContext else id
         regappedAlignment = insertGaps gap gapsLesser gapsLonger ungappedAlignment
@@ -271,15 +267,14 @@ directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
 --filterGaps = NE.fromList . NE.filter (/= gap)
 
 
-{-# INLINEABLE measureCharacters #-}
+{-# INLINABLE measureCharacters #-}
 {-# SPECIALISE measureCharacters :: Vector SymbolContext -> Vector SymbolContext -> (Ordering, [SymbolContext], [SymbolContext]) #-}
 measureCharacters
-  :: Foldable f
-  => f SymbolContext
-  -> f SymbolContext
-  -> (Ordering, [SymbolContext], [SymbolContext])
+    :: Foldable f => f SymbolContext -> f SymbolContext -> (Ordering, [SymbolContext], [SymbolContext])
 measureCharacters lhs rhs =
-    let f = foldMap toList
+    let f :: (Foldable f, Foldable t) => f (t a) -> [a]
+        f         = foldMap toList
+
         (b, x, y) = measureNullableCharacters (Just lhs) (Just rhs)
     in  (b, f x, f y)
 
@@ -297,23 +292,24 @@ measureCharacters lhs rhs =
 -- string as longer.
 --
 -- Handles equality of inputs by /not/ swapping.
-{-# INLINEABLE measureNullableCharacters #-}
+{-# INLINABLE measureNullableCharacters #-}
 {-# SPECIALISE measureNullableCharacters :: Maybe (Vector SymbolContext) -> Maybe (Vector SymbolContext) -> (Ordering, Maybe (Vector SymbolContext), Maybe (Vector SymbolContext)) #-}
 measureNullableCharacters
-  :: Foldable f
-  => Maybe (f SymbolContext)
-  -> Maybe (f SymbolContext)
-  -> (Ordering, Maybe (f SymbolContext), Maybe (f SymbolContext))
+    :: Foldable f
+    => Maybe (f SymbolContext)
+    -> Maybe (f SymbolContext)
+    -> (Ordering, Maybe (f SymbolContext), Maybe (f SymbolContext))
 measureNullableCharacters lhs rhs
-  | lhsOrdering == GT = (lhsOrdering, rhs, lhs)
-  | otherwise         = (lhsOrdering, lhs, rhs)
-  where
-    lhsOrdering =
-        -- First, compare inputs by length.
-        case comparing (maybe 0 length) lhs rhs of
-          -- If the inputs are equal length,
-          -- Then compare by the (arbitary) lexicographical ordering of the median states.
-          EQ -> let x = foldMap toList lhs
+    | lhsOrdering == GT = (lhsOrdering, rhs, lhs)
+    | otherwise         = (lhsOrdering, lhs, rhs)
+    where
+        lhsOrdering =
+            -- First, compare inputs by length.
+                      case comparing (maybe 0 length) lhs rhs of
+              -- If the inputs are equal length,
+              -- Then compare by the (arbitary) lexicographical ordering of the median states.
+            EQ ->
+                let x = foldMap toList lhs
                     y = foldMap toList rhs
                     f = fmap symbolAlignmentMedian
                 in  case f x `compare` f y of
@@ -323,9 +319,9 @@ measureNullableCharacters lhs rhs
                       -- If they are equal after this step,
                       -- Then the inputs are representationally equal.
                       -- Actually, honest to goodness 100% equal!
-                      EQ -> x `compare` y
-                      v  -> v
-          v  -> v
+                    EQ -> x `compare` y
+                    v  -> v
+            v -> v
 
 
 -- |
@@ -353,25 +349,24 @@ measureNullableCharacters lhs rhs
 {-# INLINE measureAndUngapCharacters #-}
 {-# SPECIALISE measureAndUngapCharacters :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> (Bool, IntMap Word, IntMap Word, Maybe (Vector SymbolContext), Maybe (Vector SymbolContext)) #-}
 measureAndUngapCharacters
-  :: ( Foldable f
-     , Indexable f
-     , Key f ~ Int
-     )
-  => SymbolAmbiguityGroup
-  -> f SymbolContext
-  -> f SymbolContext
-  -> (Bool, IntMap Word, IntMap Word, Maybe SymbolString, Maybe SymbolString)
+    :: (Foldable f, Indexable f, Key f ~ Int)
+    => SymbolAmbiguityGroup
+    -> f SymbolContext
+    -> f SymbolContext
+    -> (Bool, IntMap Word, IntMap Word, Maybe SymbolString, Maybe SymbolString)
 measureAndUngapCharacters gap char1 char2
-  | swapInputs = (True , gapsChar2, gapsChar1, ungappedChar2, ungappedChar1)
-  | otherwise  = (False, gapsChar1, gapsChar2, ungappedChar1, ungappedChar2)
-  where
-    (gapsChar1, ungappedChar1) = deleteGaps gap char1
-    (gapsChar2, ungappedChar2) = deleteGaps gap char2
-    needToSwap (v,_,_) = v == GT
-    swapInputs =
-        case measureNullableCharacters ungappedChar1 ungappedChar2 of
-            (EQ,_,_) -> needToSwap $ measureCharacters char1 char2
-            x        -> needToSwap x
+    | swapInputs = (True, gapsChar2, gapsChar1, ungappedChar2, ungappedChar1)
+    | otherwise  = (False, gapsChar1, gapsChar2, ungappedChar1, ungappedChar2)
+    where
+        (gapsChar1, ungappedChar1) = deleteGaps gap char1
+        (gapsChar2, ungappedChar2) = deleteGaps gap char2
+
+        needToSwap :: (Ordering, b, c) -> Bool
+        needToSwap (v, _, _) = v == GT
+
+        swapInputs = case measureNullableCharacters ungappedChar1 ungappedChar2 of
+            (EQ, _, _) -> needToSwap $ measureCharacters char1 char2
+            x          -> needToSwap x
 
 
 -- |
@@ -380,39 +375,36 @@ measureAndUngapCharacters gap char1 char2
 -- Remembers the locations of the gap characters that were deleted
 --
 -- If the character contains /only/ gaps, a missing character is returned.
-{-# INLINEABLE deleteGaps #-}
+{-# INLINABLE deleteGaps #-}
 deleteGaps
-  :: ( Foldable f
-     , Indexable f
-     , Key f ~ Int
-     )
-  => SymbolAmbiguityGroup
-  -> f SymbolContext
-  -> (IntMap Word, Maybe SymbolString)
+    :: (Foldable f, Indexable f, Key f ~ Int)
+    => SymbolAmbiguityGroup
+    -> f SymbolContext
+    -> (IntMap Word, Maybe SymbolString)
 deleteGaps gap bvs
-      | null gaps   = (gaps,         Just . V.generate (length bvs) $ \i -> bvs ! i)
-      | newLen == 0 = (gaps,                 mempty)
-      | otherwise   = (gaps, force $ Just newVector)
-      where
+    | null gaps   = (gaps, Just . V.generate (length bvs) $ \i -> bvs ! i)
+    | newLen == 0 = (gaps, mempty)
+    | otherwise   = (gaps, force $ Just newVector)
+    where
         newVector = runST $ do
             j <- newSTRef 0
             let isGapAtJ = do
-                  j' <- readSTRef j
-                  pure $ j' < charLen && (symbolAlignmentMedian (bvs ! j') == gap)
+                    j' <- readSTRef j
+                    pure $ j' < charLen && (symbolAlignmentMedian (bvs ! j') == gap)
 
             let g = do
-                  void $ whileM isGapAtJ (modifySTRef j succ)
-                  j' <- readSTRef j
-                  modifySTRef j succ
-                  pure $ bvs ! j'
-                  
+                    void $ whileM isGapAtJ (modifySTRef j succ)
+                    j' <- readSTRef j
+                    modifySTRef j succ
+                    pure $ bvs ! j'
+
             V.generateM newLen $ const g
 
         gapCount = fromEnum . getSum $ foldMap Sum gaps
         charLen  = length bvs
         newLen   = charLen - gapCount
 
-        gaps = IM.fromDistinctAscList $ reverse refs
+        gaps     = IM.fromDistinctAscList $ reverse refs
 
         refs :: [(Int, Word)]
         refs = runST $ do
@@ -424,18 +416,18 @@ deleteGaps gap bvs
             let handleGapBefore op = do
                     gapBefore <- readSTRef prevGap
                     when gapBefore $ do
-                      j <- readSTRef nonGaps
-                      g <- readSTRef gapLen
-                      modifySTRef gapRefs ( (j,g): )
-                      op
+                        j <- readSTRef nonGaps
+                        g <- readSTRef gapLen
+                        modifySTRef gapRefs ((j, g) :)
+                        op
 
-            for_ [0 .. charLen - 1] $ \i ->
-              if symbolAlignmentMedian (bvs ! i)  == gap
-              then modifySTRef gapLen succ *> writeSTRef prevGap True
-              else do handleGapBefore $ do
-                        writeSTRef  gapLen 0
+            for_ [0 .. charLen - 1] $ \i -> if symbolAlignmentMedian (bvs ! i) == gap
+                then modifySTRef gapLen succ *> writeSTRef prevGap True
+                else do
+                    handleGapBefore $ do
+                        writeSTRef gapLen  0
                         writeSTRef prevGap False
-                      modifySTRef nonGaps succ
+                    modifySTRef nonGaps succ
 
             handleGapBefore $ pure ()
             readSTRef gapRefs
@@ -444,122 +436,116 @@ deleteGaps gap bvs
 -- |
 -- Adds gaps elements to the supplied character.
 insertGaps
-  :: ( Enum a
-     , MUV.Unbox a
-     , Num a
-     , Eq a
-     )
-  => SymbolAmbiguityGroup
-  -> IntMap a
-  -> IntMap a
-  -> Maybe SymbolString
-  -> SymbolString
+    :: (Enum a, MUV.Unbox a, Num a, Eq a)
+    => SymbolAmbiguityGroup
+    -> IntMap a
+    -> IntMap a
+    -> Maybe SymbolString
+    -> SymbolString
 insertGaps gap lGaps rGaps meds
-      | null lGaps && null rGaps = fromJust meds -- No work needed
-      | otherwise                = force . coerce $ newVector
-      where
-        totalGaps = fromEnum . getSum . foldMap Sum
+    | null lGaps && null rGaps = fromJust meds
+    | -- No work needed
+      otherwise                = force . coerce $ newVector
+    where
+        gapVecLen :: IntMap b -> Int
         gapVecLen = maybe 0 (succ . fst) . IM.lookupMax
+
+        totalGaps = fromEnum . getSum . foldMap Sum
         mLength   = maybe 0 length meds
         lGapCount = totalGaps lGaps
         rGapCount = totalGaps rGaps
         newLength = lGapCount + rGapCount + mLength
 
-        ins = insertElement gap gap
-        del = deleteElement gap gap
+        ins       = insertElement gap gap
+        del       = deleteElement gap gap
 
+        (!>) :: Indexable f => Maybe (f b) -> Key f -> b
         xs !> i = maybe (error "Tried to index an empty alignment context when reinserting gaps") (! i) xs
-        
+
         newVector = EV.create $ do
-          mVec <- MV.unsafeNew newLength
-          lVec <- MUV.replicate (gapVecLen lGaps) 0
-          rVec <- MUV.replicate (gapVecLen rGaps) 0
-          lGap <- newSTRef 0
-          mPtr <- newSTRef 0
-          rGap <- newSTRef 0
+            mVec <- MV.unsafeNew newLength
+            lVec <- MUV.replicate (gapVecLen lGaps) 0
+            rVec <- MUV.replicate (gapVecLen rGaps) 0
+            lGap <- newSTRef 0
+            mPtr <- newSTRef 0
+            rGap <- newSTRef 0
 
-          -- Write out to the mutable vectors
-          for_ (IM.toAscList lGaps) $ uncurry (MUV.unsafeWrite lVec)
-          for_ (IM.toAscList rGaps) $ uncurry (MUV.unsafeWrite rVec)
+            -- Write out to the mutable vectors
+            for_ (IM.toAscList lGaps) $ uncurry (MUV.unsafeWrite lVec)
+            for_ (IM.toAscList rGaps) $ uncurry (MUV.unsafeWrite rVec)
 
-          let align i = do
-                m <- readSTRef mPtr
-                let e = meds !> m
-                let v = coerce e
-                MV.unsafeWrite mVec i v
-                modifySTRef mPtr succ
-                when (isAlign e || isDelete e) $
-                  modifySTRef lGap succ
-                when (isAlign e || isInsert e) $
-                  modifySTRef rGap succ
+            let align i = do
+                    m <- readSTRef mPtr
+                    let e = meds !> m
+                    let v = coerce e
+                    MV.unsafeWrite mVec i v
+                    modifySTRef mPtr succ
+                    when (isAlign e || isDelete e) $ modifySTRef lGap succ
+                    when (isAlign e || isInsert e) $ modifySTRef rGap succ
 
-          let insertGapWith i e gapRef gapVec = do
-                rg <- readSTRef gapRef
-                v  <- if rg >= MUV.length gapVec then pure 0 else MUV.unsafeRead gapVec rg
-                if   v == 0
-                then pure False
-                else do MV.unsafeWrite mVec i e
-                        MUV.unsafeWrite gapVec rg $ v - 1
-                        pure True
+            let insertGapWith i e gapRef gapVec = do
+                    rg <- readSTRef gapRef
+                    v  <- if rg >= MUV.length gapVec then pure 0 else MUV.unsafeRead gapVec rg
+                    if v == 0
+                        then pure False
+                        else do
+                            MV.unsafeWrite mVec i e
+                            MUV.unsafeWrite gapVec rg $ v - 1
+                            pure True
 
-          for_ [0 .. newLength - 1] $ \i -> do
-            written <- insertGapWith i ins lGap lVec
-            unless written $ do
-              written' <- insertGapWith i del rGap rVec
-              unless written' $ align i
+            for_ [0 .. newLength - 1] $ \i -> do
+                written <- insertGapWith i ins lGap lVec
+                unless written $ do
+                    written' <- insertGapWith i del rGap rVec
+                    unless written' $ align i
 
-          pure mVec
+            pure mVec
 
 
 -- |
 -- Internal generator function for the matrices based on the Needleman-Wunsch
 -- definition described in their paper.
-{-# INLINEABLE needlemanWunschDefinition #-}
+{-# INLINABLE needlemanWunschDefinition #-}
 {-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
 {-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
 needlemanWunschDefinition
-  :: ( Lookup f
-     , Indexable m
-     , Key f ~ Int
-     , Key m ~ (Int, Int)
-     )
-  => SymbolAmbiguityGroup
-  -> TransitionCostMatrix
-  -> f SymbolContext
-  -> f SymbolContext
-  -> m (Cost, Direction, SymbolAmbiguityGroup)
-  -> (Int, Int)
-  -> (Cost, Direction, SymbolAmbiguityGroup)
+    :: (Lookup f, Indexable m, Key f ~ Int, Key m ~ (Int, Int))
+    => SymbolAmbiguityGroup
+    -> TransitionCostMatrix
+    -> f SymbolContext
+    -> f SymbolContext
+    -> m (Cost, Direction, SymbolAmbiguityGroup)
+    -> (Int, Int)
+    -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
-  |  p == (0,0)                          = (            0, DiagArrow, gapGroup)
+    | p == (0, 0)                       = (0, DiagArrow, gapGroup)
+    |
 --  |  col /= 0 &&  topElement == gapGroup = (leftwardValue, LeftArrow, gapGroup)
 --  |  row /= 0 && leftElement == gapGroup = (  upwardValue,   UpArrow, gapGroup)
-  |  row /= 0 && col /= 0 && isDiagGap   = (      minCost, LeftArrow, gapGroup)
-  |  otherwise                           = (      minCost,    minDir, minState)
-  where
+      row /= 0 && col /= 0 && isDiagGap = (minCost, LeftArrow, gapGroup)
+    | otherwise                         = (minCost, minDir, minState)
+    where
     -- | Lookup with a default value of infinite cost.
-    {-# INLINE (!?) #-}
-    (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
+        {-# INLINE (!?) #-}
+        (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
 
-    isDiagGap = (minDir, minState) == (DiagArrow, gapGroup)
+        isDiagGap                                       = (minDir, minState) == (DiagArrow, gapGroup)
 
-    topContext                    = (col - 1) `lookup`  topChar
-    leftContext                   = (row - 1) `lookup` leftChar
-    topElement                    = maybe gapGroup symbolAlignmentMedian  topContext
-    leftElement                   = maybe gapGroup symbolAlignmentMedian leftContext
-    (leftwardValue, _leftwardArrow, _leftWardState) = memo !? (row    , col - 1)
-    (  upwardValue,   _upwardArrow,   _upwardState) = memo !? (row - 1, col    )
-    (diagonalValue, _, _)         = memo !? (row - 1, col - 1)
-    (rightChar, rightOverlapCost) = fromFinite <$> overlapFunction topElement gapGroup
-    ( diagChar,  diagOverlapCost) = fromFinite <$> overlapFunction topElement leftElement
-    ( downChar,  downOverlapCost) = fromFinite <$> overlapFunction gapGroup   leftElement
-    rightCost                     = rightOverlapCost +  leftwardValue
-    diagCost                      =  diagOverlapCost +  diagonalValue
-    downCost                      =  downOverlapCost +    upwardValue
-    (minCost, minState, minDir)   = getMinimalCostDirection gapGroup
-                                      ( diagCost,  diagChar)
-                                      (rightCost, rightChar)
-                                      ( downCost,  downChar)
+        topContext                                      = (col - 1) `lookup` topChar
+        leftContext                                     = (row - 1) `lookup` leftChar
+        topElement                                      = maybe gapGroup symbolAlignmentMedian topContext
+        leftElement                                     = maybe gapGroup symbolAlignmentMedian leftContext
+        (leftwardValue, _leftwardArrow, _leftWardState) = memo !? (row, col - 1)
+        (upwardValue  , _upwardArrow  , _upwardState  ) = memo !? (row - 1, col)
+        (diagonalValue, _             , _             ) = memo !? (row - 1, col - 1)
+        (rightChar, rightOverlapCost)                   = fromFinite <$> overlapFunction topElement gapGroup
+        (diagChar , diagOverlapCost )                   = fromFinite <$> overlapFunction topElement leftElement
+        (downChar , downOverlapCost )                   = fromFinite <$> overlapFunction gapGroup leftElement
+        rightCost                                       = rightOverlapCost + leftwardValue
+        diagCost                                        = diagOverlapCost + diagonalValue
+        downCost                                        = downOverlapCost + upwardValue
+        (minCost, minState, minDir) =
+            getMinimalCostDirection gapGroup (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar)
 
 
 {--}
@@ -568,82 +554,64 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
 -- and column labelings.
 --
 -- Useful for debugging purposes.
-{-# INLINEABLE renderCostMatrix #-}
+{-# INLINABLE renderCostMatrix #-}
 --{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 --{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
 renderCostMatrix
-  :: ( Foldable f
-     , Lookup m
-     , Key m ~ (Int, Int)
-     )
-  => SymbolAmbiguityGroup
-  -> f SymbolContext
-  -> f SymbolContext
-  -> m (Cost, Direction, SymbolAmbiguityGroup)
-  -> String
-renderCostMatrix gapGroup lhs rhs mtx = unlines
-    [ dimensionPrefix
-    , headerRow
-    , barRow
-    , renderedRows
-    ]
-  where
-    (_,lesser,longer) = measureCharacters lhs rhs
-    longerTokens      = toShownIntegers longer
-    lesserTokens      = toShownIntegers lesser
-    toShownIntegers   = fmap renderContext . toList
-    matrixTokens      = [ (\j -> maybe "" showCell $ (i,j) `lookup` mtx)
-                           <$> [ 0 .. colCount - 1 ]
+    :: (Foldable f, Lookup m, Key m ~ (Int, Int))
+    => SymbolAmbiguityGroup
+    -> f SymbolContext
+    -> f SymbolContext
+    -> m (Cost, Direction, SymbolAmbiguityGroup)
+    -> String
+renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, barRow, renderedRows]
+    where
+        (_, lesser, longer) = measureCharacters lhs rhs
+        longerTokens        = toShownIntegers longer
+        lesserTokens        = toShownIntegers lesser
+        toShownIntegers     = fmap renderContext . toList
+        matrixTokens =
+            [ (\j -> maybe "" showCell $ (i, j) `lookup` mtx) <$> [0 .. colCount - 1]
+            | i <- [0 .. rowCount - 1]
+            ]
 
-                        | i <- [ 0 .. rowCount - 1 ]
-                        ]                                
-    showCell (c,d,_)  = show c <> show d
-    maxPrefixWidth    = maxLengthOf lesserTokens + 1
-    maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ fold matrixTokens
-    maxLengthOf       = maximum . fmap length
+        showCell :: (Show a, Show b) => (a, b, c) -> String
+        showCell (c, d, _) = show c <> show d
+        maxPrefixWidth = maxLengthOf lesserTokens + 1
+        maxColumnWidth = max (maxLengthOf longerTokens) . maxLengthOf $ fold matrixTokens
 
-    colCount = length longer + 1
-    rowCount = length lesser + 1
+        maxLengthOf :: (Foldable f, Foldable t, Functor f) => f (t a) -> Int
+        maxLengthOf     = maximum . fmap length
 
-    dimensionPrefix  = " " <> unwords
-        [ "Dimensions:"
-        , show rowCount
-        , "⨉"
-        , show colCount
-        ]
+        colCount        = length longer + 1
+        rowCount        = length lesser + 1
 
-    headerRow = fold
-        [ " "
-        , pad maxPrefixWidth "⊗"
-        , "┃ "
-        , pad maxColumnWidth "⁎"
-        , concatMap (pad maxColumnWidth) longerTokens
-        ]
+        dimensionPrefix = " " <> unwords ["Dimensions:", show rowCount, "⨉", show colCount]
 
-    barRow    = fold
-        [ " "
-        , bar maxPrefixWidth
-        , "╋"
-        , concatMap (const (bar maxColumnWidth)) $ undefined : longerTokens
-        ]
-      where
-        bar n = replicate (n+1) '━'
+        headerRow       = fold
+            [ " "
+            , pad maxPrefixWidth "⊗"
+            , "┃ "
+            , pad maxColumnWidth "⁎"
+            , concatMap (pad maxColumnWidth) longerTokens
+            ]
 
-    renderedRows = unlines
-                 . zipWithKey renderRow ("⁎":lesserTokens)
-                 $ matrixTokens
-      where
-        renderRow k e cs = fold [" ", pad maxPrefixWidth (e <> show (k `mod` 10)), "┃ ", fold $ pad maxColumnWidth <$> cs ]
+        barRow = fold
+            [" ", bar maxPrefixWidth, "╋", concatMap (const (bar maxColumnWidth)) $ undefined : longerTokens]
+            where bar n = replicate (n + 1) '━'
 
-    renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
-    renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
-    renderContext (Insert x   _) = if x == gapGroup then "—" else "ι"
-    renderContext Gapping{}      = "—"
+        renderedRows = unlines . zipWithKey renderRow ("⁎" : lesserTokens) $ matrixTokens
+            where
+                renderRow k e cs = fold
+                    [" ", pad maxPrefixWidth (e <> show (k `mod` 10)), "┃ ", fold $ pad maxColumnWidth <$> cs]
 
-    pad :: Int -> String -> String
-    pad n e = replicate (n - len) ' ' <> e <> " "
-      where
-        len = length e
+        renderContext (Align x _ _) = if x == gapGroup then "—" else "α"
+        renderContext (Delete x _ ) = if x == gapGroup then "—" else "δ"
+        renderContext (Insert x _ ) = if x == gapGroup then "—" else "ι"
+        renderContext Gapping{}     = "—"
+
+        pad :: Int -> String -> String
+        pad n e = replicate (n - len) ' ' <> e <> " " where len = length e
 {--}
 
 
@@ -655,56 +623,59 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines
 -- from the bottom right corner, accumulating the alignment context string as it
 -- goes. The alignment *should* be biased toward insertions into the shorter of
 -- the two strings.
-{-# INLINEABLE traceback #-}
+{-# INLINABLE traceback #-}
 {-# SPECIALISE traceback :: Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 {-# SPECIALISE traceback :: UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 traceback
-  :: ( Foldable f
-     , Indexable f
-     , Indexable m
-     , Key f ~ Int
-     , Key m ~ (Int, Int)
-     )
-  => m (Cost, Direction, SymbolAmbiguityGroup)
-  -> f SymbolContext
-  -> f SymbolContext
-  -> (Word, Vector SymbolContext)
+    :: (Foldable f, Indexable f, Indexable m, Key f ~ Int, Key m ~ (Int, Int))
+    => m (Cost, Direction, SymbolAmbiguityGroup)
+    -> f SymbolContext
+    -> f SymbolContext
+    -> (Word, Vector SymbolContext)
 traceback alignMatrix longerChar lesserChar = force (unsafeToFinite cost, V.reverse $ V.unfoldr go lastCell)
-  where
-      lastCell     = (row, col)
-      (cost, _, _) = alignMatrix ! lastCell
+    where
+        lastCell     = (row, col)
+        (cost, _, _) = alignMatrix ! lastCell
 
-      col = length longerChar
-      row = length lesserChar
+        col          = length longerChar
+        row          = length lesserChar
 
-      go currentCell@(!i, !j)
-        | nextCell < (0,0) = (contextElement, Nothing)
-        | otherwise        = (contextElement, Just nextCell)
-        where
-          (_, directionArrow, medianElement) = alignMatrix ! currentCell
+        go currentCell@(!i, !j)
+            | nextCell < (0, 0) = (contextElement, Nothing)
+            | otherwise         = (contextElement, Just nextCell)
+            where
+                (_, directionArrow, medianElement) = alignMatrix ! currentCell
 
-          (nextCell, contextElement) =
-              case directionArrow of
-                LeftArrow -> ((i    , j - 1), Insert medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
-                UpArrow   -> ((i - 1, j    ), Delete medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
-                DiagArrow -> ((i - 1, j - 1), Align  medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)) (symbolAlignmentMedian $ lesserChar ! (i - 1)))
+                (nextCell, contextElement)         = case directionArrow of
+                    LeftArrow ->
+                        ((i, j - 1), Insert medianElement (symbolAlignmentMedian $ longerChar ! (j - 1)))
+                    UpArrow ->
+                        ((i - 1, j), Delete medianElement (symbolAlignmentMedian $ lesserChar ! (i - 1)))
+                    DiagArrow ->
+                        ( (i - 1, j - 1)
+                        , Align
+                            medianElement
+                            (symbolAlignmentMedian $ longerChar ! (j - 1))
+                            (symbolAlignmentMedian $ lesserChar ! (i - 1))
+                        )
 
 
 getMinimalCostDirection
-  :: Ord c
-  => SymbolAmbiguityGroup
-  -> (c, SymbolAmbiguityGroup)
-  -> (c, SymbolAmbiguityGroup)
-  -> (c, SymbolAmbiguityGroup)
-  -> (c, SymbolAmbiguityGroup, Direction)
-getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar) =
-    minimumBy (comparing (\(c,_,d) -> (c,d))) xs
-  where
-    xs =
-      [ (diagCost ,  diagChar       , DiagArrow)
-      , (rightCost, rightChar <> gap, LeftArrow)
-      , (downCost ,  downChar <> gap, UpArrow  )
-      ]
+    :: Ord c
+    => SymbolAmbiguityGroup
+    -> (c, SymbolAmbiguityGroup)
+    -> (c, SymbolAmbiguityGroup)
+    -> (c, SymbolAmbiguityGroup)
+    -> (c, SymbolAmbiguityGroup, Direction)
+getMinimalCostDirection gap (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar) = minimumBy
+    (comparing (\(c, _, d) -> (c, d)))
+    xs
+    where
+        xs =
+            [ (diagCost , diagChar        , DiagArrow)
+            , (rightCost, rightChar <> gap, LeftArrow)
+            , (downCost , downChar <> gap , UpArrow)
+            ]
 
 
 {-# INLINE fromDirection #-}

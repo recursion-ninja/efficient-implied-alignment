@@ -14,47 +14,50 @@
 --
 -----------------------------------------------------------------------------
 
+
 -- We do this because we added an orphan instanc IsString Char
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE FlexibleInstances  #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# Language DeriveDataTypeable #-}
+{-# Language DeriveFunctor #-}
+{-# Language DeriveGeneric #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language FlexibleInstances #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language OverloadedStrings #-}
+{-# Language TypeFamilies #-}
 
 module Data.Alphabet.Internal
-  ( Alphabet()
-  , AmbiguityGroup
-  , alphabetStateNames
-  , alphabetSymbols
-  , fromSymbols
-  , fromSymbolsWithStateNames
-  , gapSymbol
-  , truncateAtSymbol
-  , truncateAtMaxSymbol
-  ) where
+    ( Alphabet ()
+    , AmbiguityGroup
+    , alphabetStateNames
+    , alphabetSymbols
+    , fromSymbols
+    , fromSymbolsWithStateNames
+    , gapSymbol
+    , truncateAtMaxSymbol
+    , truncateAtSymbol
+    ) where
 
-import           Control.DeepSeq            (NFData)
-import           Control.Monad.State.Strict
-import           Data.Bifunctor             (bimap)
-import           Data.Data
-import           Data.Foldable
-import           Data.Key
-import           Data.List                  (elemIndex, intercalate, sort)
-import           Data.List.NonEmpty         (NonEmpty (..), unzip)
-import           Data.Maybe
-import           Data.Monoid
-import           Data.Semigroup.Foldable
-import qualified Data.Set                   as Set
-import           Data.String
-import           Data.Vector.NonEmpty       (Vector)
-import qualified Data.Vector.NonEmpty       as NEV
-import           GHC.Generics               (Generic)
-import           Prelude                    hiding (lookup, unzip, zip)
-import           Test.QuickCheck
+import Control.DeepSeq (NFData)
+import Control.Monad.State.Strict
+import Data.Bifunctor (bimap)
+import Data.Data
+import Data.Foldable
+import Data.Key
+import Data.List (elemIndex, intercalate, sort)
+import Data.List.NonEmpty (NonEmpty(..), unzip)
+import Data.Maybe
+import Data.Monoid
+import Data.Semigroup.Foldable
+import Data.Set (Set)
+import Data.Set qualified as Set
+import Data.String
+import Data.Vector.NonEmpty (Vector)
+import Data.Vector.NonEmpty qualified as NEV
+import GHC.Generics (Generic)
+import Prelude hiding (lookup, unzip, zip)
+import Test.QuickCheck
 
 
 -- |
@@ -64,21 +67,23 @@ type AmbiguityGroup a = NonEmpty a
 
 -- |
 -- A collection of symbols and optional corresponding state names.
-data Alphabet a =
-     Alphabet
-     { symbolVector :: {-# UNPACK #-} !(Vector a)
-     , stateNames   :: [a]
-     }
-     deriving stock (Data, Generic, Functor, Typeable)
+data  Alphabet a
+    = Alphabet
+    { symbolVector :: {-# UNPACK #-} !(Vector a)
+    , stateNames   :: [a]
+    }
+    deriving stock (Data, Functor, Generic)
 
 
 type instance Key Alphabet = Int
 
 
 -- Newtypes for corecing and consolidation of alphabet input processing logic
-newtype AlphabetInputSingle a = ASI  { toSingle ::  a    }
+newtype AlphabetInputSingle a
+    = ASI { toSingle :: a }
     deriving stock (Eq, Ord)
-newtype AlphabetInputTuple  a = ASNI { toTuple  :: (a,a) }
+newtype AlphabetInputTuple a
+    = ASNI { toTuple :: (a, a) }
     deriving stock (Eq, Ord)
 
 
@@ -88,38 +93,44 @@ newtype AlphabetInputTuple  a = ASNI { toTuple  :: (a,a) }
 -- -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 --
 
-newtype UnnamedSymbol a = Unnamed  a
+
+newtype UnnamedSymbol a
+    = Unnamed a
     deriving stock (Generic)
-newtype NamedSymbol   a = Named (a,a)
+
+
+newtype NamedSymbol a
+    = Named (a, a)
     deriving stock (Generic)
 
 
 class InternalClass a where
 
-  gapSymbol'        :: a
-  isGapSymboled     :: a -> Bool
-  isMissingSymboled :: a -> Bool
+    gapSymbol'        :: a
+    isGapSymboled     :: a -> Bool
+    isMissingSymboled :: a -> Bool
 
 
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
 alphabetPreprocessing :: (Ord a, InternalClass a, Foldable t) => t a -> NonEmpty a
 alphabetPreprocessing = appendGapSymbol . sort . removeSpecialSymbolsAndDuplicates . toList
-  where
-    appendGapSymbol xs =
-        case xs of
-          []   -> gapSymbol':|[]
-          y:ys -> y:|(ys <> [gapSymbol'])
+    where
+        appendGapSymbol :: InternalClass a => [a] -> NonEmpty a
+        appendGapSymbol xs = case xs of
+            []     -> gapSymbol' :| []
+            y : ys -> y :| (ys <> [gapSymbol'])
 
-    removeSpecialSymbolsAndDuplicates = (`evalState` mempty) . filterM f
-      where
-        f x
-          | isGapSymboled     x = pure False
-          | isMissingSymboled x = pure False
-          | otherwise           = do
-              seenSet <- get
-              _       <- put $ x `Set.insert` seenSet
-              pure $ x `notElem` seenSet
+        removeSpecialSymbolsAndDuplicates = (`evalState` mempty) . filterM f
+            where
+                f :: (InternalClass a, MonadState (Set a) f, Ord a) => a -> f Bool
+                f x
+                    | isGapSymboled x = pure False
+                    | isMissingSymboled x = pure False
+                    | otherwise = do
+                        seenSet <- get
+                        _       <- put $ x `Set.insert` seenSet
+                        pure $ x `notElem` seenSet
 
 
 -- |
@@ -152,8 +163,9 @@ fromSingle = ASI
 -- 'IsString' values.
 fromSymbols :: (Ord a, IsString a, Foldable t) => t a -> Alphabet a
 fromSymbols inputSymbols = Alphabet symbols []
-  where
-    symbols = NEV.fromNonEmpty . fmap toSingle . alphabetPreprocessing . fmap fromSingle $ toList inputSymbols
+    where
+        symbols =
+            NEV.fromNonEmpty . fmap toSingle . alphabetPreprocessing . fmap fromSingle $ toList inputSymbols
 
 
 -- |
@@ -163,14 +175,20 @@ fromSymbols inputSymbols = Alphabet symbols []
 -- corresponding state names, both of which are 'IsString' values.
 --
 -- The input ordering is preserved.
-fromSymbolsWithStateNames :: (Ord a, IsString a, Foldable t) => t (a,a) -> Alphabet a
+fromSymbolsWithStateNames :: (Ord a, IsString a, Foldable t) => t (a, a) -> Alphabet a
 fromSymbolsWithStateNames inputSymbols = Alphabet symbols names
-  where
-    (symbols, names) = bimap NEV.fromNonEmpty toList . unzip . fmap toTuple . alphabetPreprocessing . fmap fromTuple $ toList inputSymbols
+    where
+        (symbols, names) =
+            bimap NEV.fromNonEmpty toList
+                . unzip
+                . fmap toTuple
+                . alphabetPreprocessing
+                . fmap fromTuple
+                $ toList inputSymbols
 
 
 fromTuple :: (a, a) -> AlphabetInputTuple a
-fromTuple  = ASNI
+fromTuple = ASNI
 
 
 -- |
@@ -192,13 +210,11 @@ gapSymbol alphabet = alphabet ! (length alphabet - 1)
 --
 -- The resulting alphabet /includes/ the input symbol.
 truncateAtSymbol :: (Ord a, IsString a) => a -> Alphabet a -> Alphabet a
-truncateAtSymbol symbol alphabet =
-    case elemIndex symbol $ toList alphabet of
-      Nothing -> alphabet
-      Just i  ->
-        case alphabetStateNames alphabet of
-          [] -> fromSymbols               . take (i + 1) $      alphabetSymbols alphabet
-          xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
+truncateAtSymbol symbol alphabet = case elemIndex symbol $ toList alphabet of
+    Nothing -> alphabet
+    Just i  -> case alphabetStateNames alphabet of
+        [] -> fromSymbols . take (i + 1) $ alphabetSymbols alphabet
+        xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
 
 
 -- |
@@ -212,21 +228,18 @@ truncateAtSymbol symbol alphabet =
 --
 -- The resulting alphabet /includes/ the input symbol.
 truncateAtMaxSymbol :: (Foldable t, Ord a, IsString a) => t a -> Alphabet a -> Alphabet a
-truncateAtMaxSymbol symbols alphabet =
-    case maxIndex of
-      Nothing -> alphabet
-      Just i  ->
-        case alphabetStateNames alphabet of
-          [] -> fromSymbols               . take (i + 1) $      alphabetSymbols alphabet
-          xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
-  where
-    maxIndex = foldlWithKey' f Nothing alphabet
-    f e k v
-      | v `notElem` symbols = e
-      | otherwise =
-        case e of
-          Nothing -> Just k
-          Just  i -> Just $ max k i
+truncateAtMaxSymbol symbols alphabet = case maxIndex of
+    Nothing -> alphabet
+    Just i  -> case alphabetStateNames alphabet of
+        [] -> fromSymbols . take (i + 1) $ alphabetSymbols alphabet
+        xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
+    where
+        maxIndex = foldlWithKey' f Nothing alphabet
+        f e k v
+            | v `notElem` symbols = e
+            | otherwise = case e of
+                Nothing -> Just k
+                Just i  -> Just $ max k i
 
 
 instance (Ord a, IsString a) => Arbitrary (Alphabet a) where
@@ -234,17 +247,16 @@ instance (Ord a, IsString a) => Arbitrary (Alphabet a) where
     arbitrary = do
         n <- (arbitrary :: Gen Int) `suchThat` (\x -> 0 < x && x <= 62)
         pure . fromSymbols $ take n symbolSpace
-      where
+        where
         -- We do this to simplify Alphabet generation, ensuring that there is at least one non gap symbol.
-        symbolSpace = fromString . pure <$> ['0'..'9'] <> ['A'..'Z'] <> ['a'..'z'] <> "?-"
+              symbolSpace = fromString . pure <$> ['0' .. '9'] <> ['A' .. 'Z'] <> ['a' .. 'z'] <> "?-"
 
 
 -- |
 -- \( \mathcal{O} \left( n * \log_2 n \right) \)
 instance Ord a => Eq (Alphabet a) where
 
-    lhs == rhs =  length lhs == length rhs
-               && sort (toList lhs) == sort (toList rhs)
+    lhs == rhs = length lhs == length rhs && sort (toList lhs) == sort (toList rhs)
 
 
 instance Foldable Alphabet where
@@ -256,16 +268,16 @@ instance Foldable Alphabet where
     foldMap f = foldMap f . symbolVector
 
     {-# INLINE foldr #-}
-    foldr  f e = foldr  f e . symbolVector
+    foldr f e = foldr f e . symbolVector
 
     {-# INLINE foldl #-}
-    foldl  f e = foldl  f e . symbolVector
+    foldl f e = foldl f e . symbolVector
 
     {-# INLINE foldr1 #-}
-    foldr1 f   = foldr1 f   . symbolVector
+    foldr1 f = foldr1 f . symbolVector
 
     {-# INLINE foldl1 #-}
-    foldl1 f   = foldl1 f   . symbolVector
+    foldl1 f = foldl1 f . symbolVector
 
     {-# INLINE length #-}
     length = length . symbolVector
@@ -274,7 +286,7 @@ instance Foldable Alphabet where
 instance Foldable1 Alphabet where
 
     {-# INLINE fold1 #-}
-    fold1      = fold1 . symbolVector
+    fold1 = fold1 . symbolVector
 
     {-# INLINE foldMap1 #-}
     foldMap1 f = foldMap1 f . symbolVector
@@ -302,14 +314,14 @@ instance Indexable Alphabet where
 
     {-# INLINE index #-}
     index a i = fromMaybe raiseError $ i `lookup` a
-      where
-        raiseError = error $ fold
-            ["Error indexing Alphabet at location "
-            , show i
-            , ", valid inclusive index range is [0, "
-            , show $ length a - 1
-            , "]."
-            ]
+        where
+            raiseError = error $ fold
+                [ "Error indexing Alphabet at location "
+                , show i
+                , ", valid inclusive index range is [0, "
+                , show $ length a - 1
+                , "]."
+                ]
 
 
 instance (Eq a, IsString a) => InternalClass (AlphabetInputSingle a) where
@@ -323,11 +335,11 @@ instance (Eq a, IsString a) => InternalClass (AlphabetInputSingle a) where
 
 instance (Eq a, IsString a) => InternalClass (AlphabetInputTuple a) where
 
-    gapSymbol'                     = ASNI (fromString "-", fromString "-")
+    gapSymbol' = ASNI (fromString "-", fromString "-")
 
-    isGapSymboled     (ASNI (x,_)) = x == fromString "-"
+    isGapSymboled (ASNI (x, _)) = x == fromString "-"
 
-    isMissingSymboled (ASNI (x,_)) = x == fromString "?"
+    isMissingSymboled (ASNI (x, _)) = x == fromString "?"
 
 
 instance IsString Char where
@@ -352,8 +364,4 @@ instance NFData a => NFData (  NamedSymbol a)
 
 instance Show a => Show (Alphabet a) where
 
-    show x = fold
-        [ "Alphabet: {"
-        , intercalate ", " $ show <$> toList x
-        , "}"
-        ]
+    show x = fold ["Alphabet: {", intercalate ", " $ show <$> toList x, "}"]

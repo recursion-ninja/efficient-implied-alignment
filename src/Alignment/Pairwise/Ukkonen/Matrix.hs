@@ -15,20 +15,20 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ConstraintKinds    #-}
-{-# LANGUAGE DeriveFoldable     #-}
-{-# LANGUAGE DeriveFunctor      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# Language ConstraintKinds #-}
+{-# Language DeriveFoldable #-}
+{-# Language DeriveFunctor #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleContexts #-}
+{-# Language TypeFamilies #-}
 
 module Alignment.Pairwise.Ukkonen.Matrix
-  ( UkkonenMethodMatrix(..)
-  ) where
+    ( UkkonenMethodMatrix (..)
+    ) where
 
-import           Alignment.Pairwise.Ukkonen.Ribbon (Ribbon)
-import           Data.Key
-import           Prelude                           hiding (lookup)
+import Alignment.Pairwise.Ukkonen.Ribbon (Ribbon)
+import Data.Key
+import Prelude hiding (lookup)
 
 
 -- |
@@ -41,7 +41,8 @@ import           Prelude                           hiding (lookup)
 -- a logrithmic number of times in terms of the matrix dimensions.
 --
 -- Use the 'createUkkonenMethodMatrix' function to create this effcient structure.
-newtype UkkonenMethodMatrix a = U (Ribbon a)
+newtype UkkonenMethodMatrix a
+    = U (Ribbon a)
     deriving stock (Eq, Foldable, Functor)
 
 

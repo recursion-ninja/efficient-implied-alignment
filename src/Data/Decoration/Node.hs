@@ -10,36 +10,41 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# Language DeriveGeneric #-}
+{-# Language DerivingStrategies #-}
+{-# Language FlexibleInstances #-}
+{-# Language MultiParamTypeClasses #-}
 
-module Data.Decoration.Node where
+module Data.Decoration.Node
+    ( FinalizedNode (FinalizedNode)
+    , PreliminaryNode (PreliminaryNode)
+    ) where
 
-
-import           Control.DeepSeq
-import           Control.Lens
-import           Data.Decoration.Class
-import           Data.SymbolString
-import           GHC.Generics
-
-
-data PreliminaryNode
-   = PreliminaryNode
-   { _PN_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _PN_LocalCost         :: {-# UNPACK #-} !Word
-   , _PN_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   } deriving (Eq, Generic)
+import Control.DeepSeq
+import Control.Lens
+import Data.Decoration.Class
+import Data.SymbolString
+import GHC.Generics
 
 
-data FinalizedNode
-   = FinalizedNode
-   { _F_SubtreeCost       :: {-# UNPACK #-} !Word
-   , _F_LocalCost         :: {-# UNPACK #-} !Word
-   , _F_PreliminaryString :: {-# UNPACK #-} !SymbolString
-   , _F_AlignedString     :: {-# UNPACK #-} !SymbolString
-   , _F_IsRoot            :: !Bool
-   } deriving (Eq, Generic)
+data  PreliminaryNode
+    = PreliminaryNode
+    { _PN_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _PN_LocalCost         :: {-# UNPACK #-} !Word
+    , _PN_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    }
+    deriving stock (Eq, Generic)
+
+
+data  FinalizedNode
+    = FinalizedNode
+    { _F_SubtreeCost       :: {-# UNPACK #-} !Word
+    , _F_LocalCost         :: {-# UNPACK #-} !Word
+    , _F_PreliminaryString :: {-# UNPACK #-} !SymbolString
+    , _F_AlignedString     :: {-# UNPACK #-} !SymbolString
+    , _F_IsRoot            :: !Bool
+    }
+    deriving stock (Eq, Generic)
 
 
 instance NFData PreliminaryNode

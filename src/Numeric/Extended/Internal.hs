@@ -13,14 +13,15 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE TypeFamilies #-}
+{-# Language Safe #-}
+{-# Language TypeFamilies #-}
 
 module Numeric.Extended.Internal
-  ( ExtendedNumber(..)
-  , Finite()
-  ) where
+    ( ExtendedNumber (..)
+    , Finite ()
+    ) where
 
-import           Data.Kind
+import Data.Kind
 
 
 -- |
@@ -53,6 +54,6 @@ instance ExtendedNumber Word where
 
     unsafeToFinite = id
 
-    fromFinite = id
+    fromFinite     = id
 
-    infinity = maxBound
+    infinity       = maxBound

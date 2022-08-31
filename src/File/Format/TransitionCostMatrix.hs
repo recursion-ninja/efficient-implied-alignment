@@ -13,9 +13,8 @@
 -----------------------------------------------------------------------------
 
 module File.Format.TransitionCostMatrix
-  ( TCM(..)
-  , tcmStreamParser
-  ) where
+    ( TCM (..)
+    , tcmStreamParser
+    ) where
 
-
-import           File.Format.TransitionCostMatrix.Parser
+import File.Format.TransitionCostMatrix.Parser

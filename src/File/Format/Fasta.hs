@@ -13,11 +13,10 @@
 -----------------------------------------------------------------------------
 
 module File.Format.Fasta
-  ( FastaParseResult
-  , FastaSequence(..)
-  , Identifier
-  , fastaStreamParser
-  ) where
+    ( FastaParseResult
+    , FastaSequence (..)
+    , Identifier
+    , fastaStreamParser
+    ) where
 
-
-import           File.Format.Fasta.Parser
+import File.Format.Fasta.Parser

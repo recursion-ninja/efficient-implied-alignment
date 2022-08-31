@@ -30,18 +30,18 @@
 -----------------------------------------------------------------------------
 
 module Data.Alphabet
-  ( Alphabet()
-  , AmbiguityGroup
-  -- * Construction
-  , fromSymbols
-  , fromSymbolsWithStateNames
-  -- * Querries
-  , alphabetStateNames
-  , alphabetSymbols
-  , gapSymbol
-  -- * Truncation
-  , truncateAtSymbol
-  , truncateAtMaxSymbol
-  ) where
+    ( Alphabet ()
+    , AmbiguityGroup
+      -- * Construction
+    , fromSymbols
+    , fromSymbolsWithStateNames
+      -- * Querries
+    , alphabetStateNames
+    , alphabetSymbols
+    , gapSymbol
+      -- * Truncation
+    , truncateAtMaxSymbol
+    , truncateAtSymbol
+    ) where
 
-import           Data.Alphabet.Internal
+import Data.Alphabet.Internal
