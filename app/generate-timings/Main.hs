@@ -10,6 +10,7 @@
 
 module Main
     ( main
+    , recordRuntime
     ) where
 
 import Control.Applicative
@@ -31,8 +32,8 @@ import Data.Ord
 import Data.Semigroup.Foldable
 import Data.Void
 import GHC.Generics (Generic)
-import GHC.Natural
 import InputParser
+import Numeric.Natural
 import System.Directory
 import System.Exit
 import System.FilePath.Posix
@@ -41,7 +42,7 @@ import System.Timing
 import Text.Megaparsec (Parsec, anySingleBut, choice, errorBundlePretty, lookAhead, parse, single, try)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer hiding (space)
-import TimingParameters
+import TimingParameters (validateTimingParameters)
 
 
 data  DataFileReceipt
@@ -73,7 +74,11 @@ instance Ord FilePoint where
 
 
 main :: IO ()
-main = do
+main = recordRuntime
+
+
+recordRuntime :: IO ()
+recordRuntime = do
     opts <- parseTimingParameters >>= validateTimingParameters . force
 
     let alignedFile = dataFile opts
@@ -208,7 +213,6 @@ deleteFileIfExists p = do
 pointsToCSV :: Foldable f => f (Word, Word, Word, Word, Word) -> String
 pointsToCSV points = unlines $ intercalate "," <$> dataRows
     where
---    headerRow = ["Leaf Count", "Sequence Length", "Runtime"]
         dataRows = toRow <$> toList points
 
         toRow :: (Word, Word, Word, Word, Word) -> [String]
@@ -230,7 +234,7 @@ colatePoints xs ys = foldMap1 f
         indexing :: Word -> NonEmpty Word -> Word
         indexing e es = toEnum . fromJust . elemIndex e $ toList es
 
-        timeToWord = naturalToWord . toMicroseconds
+        timeToWord = fromIntegral . toMicroseconds
 
 
 parseRuntimes :: String -> (CPUTime, CPUTime)
@@ -397,8 +401,6 @@ timeFilePoint taxaNumPadder strLenPadder counter tcmPath fp = do
 
     p <- makeCleanProcess counter [] commandStr
 
-
---    putStrLn $ fileDataPath fp
     putStrLn $ unwords [taxaNumPadder $ taxaCount fp, strLenPadder $ stringLength fp]
 
     (_exitCode, stdOut, _stdErr) <- readCreateProcessWithExitCode p ""

@@ -1,0 +1,6 @@
+# Only spellcheck thesis tex files:
+^(blog|doc)/.*\.md$
+^data/.*\.(adoc|css|html|latex|md|xml)$
+^src/.*\.hs$
+
+

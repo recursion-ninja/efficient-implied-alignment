@@ -13,25 +13,23 @@
 -----------------------------------------------------------------------------
 
 {-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
 {-# Language TypeFamilies #-}
 
-module Alignment.Pairwise.Test where
+module Alignment.Pairwise.Test
+    ( testSuite
+    ) where
 
 import Alignment.Pairwise
---import Alignment.Pairwise.Internal
---import Alignment.Pairwise.NeedlemanWunsch
---import Alignment.Pairwise.Ukkonen
 import Data.Alphabet
 import Data.Foldable
 import Data.List.NonEmpty (NonEmpty(..))
---import Data.MonoTraversable
-import Data.Semigroup
 import Data.SymbolString hiding (filterGaps)
 import Data.TCM
 import Data.Vector.NonEmpty hiding (filter, reverse)
 import Test.NucleotideSequence
 import Test.Tasty
-import Test.Tasty.QuickCheck
+import Test.Tasty.QuickCheck (Property, counterexample, testProperty, (.&&.), (===), (==>))
 import Test.Tasty.SmallCheck qualified as SC
 
 
@@ -42,12 +40,7 @@ type ResultType
 testSuite :: TestTree
 testSuite = testGroup
     "Pairwise alignment tests"
-    [ testSuiteNaiveDO
-    , testSuiteMemoizedDO
-    , testSuiteUkkonenDO
-    , testSuiteUnboxedUkkonenDO
-    , constistentImplementation
-    ]
+    [testSuiteNaiveDO, testSuiteNeedlemanWunsch, testSuiteUkkonenDO, constistentImplementation]
 
 
 toOtherReturnContext :: (Word, Vector SymbolContext) -> ResultType
@@ -64,6 +57,7 @@ filterGaps :: [SymbolAmbiguityGroup] -> [SymbolAmbiguityGroup]
 filterGaps = filter (/= gap)
 
 
+constistentImplementation :: TestTree
 constistentImplementation = testGroup
     "All implementations return same states"
     [ consistentResults "Consistenty over discrete metric"                        discreteMetric
@@ -86,105 +80,85 @@ consistentResults label metric = SC.testProperty label $ SC.forAll checkConsiste
             | resultsMatch = Right $ show inputs
             | otherwise    = Left contextRendering
             where
-                naiveResult      = naiveDO alphabet metric (f x) (f y)
-                memoedResult     = naiveDOMemo alphabet tcm (f x) (f y)
-                ukkonenResult    = ukkonenDO alphabet tcm (f x) (f y)
-                unboxedResult    = unboxedUkkonenDO alphabet tcm (f x) (f y)
+                naiveResult      = alignNaively alphabet metric (f x) (f y)
+                memoedResult     = alignNeedlemanWunsch alphabet tcm (f x) (f y)
+                ukkonenResult    = alignUkkonen alphabet tcm (f x) (f y)
 
-                resultsMatch     = all (naiveResult ==) [memoedResult, ukkonenResult, unboxedResult]
+                resultsMatch     = all (naiveResult ==) [memoedResult, ukkonenResult]
 
                 contextRendering = renderContexts tcm inputs contexts
 
                 contexts =
-                    [ ("Naive"  , naiveResult)
-                    , ("Memoed" , memoedResult)
-                    , ("Ukkonen", ukkonenResult)
-                    , ("Unboxed", unboxedResult)
+                    [ ("Naive"            , naiveResult)
+                    , ("Needleman-Wunsch" , memoedResult)
+                    , ("Ukkonen (Unboxed)", ukkonenResult)
                     ]
 
 
-{-
-renderContexts
- :: ( Eq c
-    , Foldable f
-    , Functor f
-    , Show c
-    )
- => (NucleotideBase, NucleotideBase)
- -> f (String, (c, Vector SymbolContext))
- -> String
--}
-renderContexts tcm inputs xs = unlines . ([show inputs] <>) . fmap f $ toList xs
-    where
+renderContexts :: (Show b, Show c, Show d, Foldable t) => a -> b -> t (String, (c, d)) -> String
+renderContexts _tcm inputs xs =
+    let f :: (Show a, Show b) => (String, (a, b)) -> String
         f (s, c) = s <> "\n" <> renderResult c
-        renderResult (cost, aligned) = unlines
-            [ "  Cost     : " <> show cost
-            , "  Alignment: " <> show aligned -- renderDynamicCharacter alphabet tcm aligned
-    --        , "  Shown Obj: " <> show aligned
-            ]
+
+        renderResult :: (Show a, Show b) => (a, b) -> String
+        renderResult (cost, aligned) =
+            unlines ["  Cost     : " <> show cost, "  Alignment: " <> show aligned]
+    in  unlines . ([show inputs] <>) . fmap f $ toList xs
 
 
+testSuiteNaiveDO :: TestTree
 testSuiteNaiveDO = testGroup
     "Naive DO"
     [ isValidPairwiseAlignment "Naive DO over discrete metric"
-        $ \x y -> toOtherReturnContext (naiveDO alphabet discreteMetric x y)
+        $ \x y -> toOtherReturnContext (alignNaively alphabet discreteMetric x y)
     , isValidPairwiseAlignment "Naive DO over L1 norm"
-        $ \x y -> toOtherReturnContext (naiveDO alphabet l1Norm x y)
+        $ \x y -> toOtherReturnContext (alignNaively alphabet l1Norm x y)
     , isValidPairwiseAlignment "Naive DO over prefer substitution metric (1:2)"
-        $ \x y -> toOtherReturnContext (naiveDO alphabet preferSubMetric x y)
+        $ \x y -> toOtherReturnContext (alignNaively alphabet preferSubMetric x y)
     , isValidPairwiseAlignment "Naive DO over prefer insertion/deletion metric (2:1)"
-        $ \x y -> toOtherReturnContext (naiveDO alphabet preferGapMetric x y)
+        $ \x y -> toOtherReturnContext (alignNaively alphabet preferGapMetric x y)
     ]
 
 
-testSuiteMemoizedDO = testGroup
+testSuiteNeedlemanWunsch :: TestTree
+testSuiteNeedlemanWunsch = testGroup
     "Memoized DO"
-    [ isValidPairwiseAlignment "Memoized DO over discrete metric" $ \x y ->
-        toOtherReturnContext (naiveDOMemo alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
+    [ isValidPairwiseAlignment "Memoized DO over discrete metric" $ \x y -> toOtherReturnContext
+        (alignNeedlemanWunsch alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
     , isValidPairwiseAlignment "Memoized DO over L1 norm" $ \x y ->
-        toOtherReturnContext (naiveDOMemo alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
+        toOtherReturnContext (alignNeedlemanWunsch alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
     , isValidPairwiseAlignment "Memoized DO over prefer substitution metric (1:2)" $ \x y ->
-        toOtherReturnContext (naiveDOMemo alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
+        toOtherReturnContext
+            (alignNeedlemanWunsch alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
     , isValidPairwiseAlignment "Memoized DO over prefer insertion/deletion metric (2:1)" $ \x y ->
-        toOtherReturnContext (naiveDOMemo alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
+        toOtherReturnContext
+            (alignNeedlemanWunsch alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
     ]
 
 
+testSuiteUkkonenDO :: TestTree
 testSuiteUkkonenDO = testGroup
-    "Ukkonen DO"
-    [ isValidPairwiseAlignment "Ukkonen DO over discrete metric" $ \x y ->
-        toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
-    , isValidPairwiseAlignment "Ukkonen DO over L1 norm" $ \x y ->
-        toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
-    , isValidPairwiseAlignment "Ukkonen DO over prefer substitution metric (1:2)" $ \x y ->
-        toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
-    , isValidPairwiseAlignment "Ukkonen DO over prefer insertion/deletion metric (2:1)" $ \x y ->
-        toOtherReturnContext (ukkonenDO alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
-    ]
-
-
-testSuiteUnboxedUkkonenDO = testGroup
     "Unboxed Ukkonen DO"
-    [ isValidPairwiseAlignment "Unboxed Ukkonen DO over discrete metric" $ \x y -> toOtherReturnContext
-        (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
+    [ isValidPairwiseAlignment "Unboxed Ukkonen DO over discrete metric" $ \x y ->
+        toOtherReturnContext (alignUkkonen alphabet (buildTransitionCostMatrix alphabet discreteMetric) x y)
     , isValidPairwiseAlignment "Unboxed Ukkonen DO over L1 norm" $ \x y ->
-        toOtherReturnContext (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
+        toOtherReturnContext (alignUkkonen alphabet (buildTransitionCostMatrix alphabet l1Norm) x y)
     , isValidPairwiseAlignment "Unboxed Ukkonen DO over prefer substitution metric (1:2)" $ \x y ->
-        toOtherReturnContext
-            (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
+        toOtherReturnContext (alignUkkonen alphabet (buildTransitionCostMatrix alphabet preferSubMetric) x y)
     , isValidPairwiseAlignment "Unboxed Ukkonen DO over prefer insertion/deletion metric (2:1)" $ \x y ->
-        toOtherReturnContext
-            (unboxedUkkonenDO alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
+        toOtherReturnContext (alignUkkonen alphabet (buildTransitionCostMatrix alphabet preferGapMetric) x y)
     ]
 
 
 isValidPairwiseAlignment :: String -> (SymbolString -> SymbolString -> ResultType) -> TestTree
 isValidPairwiseAlignment label alignmentFunction = testGroup
     label
-    [ testProperty "alignment function is commutative"               commutivity
-    , testProperty "aligned results are all equal length"            resultsAreEqualLength
-    , testProperty "output length is ≥ input length"                 greaterThanOrEqualToInputLength
-    , testProperty "alignment length is ≤ sum of input lengths"      greaterThanOrEqualToInputLength
+    [ testProperty "alignment function is commutative"    commutivity
+    , testProperty "aligned results are all equal length" resultsAreEqualLength
+    , testProperty "output length is ≥ input length"      greaterThanOrEqualToInputLength
+    , testProperty
+        "alignment length is ≤ sum of input lengths"
+        totalAlignmentLengthLessThanOrEqualToSumOfLengths
     , testProperty "output alignments were not erroneously swapped"  outputsCorrespondToInputs
     , testProperty "output alignments were not erroneously reversed" outputsAreNotReversed
     , testProperty "output alignments only contain new gaps"         filterGapsEqualsInput
@@ -253,7 +227,11 @@ isValidPairwiseAlignment label alignmentFunction = testGroup
                         )
             where
                 (_, _, _, lhs', rhs') = alignmentFunction lhs rhs
+
+                isNotReversed :: [SymbolAmbiguityGroup] -> [SymbolAmbiguityGroup] -> Bool
                 isNotReversed x y = reverse (toList x) /= toList y
+
+                isNotPalindrome :: [SymbolAmbiguityGroup] -> Bool
                 isNotPalindrome x = isNotReversed x x
 
         filterGapsEqualsInput :: (NucleotideSequence, NucleotideSequence) -> Property
@@ -301,7 +279,7 @@ gap :: SymbolAmbiguityGroup
 gap = encodeAmbiguityGroup alphabet . (:| []) $ gapSymbol alphabet
 
 
-discreteMetric :: (Num a, Num b, Ord a, Ord b) => a -> a -> b
+discreteMetric :: (Num b, Ord a) => a -> a -> b
 discreteMetric i j = if i /= j then 1 else 0
 
 
@@ -309,7 +287,7 @@ l1Norm :: Int -> Int -> Word
 l1Norm i j = toEnum $ max i j - min i j
 
 
-preferGapMetric :: (Num a, Num b, Ord a, Ord b) => a -> a -> b
+preferGapMetric :: (Num a, Num b, Ord a) => a -> a -> b
 preferGapMetric i j
     | i == j    = 0
     | i == 4    = 1
@@ -317,7 +295,7 @@ preferGapMetric i j
     | otherwise = 2
 
 
-preferSubMetric :: (Num a, Num b, Ord a, Ord b) => a -> a -> b
+preferSubMetric :: (Num a, Num b, Ord a) => a -> a -> b
 preferSubMetric i j
     | i == j    = 0
     | i == 4    = 2

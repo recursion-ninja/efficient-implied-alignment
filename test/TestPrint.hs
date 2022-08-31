@@ -1,26 +1,21 @@
 {-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language LambdaCase #-}
 {-# Language TypeFamilies #-}
 
-module Main where
+module Main
+    ( main
+    , testPrint
+    ) where
 
 import Alignment
+import Alignment.Pairwise (alignUkkonen)
 import Control.DeepSeq
-import Control.Lens
-import Data.Alphabet
+import Control.Lens (Getting, (^.))
 import Data.BTree
-import Data.Char
 import Data.Decoration
 import Data.Foldable
-import Data.Functor (($>))
 import Data.Key
-import Data.List.NonEmpty (NonEmpty(..), intersperse)
-import Data.List.NonEmpty qualified as NE
-import Data.Map (Map)
-import Data.Map qualified as M
-import Data.Pointed
-import Data.Semigroup ((<>))
-import Data.Semigroup.Foldable
-import Data.Set (Set)
 import Data.SymbolString
 import Data.TCM
 import Data.Text (Text, unpack)
@@ -31,119 +26,82 @@ import System.IO
 
 
 main :: IO ()
-main = runTests
+main = testPrint
 
 
-runTests :: IO ()
-runTests = do
+testPrint :: IO ()
+testPrint = do
     hSetBuffering stdout NoBuffering
     let maxWidth = maximum $ (\(x, _, _, _) -> length x) <$> sampleDataSets
     mapWithKeyM_ (runAndReportDataSet maxWidth) sampleDataSets
---    runAndReportDataSet maxWidth 0 $ sampleDataSets ! 7
 
 
 runAndReportDataSet :: Int -> Int -> (String, StringValues, TreeInput, TransitionCostMatrix) -> IO ()
-runAndReportDataSet width num (dataSetLabel, leafData, treeData, op) = do
-    let dataSetNumber = "Data Set Number: " <> show num
-    let width'        = max width $ length dataSetNumber
-    putStrLn $ fold ["-=-=-=-=-=- ", centerWithin width' dataSetNumber, " -=-=-=-=-=-"]
-    putStrLn $ fold ["-=-=-=-=-=- ", centerWithin width' dataSetLabel, " -=-=-=-=-=-"]
-    putStrLn ""
-    case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
-        Left  errors -> mapM_ print $ toList errors
-        Right tree   -> do
-            putStrLn ""
-            print defaultAlphabet
-            putStrLn ""
-            putStrLn "Input Strings:"
-            putStrLn ""
-            putStrLn $ renderPhylogeny inputRenderer tree
-            putStrLn ""
-            putStrLn "Output Alignment:"
-            putStrLn ""
-            let result = force . preorder' $ postorder' tree
-            putStrLn $ renderAlignment nodeRendererA leafRendererA result
-            putStrLn ""
-  {--}
-            putStrLn $ renderAlignment nodeRendererB leafRendererB result
-            putStrLn ""
-            putStrLn $ renderAlignment nodeRendererC leafRendererC result
-            putStrLn ""
-{--}
-    where
-        centerWithin width x = fold [replicate pad ' ', x, replicate pad ' ', if extra == 1 then " " else ""]
-            where (pad, extra) = (width - length x) `quotRem` 2
+runAndReportDataSet width num (dataSetLabel, leafData, treeData, operation) =
+    let centerWithin spanArea x =
+            let (spacing, extra) = (spanArea - length x) `quotRem` 2
+                spanPadding      = replicate spacing ' '
+                spanOffest       = case extra of
+                    0 -> ""
+                    _ -> " "
+            in  fold [spanPadding, x, spanPadding, spanOffest]
 
         postorder'           = postorder stringAligner
         preorder'            = preorder preorderRootLogic medianStateFinalizer preorderLeafLogic
+        medianStateFinalizer = preorderInternalLogic
+        stringAligner        = postorderLogic (alignUkkonen defaultAlphabet operation)
 
-        medianStateFinalizer = preorderInternalLogic -- (buildThreeWayCompare defaultAlphabet op)
+        generalRender :: s -> Getting SymbolString s SymbolString -> Maybe Text -> String
+        generalRender x s = \case
+            Nothing -> fold ["", "?: ", renderSingleton defaultAlphabet $ x ^. s]
+            Just i  -> fold [unpack i, ": ", renderSingleton defaultAlphabet $ x ^. s]
 
-        stringAligner        = postorderLogic (ukkonenDO defaultAlphabet op)
+        inputRenderer :: PreliminaryNode -> Text -> String
+        inputRenderer x = generalRender x preliminaryString . Just
 
-        inputRenderer x i = fold [unpack i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString]
+        leafRendererA :: FinalizedNode -> Text -> String
+        leafRendererA x = generalRender x alignedString . Just
 
-        leafRendererA x i = fold
-            [ unpack i
-            , ": "
-    --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-    --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-            , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        leafRendererB :: FinalizedNode -> Text -> String
+        leafRendererB x = generalRender x alignedString . Just
 
-        nodeRendererA x _ = fold
-            [ "?: "
-    --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-    --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-            , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        leafRendererC :: FinalizedNode -> Text -> String
+        leafRendererC x = generalRender x preliminaryString . Just
 
-        leafRendererB x i = fold
-            [ unpack i
-            , ": "
-    --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-            , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-    --        , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        nodeRendererA :: FinalizedNode -> p -> String
+        nodeRendererA x = const $ generalRender x alignedString Nothing
 
-        nodeRendererB x _ = fold
-            [ "?: "
-    --        , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-            , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-    --        , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        nodeRendererB :: FinalizedNode -> p -> String
+        nodeRendererB x = const $ generalRender x alignedString Nothing
 
-        leafRendererC x i = fold
-            [ unpack i
-            , ": "
-            , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-    --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-    --        , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        nodeRendererC :: FinalizedNode -> p -> String
+        nodeRendererC x = const $ generalRender x preliminaryString Nothing
 
-        nodeRendererC x _ = fold
-            [ "?: "
-            , renderSymbolString defaultAlphabet $ x ^. preliminaryString
-    --        , renderString       defaultAlphabet $ x ^.   finalizedString
-    --        , renderSymbolString defaultAlphabet $ x ^. alignedString
-    --        , renderAligns defaultAlphabet $ x ^. alignedString
-    --        , renderSingleton defaultAlphabet $ x ^. alignedString
-            ]
+        preamble :: IO ()
+        preamble =
+            let dataSetNumber = "Data Set Number: " <> show num
+                midWidth      = max width $ length dataSetNumber
+                header x = fold ["-=-=-=-=-=- ", centerWithin midWidth x, " -=-=-=-=-=-"]
+            in  traverse_ putStrLn [header dataSetNumber, header dataSetLabel, ""]
 
-
-pad :: Int -> String -> String
-pad i str = str <> replicate (i - length str) ' '
-
-
-renderAlphabet :: Alphabet Char -> String
-renderAlphabet = (\x -> "Alphabet: { " <> x <> " }") . fold1 . intersperse ", " . fmap pure . toNonEmpty
+        reporting :: IO ()
+        reporting = case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
+            Left  errors -> mapM_ print $ toList errors
+            Right tree   -> do
+                putStrLn ""
+                print defaultAlphabet
+                putStrLn ""
+                putStrLn "Input Strings:"
+                putStrLn ""
+                putStrLn $ renderPhylogeny inputRenderer tree
+                putStrLn ""
+                putStrLn "Output Alignment:"
+                putStrLn ""
+                let result = force . preorder' $ postorder' tree
+                putStrLn $ renderAlignment nodeRendererA leafRendererA result
+                putStrLn ""
+                putStrLn $ renderAlignment nodeRendererB leafRendererB result
+                putStrLn ""
+                putStrLn $ renderAlignment nodeRendererC leafRendererC result
+                putStrLn ""
+    in  preamble *> reporting

@@ -21,7 +21,6 @@ data  UserInput
     , verbose      :: Bool
     , timing       :: Bool
     , alphabetType :: AlphabetType
-      --    , commandHelp :: ExampleFileRequest
     }
     deriving stock Show
 

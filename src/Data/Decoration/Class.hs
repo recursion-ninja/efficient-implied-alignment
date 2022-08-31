@@ -13,7 +13,6 @@
 {-# Language FlexibleContexts #-}
 {-# Language FlexibleInstances #-}
 {-# Language FunctionalDependencies #-}
-{-# Language MultiParamTypeClasses #-}
 {-# Language Safe #-}
 
 module Data.Decoration.Class

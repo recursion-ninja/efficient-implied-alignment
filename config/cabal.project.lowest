@@ -1,0 +1,105 @@
+---------------------------------------------------------------------------------
+-- Dependency specifications
+--
+-- Constrain the build to the lowest bounds within the package description.
+---------------------------------------------------------------------------------
+
+with-compiler:
+   ghc-8.10.1
+        
+constraints:
+    ansi-wl-pprint==0.6.8,
+    base==4.14.0.0,
+    bimap==0.3.1,
+    containers==0.6.0.1,
+    Decimal==0.3.1,
+    deepseq==1.4.4.0,
+    diagrams-lib==1.4.4,
+    diagrams-svg==1.4.3,
+    directory==1.3.6.0,
+    dlist==0.8.0.7,
+    filepath==1.4.2.*,
+    hashable==1.3.0.0,
+    keys==3.12.2,
+    lens==5,
+    matrices==0.5.0,
+    megaparsec==9.0.1,
+    monad-loops==0.4.2,
+    mtl==2.2.2,
+    optparse-applicative==0.15.0.0,
+    parser-combinators==1.0.0,
+    pointed==5.0.1,
+    primitive==0.7.0.0,
+    process==1.6.8.2,
+    QuickCheck==2.13.2,
+    scientific==0.3.5.3,
+    semigroupoids==5.3.2,
+    smallcheck==1.1,
+    split==0.2.3.4,
+    tasty==1.2,
+    tasty-hunit==0.10,
+    tasty-quickcheck==0.8.4,
+    tasty-smallcheck==0.8,
+    text==1.2.3.2,
+    validation==1.1.1,
+    vector==0.12.1.2,
+    vector-instances==3.4,
+
+
+---------------------------------------------------------------------------------
+-- Output paths
+--
+-- Place build output(s) in more accessible locations. Binaries should go in `bin`
+-- and log files of the build/benchmarks/tests should go in `log`.
+---------------------------------------------------------------------------------
+
+logs-dir:         ./log
+installdir:       ./bin
+install-method:   copy
+overwrite-policy: always
+
+
+---------------------------------------------------------------------------------
+-- Package flags (useful defaults)
+--
+-- Instruct all transative dependencies to be built *with both* optimization and
+-- profiling enabled. This reduces rebuilds when debugging while not sacraficing
+-- undue execution speed from imported code.
+--
+-- Contrastingly, *disable both* optimization and profiling when building the
+-- current package's codebase. This improves the frequent recompilation speed
+-- during iterative development.
+--
+-- Finally, enable all warnings and then prune out the undesirable ones. Having
+-- the large litany of warnings enabled forces pre-emptive compatibility with
+-- future breaking changes as well as improving overall code quality.
+---------------------------------------------------------------------------------
+
+-- Applies to *all* packages, not just dependencies...
+package *
+    benchmarks:    False
+    documentation: True
+    tests:         False
+    optimization: 0
+    ghc-options:
+        -- Interface files for post-compilation static analysis
+        -fwrite-ide-info
+        -hiedir=.hie
+
+package efficient-implied-alignment
+    benchmarks:    True
+    documentation: True
+    tests:         True
+    optimization:  0
+    ghc-options:
+        -- Interface files for post-compilation static analysis
+        -fwrite-ide-info
+        -hiedir=.hie
+        -- Multi-threaded build
+        -j
+        -- Adjust compiler memory parameters
+        +RTS -A128m -n2m -RTS
+        -- Warnings cause failure
+        -Werror
+
+packages: .

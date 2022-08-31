@@ -1,0 +1,46 @@
+extends: relaxed
+
+rules:
+  braces:
+    level: warning
+    max-spaces-inside: 1
+
+  brackets:
+    level: warning
+    max-spaces-inside: 1
+
+  colons:
+    level: warning
+
+  commas:
+    level: warning
+
+  comments:
+    min-spaces-from-content: 1 # Used to follow prettier standard: https://github.com/prettier/prettier/pull/10926
+
+  comments-indentation: disable
+
+  document-end: disable
+
+  document-start: disable
+
+  empty-lines:
+    level: warning
+
+  hyphens:
+    level: warning
+
+  indentation:
+    level: warning
+    indent-sequences: consistent
+
+  line-length:
+    max: 256
+    level: warning
+    allow-non-breakable-inline-mappings: true
+
+  new-lines:
+    level: warning
+    type: unix
+
+  truthy: disable

@@ -50,6 +50,7 @@ Portability :  portable (I hope)
 
 module Main
     ( main
+    , modifyFASTA
     ) where
 
 import Data.Key
@@ -134,7 +135,11 @@ printPair channel (taxName, taxSequence) = do
 -- |
 -- 'main' Main Function
 main :: IO ()
-main = do
+main = modifyFASTA
+
+
+modifyFASTA :: IO ()
+modifyFASTA = do
         --get input command filename
     args <- getArgs
     if length args /= 4
@@ -166,7 +171,6 @@ main = do
             then error "Increase num taxa--this results in zero taxa to output"
             else hPutStrLn stderr $ unwords ["Outputting", show numTaxa, "with length", show numBases]
     let newPairs     = getNewPairs numTaxa numBases sequencePairList
-    -- let deletedTaxa = intersperse " " $ fmap fst (drop numTaxa sequencePairList)
     let deletedPairs = drop numTaxa sequencePairList
     let deletedTaxa  = intersperse " " $ fmap (tail . fst) deletedPairs
     hPutStrLn stderr $ show (length deletedTaxa) <> " deleted taxa"

@@ -9,6 +9,8 @@
 -----------------------------------------------------------------------------
 
 {-# Language FlexibleInstances #-}
+{-# Language ImportQualifiedPost #-}
+{-# Language LambdaCase #-}
 {-# Language MultiParamTypeClasses #-}
 
 module Test.NucleotideSequence
@@ -19,7 +21,7 @@ module Test.NucleotideSequence
 import Data.Alphabet.IUPAC
 import Data.Bimap (elems)
 import Data.Foldable
-import Data.List
+import Data.List (delete)
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.List.NonEmpty qualified as NE
 import Data.SymbolString
@@ -49,19 +51,22 @@ instance Arbitrary NucleotideBase where
 
 instance Arbitrary NucleotideSequence where
 
-    arbitrary = do
-        num <- choose (1, 4) :: Gen Int
-        if num == 1 -- 1/4 chance it's a "leaf" with all aligns.
-            then NS <$> streamGen leafGen
-            else NS <$> streamGen contextGen
-        where
-            streamGen  = fmap (fromNonEmpty . NE.fromList) . listOf1
+    arbitrary =
+        let streamGen :: Gen a -> Gen (Vector a)
+            streamGen = fmap (fromNonEmpty . NE.fromList) . listOf1
+
+            randRange :: Gen Word
+            randRange  = choose (0, 3)
+
             contextGen = oneof [alignGen, deleteGen, insertGen]
             leafGen    = elementGen >>= (\x -> pure $ Align x x x)
             alignGen   = Align <$> elementGen <*> elementGen <*> elementGen
             deleteGen  = Delete <$> elementGen <*> elementGen
             insertGen  = Insert <$> elementGen <*> elementGen
             elementGen = fmap (encodeAmbiguityGroup alphabet) . elements $ elems iupacToDna
+        in  randRange >>= \case
+            0 -> NS <$> streamGen leafGen
+            _ -> NS <$> streamGen contextGen
 
 
 instance Monad m => Serial m NucleotideBase where

@@ -1,0 +1,3 @@
+\b[ACGTRYSWKMBDHVNacgtryswkmbdhvn\-?]+\b
+\b[ACGURYSWKMBDHVNacguryswkmbdhvn\-?]+\b
+\b[ABCDEFGHIKLMNPQRSTVWXYZabcdefghiklmnpqrstvwxyz\-?]+\b

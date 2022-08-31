@@ -7,6 +7,7 @@
 
 module File.Input
     ( FileInput (..)
+    , UnificationError (..)
     , parseFileInput
     , unifyInput
     ) where
@@ -26,7 +27,7 @@ import Data.Key
 import Data.List.NonEmpty (NonEmpty(..), intersperse)
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Matrix (Matrix)
+import Data.Matrix.Unboxed (Matrix)
 import Data.Maybe
 import Data.Pointed
 import Data.Semigroup

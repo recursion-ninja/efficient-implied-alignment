@@ -29,14 +29,7 @@ module Data.Vector.NonEmpty
     , fromNonEmpty
     , generate
     , generateM
-    , singleton
     , unfoldr
-      -- * Conversion
-    , fromVector
-    , toVector
-    , unsafeFromVector
-      -- * Deconstruction
-    , uncons
       -- * Useful stuff
     , filter
     , reverse
@@ -150,15 +143,6 @@ instance Show a => Show (Vector a) where
 
 
 -- |
--- /O(1)/
---
--- A synomym for 'point'.
-{-# INLINE singleton #-}
-singleton :: a -> Vector a
-singleton = NEV . V.singleton
-
-
--- |
 -- /O(n)/
 --
 -- Construct a 'Vector' from a non-empty structure.
@@ -218,46 +202,3 @@ generateM :: Monad m => Int -> (Int -> m a) -> m (Vector a)
 generateM n f
     | n < 1     = error $ "Called Vector.Nonempty.generateM on a non-positive dimension " <> show n
     | otherwise = NEV <$> V.generateM n f
-
-
--- |
--- /O(1)/
---
--- Get the underlying 'V.Vector'.
-toVector :: Vector a -> V.Vector a
-toVector = unwrap
-
-
--- |
--- /O(1)/
---
--- Attempt to convert a 'V.Vector' to a non-empty 'Vector'.
-fromVector :: V.Vector a -> Maybe (Vector a)
-fromVector v
-    | V.null v  = Nothing
-    | otherwise = Just $ NEV v
-
-
--- |
--- /O(1)/
---
--- Attempt to convert a 'V.Vector' to a non-empty 'Vector' throwing an
--- error if the vector received is empty.
-unsafeFromVector :: V.Vector a -> Vector a
-unsafeFromVector v
-    | V.null v  = error "NonEmpty.unsafeFromVector: empty vector"
-    | otherwise = NEV v
-
-
--- | /O(n)/
---
--- 'uncons' produces both the first element of the 'Vector' and a
--- 'Vector' of the remaining elements, if any.
-uncons :: Vector a -> (a, Maybe (Vector a))
-uncons (NEV v) = (first, stream)
-    where
-        stream
-            | len == 1  = Nothing
-            | otherwise = Just . NEV $ V.slice 1 (len - 1) v
-        first = v ! 0
-        len   = length v

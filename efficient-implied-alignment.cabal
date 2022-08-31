@@ -3,7 +3,7 @@ category:       Algorithms
 build-type:     Simple
 
 name:           efficient-implied-alignment
-version:        1.1.1
+version:        1.2.0
 
 author:         Alex Washburn
 maintainer:     github@recursion.ninja
@@ -28,6 +28,7 @@ tested-with:
     GHC == 8.10.7
     GHC == 9.0.2
     GHC == 9.2.4
+    GHC == 9.4.2
 
 extra-source-files:
     doc/CHANGELOG.md
@@ -41,15 +42,17 @@ source-repository head
 
 -- A litany of GHC warnings designed to alert us during the build of any common
 -- pitfalls, future compatibility issues, or coding conventions.
-common ghc-flags
+common parameters-basic
+
+  default-language:
+    Haskell2010
 
   ghc-options:
     -- Usability flags
     -fdiagnostics-color=always
     -fhide-source-paths
     -j
-    -threaded
-    
+
     -- Optimization flags
     -O2
     -fexcess-precision
@@ -61,7 +64,7 @@ common ghc-flags
     -fspec-constr-keen
     -fspecialize-aggressively
     -fstatic-argument-transformation
-        
+
     -- Sanity check warnings
     --   1. Include all warnings by default
     -Weverything
@@ -70,12 +73,13 @@ common ghc-flags
     -Wno-all-missed-specialisations
     -Wno-implicit-prelude
     -Wno-inferred-safe-imports
+    -Wno-missed-specialisations
     -Wno-missing-import-lists
     -Wno-missing-safe-haskell-mode
     -Wno-monomorphism-restriction
     -Wno-type-defaults
     -Wno-unsafe
-    
+
 --  if impl(ghc >= 8.10)
 --    ghc-options:
 --      -Wderiving-defaults
@@ -90,292 +94,298 @@ common ghc-flags
       -Wredundant-strictness-flags
 
 
+common parameters-multi-threaded
+
+  import:
+    parameters-basic
+
+  ghc-options:
+    -threaded
+    -rtsopts
+    -with-rtsopts=-N
+
+
+common parameters-test-suite
+
+  import:
+    parameters-multi-threaded
+
+  hs-source-dirs:
+    test
+
+
 library
 
   import:
-      ghc-flags
+    parameters-basic
 
   hs-source-dirs:
-      src
+    src
 
   build-depends:
-      base               >=4.7 && <5
-    , bimap
-    , case-insensitive
-    , containers         >=0.5.8
-    , deepseq
-    , dlist
-    , hashable
-    , keys
-    , lens
-    , matrices
-    , megaparsec         >=8.0
-    , monad-loops
-    , mtl
-    , parser-combinators >=1.2
-    , pointed
-    , primitive          >=0.7
-    , QuickCheck
-    , scientific
-    , semigroupoids
-    , text               >=1.2
-    , validation
-    , vector
-    , vector-instances   >=3.4
+    base                          >= 4.14 && < 5,
+    bimap                         >= 0.3.1,
+    containers                    >= 0.6.0.1,
+    deepseq                       >= 1.4.4,
+    dlist                         >= 0.8.0.7,
+    hashable                      >= 1.3.0.0,
+    keys                          >= 3.12.2,
+    lens                          >= 5,
+    matrices                      >= 0.5.0,
+    megaparsec                    >= 9.0.1,
+    monad-loops                   >= 0.4.2,
+    mtl                           >= 2.2.2,
+    parser-combinators            >= 1.0.0,
+    pointed                       >= 5.0.1,
+    primitive                     >= 0.7.0.0,
+    QuickCheck                    >= 2.13.2,
+    scientific                    >= 0.3.5.3,
+    semigroupoids                 >= 5.3.2,
+    text                          >= 1.2.3.2,
+    validation                    >= 1.1.1,
+    vector                        >= 0.12.1.2,
+    vector-instances              >= 3.4,
+
+  if impl(ghc < 9.0)
+    build-depends:
+      integer-gmp
 
   exposed-modules:
-      Alignment
-      Alignment.Pairwise
-      Data.Alphabet
-      Data.Alphabet.IUPAC
-      Data.BTree
-      Data.Decoration
-      Data.DecTree
-      Data.SymbolString
-      Data.TCM
-      Data.UserInput
-      Data.Vector.NonEmpty
-      Data.Vector.Unboxed.NonEmpty
-      File.Format.Fasta
-      File.Format.Newick
-      File.Format.TransitionCostMatrix
-      File.Input
-      File.Output
-      System.Timing
+    Alignment
+    Alignment.Pairwise
+    Data.Alphabet
+    Data.Alphabet.IUPAC
+    Data.BTree
+    Data.Decoration
+    Data.DecTree
+    Data.SymbolString
+    Data.TCM
+    Data.UserInput
+    Data.Vector.NonEmpty
+    Data.Vector.Unboxed.NonEmpty
+    File.Format.Fasta
+    File.Format.Newick
+    File.Format.TransitionCostMatrix
+    File.Input
+    File.Output
+    System.Timing
 
   other-modules:
-      Alignment.Internal
-      Alignment.Pairwise.Internal
-      Alignment.Pairwise.NeedlemanWunsch
-      Alignment.Pairwise.Ukkonen
-      Alignment.Pairwise.UnboxedUkkonen
-      Alignment.Pairwise.Ukkonen.Internal
-      Alignment.Pairwise.Ukkonen.Matrix
-      Alignment.Pairwise.Ukkonen.Ribbon
-      Data.Alphabet.Internal
-      Data.Decoration.Class
-      Data.Decoration.Internal
-      Data.Decoration.Leaf
-      Data.Decoration.Node
-      Data.List.Utility
-      File.Format.Fasta.Internal
-      File.Format.Fasta.Parser
-      File.Format.Newick.Internal
-      File.Format.Newick.Parser
-      File.Format.TransitionCostMatrix.Parser
-      Numeric.Extended.Internal
-      Numeric.Extended.Natural
-      Text.Megaparsec.Custom
-
-  default-language: Haskell2010
+    Alignment.Internal
+    Alignment.Pairwise.Internal
+    Alignment.Pairwise.NeedlemanWunsch
+    Alignment.Pairwise.Ukkonen
+    Alignment.Pairwise.Ukkonen.Unboxed
+    Data.Alphabet.Internal
+    Data.Decoration.Class
+    Data.Decoration.Internal
+    Data.Decoration.Leaf
+    Data.Decoration.Node
+    Data.List.Utility
+    File.Format.Fasta.Internal
+    File.Format.Fasta.Parser
+    File.Format.Newick.Internal
+    File.Format.Newick.Parser
+    File.Format.TransitionCostMatrix.Parser
+    Numeric.Extended.Internal
+    Numeric.Extended.Natural
+    Text.Megaparsec.Custom
 
 
 executable implied-align
 
-  import:  ghc-flags
+  import:
+    parameters-multi-threaded
 
-  main-is: Main.hs
+  main-is:
+    Main.hs
 
   hs-source-dirs:
-      app/implied-align
+    app/implied-align
 
   build-depends:
-      efficient-implied-alignment
-    , ansi-wl-pprint
-    , base       >=4.7 && <5
-    , deepseq
-    , keys
-    , lens
-    , optparse-applicative
-    , semigroupoids
-    , text
+    efficient-implied-alignment,
+    ansi-wl-pprint                >= 0.6.8,
+    base                          >= 4.14 && < 5,
+    deepseq                       >= 1.4.4,
+    keys                          >= 3.12.2,
+    lens                          >= 5,
+    optparse-applicative          >= 0.15.0.0,
+    semigroupoids                 >= 5.3.2,
+    text                          >= 1.2.3.2,
 
   other-modules:
-      Paths_efficient_implied_alignment
-      InputParser
-
-  default-language: Haskell2010
+    Paths_efficient_implied_alignment
+    InputParser
 
 
 executable generate-timings
 
-  import:  ghc-flags
+  import:
+    parameters-multi-threaded
 
-  main-is: Main.hs
+  main-is:
+    Main.hs
 
   hs-source-dirs:
-      app/generate-timings
+    app/generate-timings
 
   build-depends:
-      efficient-implied-alignment
-    , ansi-wl-pprint
-    , base               >=4.7 && <5
-    , containers         >=0.5.8
-    , Decimal
-    , deepseq
-    , directory
-    , filepath
-    , keys
-    , megaparsec         >=7.0
-    , optparse-applicative
-    , process
-    , semigroupoids
-
-  default-language: Haskell2010
+    efficient-implied-alignment,
+    ansi-wl-pprint                >= 0.6.8,
+    base                          >= 4.14 && < 5,
+    containers                    >= 0.6.0.1,
+    Decimal                       >= 0.3.1,
+    deepseq                       >= 1.4.4,
+    directory                     >= 1.3.6,
+    filepath                      >= 1.4.2,
+    keys                          >= 3.12.2,
+    megaparsec                    >= 9.0.1,
+    optparse-applicative          >= 0.15.0.0,
+    process                       >= 1.6.8.2,
+    semigroupoids                 >= 5.3.2,
 
   other-modules:
     InputParser
     TimingParameters
 
+
 executable newick-add-delete-taxon
 
-  import:  ghc-flags
+  import:
+    parameters-basic
 
-  main-is: newick-add-delete-taxon.hs
+  main-is:
+    newick-add-delete-taxon.hs
 
   hs-source-dirs:
-      app
+    app
 
   build-depends:
-      base       >=4.7 && <5
-    , keys
-    , split
-
-  default-language: Haskell2010
+    base                          >= 4.14 && < 5,
+    keys                          >= 3.12.2,
+    split                         >= 0.2.3.4,
 
 
 executable draw-pre-order-figure
 
-  import:  ghc-flags
+  import:
+    parameters-multi-threaded
 
-  main-is: draw-pre-order-figure.hs
+  main-is:
+    draw-pre-order-figure.hs
 
   hs-source-dirs:
-      app
+    app
 
   build-depends:
-      base       >=4.7 && <5
-    , diagrams-lib
-    , diagrams-svg
-    , keys
-
-  default-language: Haskell2010
+    base                          >= 4.14 && < 5,
+    diagrams-lib                  >= 1.4.4,
+    diagrams-svg                  >= 1.4.3,
+    keys                          >= 3.12.2,
 
 
 executable reduce-fasta
 
-  import:  ghc-flags
+  import:
+    parameters-basic
 
-  main-is: reduce-fasta.hs
+  main-is:
+    reduce-fasta.hs
 
   hs-source-dirs:
-      app
+    app
 
   build-depends:
-      base       >=4.7 && <5
-    , keys
-
-  default-language: Haskell2010
+    base                          >= 4.14 && < 5,
+    keys                          >= 3.12.2,
 
 
 test-suite test-align
 
-  type: exitcode-stdio-1.0
+  import:
+    parameters-test-suite
 
-  main-is: TestPrint.hs
+  type:
+    exitcode-stdio-1.0
 
-  hs-source-dirs:
-      test
-
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  main-is:
+    TestPrint.hs
 
   build-depends:
-      efficient-implied-alignment
-    , base       >=4.7 && <5
-    , containers >=0.5.8
-    , deepseq
-    , keys
-    , lens
-    , matrices
-    , pointed
-    , semigroupoids
-    , text
-    , validation
+    efficient-implied-alignment,
+    base                          >= 4.14 && < 5,
+    containers                    >= 0.6.0.1,
+    deepseq                       >= 1.4.4,
+    keys                          >= 3.12.2,
+    lens                          >= 5,
+    matrices                      >= 0.5.0,
+    semigroupoids                 >= 5.3.2,
+    text                          >= 1.2.3.2,
+    validation                    >= 1.1.1,
 
   other-modules:
-      Paths_efficient_implied_alignment
-      SampleData
-
-  default-language: Haskell2010
+    Paths_efficient_implied_alignment
+    SampleData
 
 
 test-suite test-trees
 
-  type: exitcode-stdio-1.0
+  import:
+    parameters-test-suite
 
-  main-is: TestTrees.hs
+  type:
+    exitcode-stdio-1.0
 
-  hs-source-dirs:
-      test
-
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  main-is:
+    TestTrees.hs
 
   build-depends:
-      efficient-implied-alignment
-    , base       >=4.7 && <5
-    , containers >=0.5.8
-    , deepseq
-    , keys
-    , lens
-    , matrices
-    , pointed
-    , semigroupoids
-    , tasty
-    , tasty-hunit
-    , text
-    , validation
+    efficient-implied-alignment,
+    base                          >= 4.14 && < 5,
+    containers                    >= 0.6.0.1,
+    deepseq                       >= 1.4.4,
+    keys                          >= 3.12.2,
+    lens                          >= 5,
+    matrices                      >= 0.5.0,
+    semigroupoids                 >= 5.3.2,
+    tasty                         >= 1.2,
+    tasty-hunit                   >= 0.10,
+    text                          >= 1.2.3.2,
+    validation                    >= 1.1.1,
 
   other-modules:
-      Paths_efficient_implied_alignment
-      SampleData
-
-  default-language: Haskell2010
+    Paths_efficient_implied_alignment
+    SampleData
 
 
 test-suite test-suite
 
-  type: exitcode-stdio-1.0
+  import:
+    parameters-test-suite
 
-  main-is: TestSuite.hs
+  type:
+    exitcode-stdio-1.0
 
-  hs-source-dirs:
-      test
-
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  main-is:
+    TestSuite.hs
 
   build-depends:
-      efficient-implied-alignment
-    , base       >=4.7 && <5
-    , bimap
-    , containers >=0.5.8
-    , deepseq
-    , keys
-    , lens
-    , matrices
-    , pointed
-    , QuickCheck
-    , semigroupoids
-    , smallcheck
-    , tasty
-    , tasty-hunit
-    , tasty-quickcheck
-    , tasty-smallcheck
-    , text
-    , validation
+    efficient-implied-alignment,
+    base                          >= 4.14 && < 5,
+    bimap                         >= 0.3.1,
+    containers                    >= 0.6.0.1,
+    keys                          >= 3.12.2,
+    matrices                      >= 0.5.0,
+    QuickCheck                    >= 2.13.2,
+    semigroupoids                 >= 5.3.2,
+    smallcheck                    >= 1.1,
+    tasty                         >= 1.2,
+    tasty-quickcheck              >= 0.8.4,
+    tasty-smallcheck              >= 0.8,
+    text                          >= 1.2.3.2,
 
   other-modules:
-      Alignment.Pairwise.Test
-      SampleData
-      Test.NucleotideSequence
-
-  default-language: Haskell2010
+    Alignment.Pairwise.Test
+    SampleData
+    Test.NucleotideSequence

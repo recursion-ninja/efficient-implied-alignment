@@ -9,7 +9,7 @@
 -- Portability :  portable
 --
 -- Defines the primitive operations for standard Needleman-Wunsch and Ukkonen
--- algorithms for performing a direct optimization heuristic alignmnet between
+-- algorithms for performing a direct optimization heuristic alignment between
 -- two alignment context strings.
 --
 -----------------------------------------------------------------------------
@@ -39,13 +39,12 @@ module Alignment.Pairwise.Internal
     , measureAndUngapCharacters
     , measureCharacters
     , needlemanWunschDefinition
-    , renderCostMatrix
+      --    , renderCostMatrix
       -- * Gap removal and reinsertion
     , deleteGaps
     , insertGaps
     ) where
 
-import Alignment.Pairwise.Ukkonen.Matrix (UkkonenMethodMatrix)
 import Control.DeepSeq
 import Control.Monad.Loops (whileM)
 import Control.Monad.ST
@@ -56,8 +55,8 @@ import Data.Foldable
 import Data.IntMap (IntMap)
 import Data.IntMap qualified as IM
 import Data.Key
-import Data.Matrix (Matrix, dim, unsafeIndex)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Matrix.Generic (Matrix, dim, unsafeIndex)
+import Data.Maybe (fromJust)
 import Data.Ord
 import Data.STRef
 import Data.Semigroup
@@ -195,36 +194,19 @@ type Cost = ExtendedNatural
 -- A representation of an alignment matrix for DO.
 -- The matrix itself stores tuples of the cost and direction at that position.
 -- We also store a vector of characters that are generated.
-type NeedlemanWunchMatrix e = Matrix (Cost, Direction, e)
+type NeedlemanWunchMatrix = Matrix U.Vector (Cost, Direction, SymbolAmbiguityGroup)
 
 
 -- |
 -- Constraints on the type of structure a "matrix" exposes to be used in rendering
 -- and traceback functions.
-type MatrixConstraint m = (Indexable m, Key m ~ (Int, Int))
+type MatrixConstraint v = G.Vector v (Cost, Direction, SymbolAmbiguityGroup)
 
 
 -- |
 -- A parameterized function to generate an alignment matrix.
-type MatrixFunction m
-    = TransitionCostMatrix -> SymbolString -> SymbolString -> m (Cost, Direction, SymbolAmbiguityGroup)
-
-
-type instance Key Matrix = (Int, Int)
-
-
-instance Indexable Matrix where
-
-    index = unsafeIndex
-
-
-instance Lookup Matrix where
-
-    lookup p@(i, j) m
-        | i < 0 || r <= i = Nothing
-        | j < 0 || c <= j = Nothing
-        | otherwise       = Just $ unsafeIndex m p
-        where (r, c) = dim m
+type MatrixFunction v
+    = TransitionCostMatrix -> SymbolString -> SymbolString -> Matrix v (Cost, Direction, SymbolAmbiguityGroup)
 
 
 -- |
@@ -233,17 +215,20 @@ instance Lookup Matrix where
 --
 -- Reused internally by different implementations.
 {-# INLINABLE directOptimization #-}
--- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction Matrix              -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
--- {-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String) -> MatrixFunction UkkonenMethodMatrix -> Vector  SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+{-# SPECIALIZE directOptimization :: SymbolAmbiguityGroup -> TransitionCostMatrix -> (SymbolString -> SymbolString -> NeedlemanWunchMatrix -> String) -> MatrixFunction U.Vector -> SymbolString -> SymbolString -> (Word, SymbolString) #-}
 directOptimization
-    :: (Foldable f, Indexable f, Key f ~ Int, MatrixConstraint m)
+    :: MatrixConstraint v
     => SymbolAmbiguityGroup
     -> TransitionCostMatrix
-    -> (f SymbolContext -> f SymbolContext -> m (Cost, Direction, SymbolAmbiguityGroup) -> String)
-    -> MatrixFunction m
-    -> f SymbolContext
-    -> f SymbolContext
-    -> (Word, Vector SymbolContext)
+    -> (  SymbolString
+       -> SymbolString
+       -> Matrix v (Cost, Direction, SymbolAmbiguityGroup)
+       -> String
+       )
+    -> MatrixFunction v
+    -> SymbolString
+    -> SymbolString
+    -> (Word, SymbolString)
 directOptimization gap overlapλ _renderingFunction matrixFunction lhs rhs =
     let (swapped, gapsLesser, gapsLonger, shorterChar, longerChar) = measureAndUngapCharacters gap lhs rhs
         (alignmentCost, ungappedAlignment)                         = case (shorterChar, longerChar) of
@@ -274,7 +259,6 @@ measureCharacters
 measureCharacters lhs rhs =
     let f :: (Foldable f, Foldable t) => f (t a) -> [a]
         f         = foldMap toList
-
         (b, x, y) = measureNullableCharacters (Just lhs) (Just rhs)
     in  (b, f x, f y)
 
@@ -307,7 +291,7 @@ measureNullableCharacters lhs rhs
             -- First, compare inputs by length.
                       case comparing (maybe 0 length) lhs rhs of
               -- If the inputs are equal length,
-              -- Then compare by the (arbitary) lexicographical ordering of the median states.
+              -- Then compare by the (arbitrary) lexicographical ordering of the median states.
             EQ ->
                 let x = foldMap toList lhs
                     y = foldMap toList rhs
@@ -335,7 +319,7 @@ measureNullableCharacters lhs rhs
 -- First remove the gaps from the input characters.
 --
 -- If both "ungapped" inputs are empty, we measure the original "gapped" inputs to
--- determine if the inputs need to be swapped. This is requried to ensure comutativity
+-- determine if the inputs need to be swapped. This is required to ensure commutativity
 -- of subsequent operations which use this method.
 --
 -- Returns the "ungapped" dynamic character that is "shorter" first, "longer" second,
@@ -442,8 +426,8 @@ insertGaps
     -> IntMap a
     -> Maybe SymbolString
     -> SymbolString
-insertGaps gap lGaps rGaps meds
-    | null lGaps && null rGaps = fromJust meds
+insertGaps gap lGaps rGaps medians
+    | null lGaps && null rGaps = fromJust medians
     | -- No work needed
       otherwise                = force . coerce $ newVector
     where
@@ -451,7 +435,7 @@ insertGaps gap lGaps rGaps meds
         gapVecLen = maybe 0 (succ . fst) . IM.lookupMax
 
         totalGaps = fromEnum . getSum . foldMap Sum
-        mLength   = maybe 0 length meds
+        mLength   = maybe 0 length medians
         lGapCount = totalGaps lGaps
         rGapCount = totalGaps rGaps
         newLength = lGapCount + rGapCount + mLength
@@ -476,7 +460,7 @@ insertGaps gap lGaps rGaps meds
 
             let align i = do
                     m <- readSTRef mPtr
-                    let e = meds !> m
+                    let e = medians !> m
                     let v = coerce e
                     MV.unsafeWrite mVec i v
                     modifySTRef mPtr succ
@@ -506,15 +490,14 @@ insertGaps gap lGaps rGaps meds
 -- Internal generator function for the matrices based on the Needleman-Wunsch
 -- definition described in their paper.
 {-# INLINABLE needlemanWunschDefinition #-}
-{-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
-{-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
+{-# SPECIALIZE needlemanWunschDefinition :: SymbolAmbiguityGroup -> TransitionCostMatrix -> Vector SymbolContext -> Vector SymbolContext -> NeedlemanWunchMatrix -> (Int, Int) -> (Cost, Direction, SymbolAmbiguityGroup) #-}
 needlemanWunschDefinition
-    :: (Lookup f, Indexable m, Key f ~ Int, Key m ~ (Int, Int))
+    :: (Lookup f, Key f ~ Int, G.Vector v (Cost, Direction, SymbolAmbiguityGroup))
     => SymbolAmbiguityGroup
     -> TransitionCostMatrix
     -> f SymbolContext
     -> f SymbolContext
-    -> m (Cost, Direction, SymbolAmbiguityGroup)
+    -> Matrix v (Cost, Direction, SymbolAmbiguityGroup)
     -> (Int, Int)
     -> (Cost, Direction, SymbolAmbiguityGroup)
 needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row, col)
@@ -525,9 +508,18 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
       row /= 0 && col /= 0 && isDiagGap = (minCost, LeftArrow, gapGroup)
     | otherwise                         = (minCost, minDir, minState)
     where
-    -- | Lookup with a default value of infinite cost.
+        -- Lookup with a default value of infinite cost.
         {-# INLINE (!?) #-}
-        (!?) m k = fromMaybe (infinity, DiagArrow, gapGroup) $ k `lookup` m
+        (!?)
+            :: G.Vector v (Cost, Direction, SymbolAmbiguityGroup)
+            => Matrix v (Cost, Direction, SymbolAmbiguityGroup)
+            -> (Int, Int)
+            -> (Cost, Direction, SymbolAmbiguityGroup)
+        (!?) m k@(i, j) =
+            let ~(!rows, !cols) = dim m
+            in  if i < 0 || rows <= i || j < 0 || cols <= j
+                    then (infinity, DiagArrow, gapGroup)
+                    else unsafeIndex m k
 
         isDiagGap                                       = (minDir, minState) == (DiagArrow, gapGroup)
 
@@ -544,25 +536,29 @@ needlemanWunschDefinition gapGroup overlapFunction topChar leftChar memo p@(row,
         rightCost                                       = rightOverlapCost + leftwardValue
         diagCost                                        = diagOverlapCost + diagonalValue
         downCost                                        = downOverlapCost + upwardValue
-        (minCost, minState, minDir) =
-            getMinimalCostDirection gapGroup (diagCost, diagChar) (rightCost, rightChar) (downCost, downChar)
+        (minCost, minState, minDir)                     = getMinimalCostDirection
+            gapGroup
+            (diagCost , diagChar)
+            (rightCost, rightChar)
+            (downCost , downChar)
 
 
-{--}
+{--
 -- |
 -- Serializes an alignment matrix to a 'String'. Uses input characters for row
 -- and column labelings.
 --
 -- Useful for debugging purposes.
 {-# INLINABLE renderCostMatrix #-}
---{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
---{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> String #-}
+{-# SPECIALIZE renderCostMatrix :: SymbolAmbiguityGroup -> Vector SymbolContext -> Vector SymbolContext -> NeedlemanWunchMatrix -> String #-}
 renderCostMatrix
-    :: (Foldable f, Lookup m, Key m ~ (Int, Int))
+    :: ( Foldable f
+       , G.Vector v (Cost, Direction, SymbolAmbiguityGroup)
+       )
     => SymbolAmbiguityGroup
     -> f SymbolContext
     -> f SymbolContext
-    -> m (Cost, Direction, SymbolAmbiguityGroup)
+    -> Matrix v (Cost, Direction, SymbolAmbiguityGroup)
     -> String
 renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, barRow, renderedRows]
     where
@@ -571,9 +567,20 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, bar
         lesserTokens        = toShownIntegers lesser
         toShownIntegers     = fmap renderContext . toList
         matrixTokens =
-            [ (\j -> maybe "" showCell $ (i, j) `lookup` mtx) <$> [0 .. colCount - 1]
+            [ (\j -> maybe "" showCell $ (i, j) `lookupCell` mtx) <$> [0 .. colCount - 1]
             | i <- [0 .. rowCount - 1]
             ]
+
+        lookupCell
+          :: G.Vector v (Cost, Direction, SymbolAmbiguityGroup)
+          => (Int, Int)
+          -> Matrix v (Cost, Direction, SymbolAmbiguityGroup)
+          -> Maybe (Cost, Direction, SymbolAmbiguityGroup)
+        lookupCell k@(i,j) m =
+            let ~(!rows, !cols) = dim m
+            in  if i < 0 || rows <= i || j < 0 || cols <= j
+                then Nothing
+                else Just $ unsafeIndex m k
 
         showCell :: (Show a, Show b) => (a, b, c) -> String
         showCell (c, d, _) = show c <> show d
@@ -603,7 +610,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, bar
         renderedRows = unlines . zipWithKey renderRow ("⁎" : lesserTokens) $ matrixTokens
             where
                 renderRow k e cs = fold
-                    [" ", pad maxPrefixWidth (e <> show (k `mod` 10)), "┃ ", fold $ pad maxColumnWidth <$> cs]
+                    [" ", pad maxPrefixWidth (e <> show (k `mod` 10)), "┃ ", foldMap (pad maxColumnWidth) cs]
 
         renderContext (Align x _ _) = if x == gapGroup then "—" else "α"
         renderContext (Delete x _ ) = if x == gapGroup then "—" else "δ"
@@ -612,7 +619,7 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, bar
 
         pad :: Int -> String -> String
         pad n e = replicate (n - len) ' ' <> e <> " " where len = length e
-{--}
+--}
 
 
 -- |
@@ -624,18 +631,17 @@ renderCostMatrix gapGroup lhs rhs mtx = unlines [dimensionPrefix, headerRow, bar
 -- goes. The alignment *should* be biased toward insertions into the shorter of
 -- the two strings.
 {-# INLINABLE traceback #-}
-{-# SPECIALISE traceback :: Matrix              (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
-{-# SPECIALISE traceback :: UkkonenMethodMatrix (Cost, Direction, SymbolAmbiguityGroup) -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
+{-# SPECIALISE traceback :: NeedlemanWunchMatrix -> Vector SymbolContext -> Vector SymbolContext -> (Word, Vector SymbolContext) #-}
 traceback
-    :: (Foldable f, Indexable f, Indexable m, Key f ~ Int, Key m ~ (Int, Int))
-    => m (Cost, Direction, SymbolAmbiguityGroup)
-    -> f SymbolContext
-    -> f SymbolContext
+    :: MatrixConstraint v
+    => Matrix v (Cost, Direction, SymbolAmbiguityGroup)
+    -> SymbolString
+    -> SymbolString
     -> (Word, Vector SymbolContext)
 traceback alignMatrix longerChar lesserChar = force (unsafeToFinite cost, V.reverse $ V.unfoldr go lastCell)
     where
         lastCell     = (row, col)
-        (cost, _, _) = alignMatrix ! lastCell
+        (cost, _, _) = alignMatrix `unsafeIndex` lastCell
 
         col          = length longerChar
         row          = length lesserChar
@@ -644,7 +650,7 @@ traceback alignMatrix longerChar lesserChar = force (unsafeToFinite cost, V.reve
             | nextCell < (0, 0) = (contextElement, Nothing)
             | otherwise         = (contextElement, Just nextCell)
             where
-                (_, directionArrow, medianElement) = alignMatrix ! currentCell
+                (_, directionArrow, medianElement) = alignMatrix `unsafeIndex` currentCell
 
                 (nextCell, contextElement)         = case directionArrow of
                     LeftArrow ->

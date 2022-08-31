@@ -14,15 +14,10 @@
 
 module Alignment
     ( PairwiseAlignment
-    , naiveDO
-    , naiveDOMemo
     , postorderLogic
     , preorderInternalLogic
     , preorderLeafLogic
     , preorderRootLogic
-    , ukkonenDO
-    , unboxedUkkonenDO
     ) where
 
 import Alignment.Internal
-import Alignment.Pairwise

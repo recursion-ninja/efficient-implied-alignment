@@ -1,0 +1,24 @@
+# Ignore directories named `.git`
+(?:^|/)\.git.*/
+(?:^|/)(?i)COPYRIGHT
+(?:^|/)(?i)LICEN[CS]E
+(?:^|/)package(?:-lock|)\.json$
+(?:^|/)vendor/
+ignore$
+\.avi$
+\.ico$
+\.jpe?g$
+\.lock$
+\.map$
+\.min\.
+\.mod$
+\.mp[34]$
+\.png$
+\.wav$
+^\.github/
+
+# Ignore makefiles
+Makefile
+^.+\.mk$
+^tex/.*$
+

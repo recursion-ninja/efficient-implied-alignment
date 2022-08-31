@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.SymbolString
--- Copyright   :  (c) 2018 Alex Wahsburn
+-- Copyright   :  (c) 2018 Alex Washburn
 -- License     :  BSD-style
 --
 -- Maintainer  :  github@recursion.ninja
@@ -14,6 +14,7 @@
 {-# Language DerivingStrategies #-}
 {-# Language GeneralizedNewtypeDeriving #-}
 {-# Language ImportQualifiedPost #-}
+{-# Language MultiParamTypeClasses #-}
 {-# Language Strict #-}
 {-# Language TypeFamilies #-}
 {-# Language UnboxedSums #-}
@@ -53,14 +54,17 @@ import Control.DeepSeq
 import Data.Alphabet
 import Data.Alphabet.IUPAC
 import Data.Bits
---import           Data.Coerce
+import Data.Coerce
 import Data.Foldable
 import Data.Key
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.List.NonEmpty qualified as NE
 import Data.Semigroup.Foldable
+import Data.Vector.Generic qualified as GV
+import Data.Vector.Generic.Mutable qualified as MGV
 import Data.Vector.NonEmpty
---import           Data.Vector.Unboxed     (Unbox)
+import Data.Vector.Primitive qualified as PV
+import Data.Vector.Unboxed qualified as UV
 import Data.Word
 import GHC.Generics
 import Prelude hiding (filter)
@@ -123,50 +127,6 @@ isInsert _        = False
 isGapping :: SymbolContext -> Bool
 isGapping Gapping{} = True
 isGapping _         = False
-
-
-{-
-data  SymbolContext2
-    = SymbolContext2
-    { getMedian :: {-# UNPACK #-} !SymbolAmbiguityGroup
-    , getLeft   :: {-# UNPACK #-} !SymbolAmbiguityGroup
-    , getRight  :: {-# UNPACK #-} !SymbolAmbiguityGroup
-    }
-    deriving stock (Eq, Generic, Ord)
-
-
-alignElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
-alignElement = SymbolContext2
-
-
-deleteElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
-deleteElement m y = SymbolContext2 m 0 y
-
-
-insertElement :: SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> SymbolContext2
-insertElement m x = SymbolContext2 m x 0
-
-
-gappingElement :: Word -> SymbolContext2
-gappingElement w = let g = bit . fromEnum $ w - 1
-                   in  SymbolContext2 g 0 0
-
-
-isAlign   :: SymbolContext2 -> Bool
-isAlign   (SymbolContext2 _ x y) = coerce x /= (0 :: Word16) && coerce y /= (0 :: Word16)
-
-
-isDelete  :: SymbolContext2 -> Bool
-isDelete  (SymbolContext2 _ x y) = coerce x /= (0 :: Word16) && coerce y == (0 :: Word16)
-
-
-isInsert  :: SymbolContext2 -> Bool
-isInsert  (SymbolContext2 _ x y) = coerce x == (0 :: Word16) && coerce y /= (0 :: Word16)
-
-
-isGapping :: SymbolContext2 -> Bool
-isGapping (SymbolContext2 _ x y) = coerce x == (0 :: Word16) && coerce y == (0 :: Word16)
--}
 
 
 encodeAmbiguityGroup :: (Eq a, Foldable1 f) => Alphabet a -> f a -> SymbolAmbiguityGroup
@@ -234,6 +194,79 @@ instance Show SymbolContext where
             g (Delete m x ) = fold ["D:", pad m, ".", pad x, ".", blank, "|"]
             g (Insert m y ) = fold ["I:", pad m, ".", blank, ".", pad y, "|"]
             g (Gapping v  ) = fold ["G:", pad v, ".", blank, ".", blank, "|"]
+
+
+newtype instance UV.MVector s SymbolAmbiguityGroup = MV_SymbolAmbiguityGroup (PV.MVector s Word16)
+
+
+newtype instance UV.Vector    SymbolAmbiguityGroup = V_SymbolAmbiguityGroup  (PV.Vector    Word16)
+
+
+instance UV.Unbox SymbolAmbiguityGroup
+
+
+instance MGV.MVector UV.MVector SymbolAmbiguityGroup where
+
+    {-# INLINE basicLength #-}
+    basicLength (MV_SymbolAmbiguityGroup v) = MGV.basicLength v
+
+    {-# INLINE basicUnsafeSlice #-}
+    basicUnsafeSlice i n (MV_SymbolAmbiguityGroup v) = MV_SymbolAmbiguityGroup $ MGV.basicUnsafeSlice i n v
+
+    {-# INLINE basicOverlaps #-}
+    basicOverlaps (MV_SymbolAmbiguityGroup v1) (MV_SymbolAmbiguityGroup v2) = MGV.basicOverlaps v1 v2
+
+    {-# INLINE basicUnsafeNew #-}
+    basicUnsafeNew n = MV_SymbolAmbiguityGroup <$> MGV.basicUnsafeNew n
+
+    {-# INLINE basicInitialize #-}
+    basicInitialize (MV_SymbolAmbiguityGroup v) = MGV.basicInitialize v
+
+    {-# INLINE basicUnsafeReplicate #-}
+    basicUnsafeReplicate n x = MV_SymbolAmbiguityGroup <$> MGV.basicUnsafeReplicate n (coerce x)
+
+    {-# INLINE basicUnsafeRead #-}
+    basicUnsafeRead (MV_SymbolAmbiguityGroup v) i = coerce <$> MGV.basicUnsafeRead v i
+
+    {-# INLINE basicUnsafeWrite #-}
+    basicUnsafeWrite (MV_SymbolAmbiguityGroup v) i x = MGV.basicUnsafeWrite v i (coerce x)
+
+    {-# INLINE basicClear #-}
+    basicClear (MV_SymbolAmbiguityGroup v) = MGV.basicClear v
+
+    {-# INLINE basicSet #-}
+    basicSet (MV_SymbolAmbiguityGroup v) x = MGV.basicSet v (coerce x)
+
+    {-# INLINE basicUnsafeCopy #-}
+    basicUnsafeCopy (MV_SymbolAmbiguityGroup v1) (MV_SymbolAmbiguityGroup v2) = MGV.basicUnsafeCopy v1 v2
+
+    basicUnsafeMove (MV_SymbolAmbiguityGroup v1) (MV_SymbolAmbiguityGroup v2) = MGV.basicUnsafeMove v1 v2
+
+    {-# INLINE basicUnsafeGrow #-}
+    basicUnsafeGrow (MV_SymbolAmbiguityGroup v) n = MV_SymbolAmbiguityGroup <$> MGV.basicUnsafeGrow v n
+
+
+instance GV.Vector UV.Vector SymbolAmbiguityGroup where
+
+    {-# INLINE basicUnsafeFreeze #-}
+    basicUnsafeFreeze (MV_SymbolAmbiguityGroup v) = V_SymbolAmbiguityGroup <$> GV.basicUnsafeFreeze v
+
+    {-# INLINE basicUnsafeThaw #-}
+    basicUnsafeThaw (V_SymbolAmbiguityGroup v) = MV_SymbolAmbiguityGroup <$> GV.basicUnsafeThaw v
+
+    {-# INLINE basicLength #-}
+    basicLength (V_SymbolAmbiguityGroup v) = GV.basicLength v
+
+    {-# INLINE basicUnsafeSlice #-}
+    basicUnsafeSlice i n (V_SymbolAmbiguityGroup v) = V_SymbolAmbiguityGroup $ GV.basicUnsafeSlice i n v
+
+    {-# INLINE basicUnsafeIndexM #-}
+    basicUnsafeIndexM (V_SymbolAmbiguityGroup v) i = coerce <$> GV.basicUnsafeIndexM v i
+
+    basicUnsafeCopy (MV_SymbolAmbiguityGroup mv) (V_SymbolAmbiguityGroup v) = GV.basicUnsafeCopy mv v
+
+    {-# INLINE elemseq #-}
+    elemseq _ = seq
 
 
 -- We pad things to be exactly 5 characters long with leading space because a

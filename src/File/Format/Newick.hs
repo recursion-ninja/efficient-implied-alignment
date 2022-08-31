@@ -17,7 +17,7 @@
 -- After over two decades of informal usage, the Extended Newick file format
 -- was proposed in a BCM publication which allowed node labels to be non-
 -- unique and merged to a single node with shared ancestors and descendants.
--- This allowed for easy manual annotating of phylogentic trees.
+-- This allowed for easy manual annotating of phylogenetic trees.
 --
 -- Another half decade later, the Forest Extended Newick was proposed by
 -- Professor Wheeler to model collections of disjoint phylogenetic trees.
@@ -35,10 +35,6 @@
 
 module File.Format.Newick
     ( NewickNode
-    , branchLength
-    , descendants
-    , isLeaf
-    , newickLabel
     , newickStreamParser
     ) where
 

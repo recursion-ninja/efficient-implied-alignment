@@ -1,0 +1,19 @@
+{
+    "blank_lines": false,
+    "MD002": false,
+    "MD007": {
+        "indent": 2,
+        "start_indented": false,
+        "start_indent": 2        
+    },
+    "MD013": {
+        "line_length": 400
+    },
+    "MD024": false,
+    "MD026": {
+        "punctuation": ".,;:!。，；:"
+    },
+    "MD029": false,
+    "MD036": false,
+    "MD041": false
+}

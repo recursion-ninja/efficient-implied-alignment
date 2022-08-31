@@ -53,31 +53,8 @@ newickStandardDefinition :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => 
 newickStandardDefinition = whitespace *> newickNodeDefinition <* symbol (char ';')
 
 
-{-
 -- |
--- Parses a stream producing an extended Newick tree.
--- Directed cycles in extended Newick trees are not permitted.
-{-# INLINEABLE newickExtendedDefinition #-}
-{-# SPECIALISE newickExtendedDefinition :: Parsec Void  T.Text (BTree () ()) #-}
-{-# SPECIALISE newickExtendedDefinition :: Parsec Void LT.Text (BTree () ()) #-}
-{-# SPECIALISE newickExtendedDefinition :: Parsec Void  String (BTree () ()) #-}
-newickExtendedDefinition :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => m (BTree () ())
-newickExtendedDefinition = newickStandardDefinition >>= joinNonUniqueLabeledNodes
-
-
--- |
--- Parses a stream producing a forest of extended Newick trees.
-{-# INLINEABLE newickForestDefinition #-}
-{-# SPECIALISE newickForestDefinition :: Parsec Void  T.Text   NewickForest #-}
-{-# SPECIALISE newickForestDefinition :: Parsec Void LT.Text   NewickForest #-}
-{-# SPECIALISE newickForestDefinition :: Parsec Void    String NewickForest #-}
-newickForestDefinition :: (MonadFail m, MonadParsec e s m, Token s ~ Char) => m (BTree () ())
-newickForestDefinition = whitespace *> symbol (char '<') *> some1 newickExtendedDefinition <* symbol (char '>')
--}
-
-
--- |
--- Definition of a serialized Newick node consisiting of the node's descendants,
+-- Definition of a serialized Newick node consisting of the node's descendants,
 -- optional label, and optional branch length.
 {-# INLINABLE newickNodeDefinition #-}
 {-# SPECIALISE newickNodeDefinition :: Parsec Void  T.Text (BTree () ()) #-}
@@ -117,7 +94,7 @@ subtreeDefinition = newickNodeDefinition <|> newickLeafDefinition
 
 
 -- |
--- Definition of a sigle leaf node in a Newick tree. Must contain a node label.
+-- Definition of a single leaf node in a Newick tree. Must contain a node label.
 -- Has no descendants be definition.
 {-# INLINABLE newickLeafDefinition #-}
 {-# SPECIALISE newickLeafDefinition :: Parsec Void  T.Text (BTree () ()) #-}
@@ -186,14 +163,14 @@ unquotedLabel = fromString . chunkToTokens (Proxy :: Proxy s) <$> noneOfThese in
 
 
 -- |
--- Characters which can ontly appear in a quoted '(BTree () ())' label.
+-- Characters which can only appear in a quoted '(BTree () ())' label.
 {-# INLINE requiresQuotedLabelChars #-}
 requiresQuotedLabelChars :: String
 requiresQuotedLabelChars = " ':;,()[]<>"
 
 
 -- |
--- List of chacracters which __cannot__ appear in an /quoted/ label of a
+-- List of characters which __cannot__ appear in an /quoted/ label of a
 -- '(BTree () ())'.
 {-# INLINE invalidQuotedLabelChars #-}
 invalidQuotedLabelChars :: String
@@ -201,7 +178,7 @@ invalidQuotedLabelChars = "\r\n\t\f\v\b"
 
 
 -- |
--- List of chacracters which __cannot__ appear in an /unquoted/ label of a
+-- List of characters which __cannot__ appear in an /unquoted/ label of a
 -- '(BTree () ())'.
 {-# INLINE invalidUnquotedLabelChars #-}
 invalidUnquotedLabelChars :: String
@@ -210,7 +187,7 @@ invalidUnquotedLabelChars = invalidQuotedLabelChars <> requiresQuotedLabelChars
 
 -- |
 -- Definition of a serialized branch length between two nodes in the Newick
--- tree. Since the Newick tree is impicitly rooted in it's serialization form,
+-- tree. Since the Newick tree is implicitly rooted in it's serialization form,
 -- the 'branchLength' of a given '(BTree () ())' is the branch length itself and
 -- it's parent. Becomes non-sensical with extended Newick trees that have nodes
 -- with "in-degree" greater than one.
@@ -223,7 +200,7 @@ branchLengthDefinition = symbol (char ':') *> (toRealFloat <$> symbol scientific
 
 
 -- |
--- Convinience combinator for stripping /leading and trailing/ whitespace from a
+-- Convenience combinator for stripping /leading and trailing/ whitespace from a
 -- combinator.
 {-# INLINE trimmed #-}
 {-# SPECIALISE trimmed :: Parsec Void  T.Text a -> Parsec Void  T.Text a #-}
@@ -234,7 +211,7 @@ trimmed x = whitespace *> x <* whitespace
 
 
 -- |
--- Convinience combinator for stripping /trailing/ whitespace from a combinator.
+-- Convenience combinator for stripping /trailing/ whitespace from a combinator.
 {-# INLINE symbol #-}
 {-# SPECIALISE symbol :: Parsec Void  T.Text a -> Parsec Void  T.Text a #-}
 {-# SPECIALISE symbol :: Parsec Void LT.Text a -> Parsec Void LT.Text a #-}
@@ -251,8 +228,8 @@ symbol x = x <* whitespace
 {-# SPECIALISE whitespace :: Parsec Void LT.Text () #-}
 {-# SPECIALISE whitespace :: Parsec Void  String () #-}
 whitespace :: forall e s m . (MonadParsec e s m, Token s ~ Char) => m ()
-whitespace = skipMany $ choice [hidden spChar, hidden block]
-    where
-        spChar = void spaceChar
+whitespace =
+    let spChar = void spaceChar
         block  = skipBlockCommentNested (tokenToChunk proxy '[') (tokenToChunk proxy ']')
         proxy  = Proxy :: Proxy s
+    in  skipMany $ choice [hidden spChar, hidden block]

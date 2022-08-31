@@ -1,0 +1,12 @@
+{
+    "aliveStatusCodes": [ 200, 203 ],
+    "ignorePatterns": [
+        { "pattern": "^data/img/.+" },
+        { "pattern": "^/.+\\.html$" },
+        { "pattern": "^\\$BaseURL\\$" },
+        { "pattern": "^https://www.amnh.org/research/computational-sciences$" },
+        { "pattern": "^https://doi.org/10.1111/cla.12370$" }
+    ],
+    "retryCount": 8,
+    "retryOn429": true
+}

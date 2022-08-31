@@ -14,9 +14,6 @@
 --
 -----------------------------------------------------------------------------
 
-
--- We do this because we added an orphan instanc IsString Char
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# Language DeriveDataTypeable #-}
 {-# Language DeriveFunctor #-}
 {-# Language DeriveGeneric #-}
@@ -27,26 +24,24 @@
 {-# Language OverloadedStrings #-}
 {-# Language TypeFamilies #-}
 
+
+-- We do this because we added an orphan instance IsString Char
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Data.Alphabet.Internal
     ( Alphabet ()
     , AmbiguityGroup
-    , alphabetStateNames
-    , alphabetSymbols
     , fromSymbols
-    , fromSymbolsWithStateNames
     , gapSymbol
-    , truncateAtMaxSymbol
-    , truncateAtSymbol
     ) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad.State.Strict
-import Data.Bifunctor (bimap)
 import Data.Data
 import Data.Foldable
 import Data.Key
-import Data.List (elemIndex, intercalate, sort)
-import Data.List.NonEmpty (NonEmpty(..), unzip)
+import Data.List (intercalate, sort)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe
 import Data.Monoid
 import Data.Semigroup.Foldable
@@ -78,12 +73,9 @@ data  Alphabet a
 type instance Key Alphabet = Int
 
 
--- Newtypes for corecing and consolidation of alphabet input processing logic
+-- Newtypes for coercing and consolidation of alphabet input processing logic
 newtype AlphabetInputSingle a
     = ASI { toSingle :: a }
-    deriving stock (Eq, Ord)
-newtype AlphabetInputTuple a
-    = ASNI { toTuple :: (a, a) }
     deriving stock (Eq, Ord)
 
 
@@ -133,25 +125,6 @@ alphabetPreprocessing = appendGapSymbol . sort . removeSpecialSymbolsAndDuplicat
                         pure $ x `notElem` seenSet
 
 
--- |
--- \( \mathcal{O} \left( n \right) \)
---
--- Retrieves the state names for the symbols of the 'Alphabet'.
---
--- If the symbols of the 'Alphabet' were not given state names during
--- construction then an empty list is returned.
-alphabetStateNames :: Alphabet a -> [a]
-alphabetStateNames = stateNames
-
-
--- |
--- \( \mathcal{O} \left( n \right) \)
---
--- Retrieves the symbols of the 'Alphabet'. Synonym for 'toList'.
-alphabetSymbols :: Alphabet a -> [a]
-alphabetSymbols = toList
-
-
 fromSingle :: a -> AlphabetInputSingle a
 fromSingle = ASI
 
@@ -162,33 +135,10 @@ fromSingle = ASI
 -- Constructs an 'Alphabet' from a 'Foldable' structure of symbols which are
 -- 'IsString' values.
 fromSymbols :: (Ord a, IsString a, Foldable t) => t a -> Alphabet a
-fromSymbols inputSymbols = Alphabet symbols []
-    where
-        symbols =
+fromSymbols inputSymbols =
+    let symbols =
             NEV.fromNonEmpty . fmap toSingle . alphabetPreprocessing . fmap fromSingle $ toList inputSymbols
-
-
--- |
--- \( \mathcal{O} \left( n * \log_2 n \right) \)
---
--- Constructs an 'Alphabet' from a 'Foldable' structure of symbols and
--- corresponding state names, both of which are 'IsString' values.
---
--- The input ordering is preserved.
-fromSymbolsWithStateNames :: (Ord a, IsString a, Foldable t) => t (a, a) -> Alphabet a
-fromSymbolsWithStateNames inputSymbols = Alphabet symbols names
-    where
-        (symbols, names) =
-            bimap NEV.fromNonEmpty toList
-                . unzip
-                . fmap toTuple
-                . alphabetPreprocessing
-                . fmap fromTuple
-                $ toList inputSymbols
-
-
-fromTuple :: (a, a) -> AlphabetInputTuple a
-fromTuple = ASNI
+    in  Alphabet symbols []
 
 
 -- |
@@ -199,57 +149,15 @@ gapSymbol :: Alphabet a -> a
 gapSymbol alphabet = alphabet ! (length alphabet - 1)
 
 
--- |
--- \( \mathcal{O} \left( n * \log_2 n \right) \)
---
--- Attempts to find the symbol in the 'Alphabet'.
--- If the symbol exists, returns an alphabet that includes all symbols occurring
--- before the supplied symbol and excludes all symbols occurring after the
--- supplied symbol. The gap character is preserved in the alphabet
--- regardless of the supplied symbol.
---
--- The resulting alphabet /includes/ the input symbol.
-truncateAtSymbol :: (Ord a, IsString a) => a -> Alphabet a -> Alphabet a
-truncateAtSymbol symbol alphabet = case elemIndex symbol $ toList alphabet of
-    Nothing -> alphabet
-    Just i  -> case alphabetStateNames alphabet of
-        [] -> fromSymbols . take (i + 1) $ alphabetSymbols alphabet
-        xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
-
-
--- |
--- \( \mathcal{O} \left( n * \log_2 n \right) \)
---
--- Attempts to find the maximum provided symbol in the Alphabet.
--- If the any of the provided symbols exists, returns an alphabet including all
--- the symbols occurring before the maximum provided symbol and excluding all symbols
--- occurring after the maximum supplied symbol. The gap character is
--- preserved in the alphabet regardless of the supplied symbol.
---
--- The resulting alphabet /includes/ the input symbol.
-truncateAtMaxSymbol :: (Foldable t, Ord a, IsString a) => t a -> Alphabet a -> Alphabet a
-truncateAtMaxSymbol symbols alphabet = case maxIndex of
-    Nothing -> alphabet
-    Just i  -> case alphabetStateNames alphabet of
-        [] -> fromSymbols . take (i + 1) $ alphabetSymbols alphabet
-        xs -> fromSymbolsWithStateNames . take (i + 1) $ zip (alphabetSymbols alphabet) xs
-    where
-        maxIndex = foldlWithKey' f Nothing alphabet
-        f e k v
-            | v `notElem` symbols = e
-            | otherwise = case e of
-                Nothing -> Just k
-                Just i  -> Just $ max k i
-
-
 instance (Ord a, IsString a) => Arbitrary (Alphabet a) where
 
-    arbitrary = do
-        n <- (arbitrary :: Gen Int) `suchThat` (\x -> 0 < x && x <= 62)
-        pure . fromSymbols $ take n symbolSpace
-        where
-        -- We do this to simplify Alphabet generation, ensuring that there is at least one non gap symbol.
-              symbolSpace = fromString . pure <$> ['0' .. '9'] <> ['A' .. 'Z'] <> ['a' .. 'z'] <> "?-"
+    arbitrary =
+        let -- We do this to simplify Alphabet generation, ensuring that there is at least one non gap symbol.
+            buildPrefix = fromSymbols . flip take symbolSpace
+            randomCount = (arbitrary :: Gen Int) `suchThat` (\x -> 0 < x && x <= symbolCount)
+            symbolSpace = fromString . pure <$> ['0' .. '9'] <> ['A' .. 'Z'] <> ['a' .. 'z'] <> "?-"
+            symbolCount = length symbolSpace
+        in  buildPrefix <$> randomCount
 
 
 -- |
@@ -331,15 +239,6 @@ instance (Eq a, IsString a) => InternalClass (AlphabetInputSingle a) where
     isGapSymboled     = (gapSymbol' ==)
 
     isMissingSymboled = (ASI (fromString "?") ==)
-
-
-instance (Eq a, IsString a) => InternalClass (AlphabetInputTuple a) where
-
-    gapSymbol' = ASNI (fromString "-", fromString "-")
-
-    isGapSymboled (ASNI (x, _)) = x == fromString "-"
-
-    isMissingSymboled (ASNI (x, _)) = x == fromString "?"
 
 
 instance IsString Char where

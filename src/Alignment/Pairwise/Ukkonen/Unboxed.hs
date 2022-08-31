@@ -1,8 +1,6 @@
-
-
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Alignment.Pairwise.UnboxedUkkonen
+-- Module      :  Alignment.Pairwise.Ukkonen.Unboxed
 -- Copyright   :  (c) 2015-2015 Ward Wheeler
 -- License     :  BSD-style
 --
@@ -26,7 +24,7 @@
 {-# Language TypeOperators #-}
 {-# Language UnboxedTuples #-}
 
-module Alignment.Pairwise.UnboxedUkkonen
+module Alignment.Pairwise.Ukkonen.Unboxed
     ( unboxedUkkonenDO
     ) where
 
@@ -98,7 +96,7 @@ unboxedUkkonenDO alphabet tcm char1 char2
         -- initial barrier will be set adjacent to or beyond the lower left and
         -- upper right corners.
         --
-        -- Also, a threshold coeffcient is computed as the minimal indel cost from
+        -- Also, a threshold coefficient is computed as the minimal indel cost from
         -- any symbol in the alphabet to gap. However, if the indel cost for any
         -- symbol is zero, the algorithm will hang, and a naive approach must be taken.
         --
@@ -132,7 +130,7 @@ unboxedUkkonenDO alphabet tcm char1 char2
 
         -- /O(2*(a - 1))/
         --
-        -- This was taken from Ukkonen's original 1985 paper wherein the coeffcient
+        -- This was taken from Ukkonen's original 1985 paper wherein the coefficient
         -- delta @(Δ)@ was defined by the minimum transition cost from any symbol in
         -- the alphabet @(Σ)@ to the gap symbol @'-'@.
         --
@@ -186,7 +184,7 @@ createUkkonenMethodMatrix
     -> (Word, Matrix Direction)
 createUkkonenMethodMatrix gap minimumIndelCost gapsPresentInInputs tcm lesserLeft longerTop = finalMatrix
     where
-    -- General values that need to be in scope for the recursive computations.
+        -- General values that need to be in scope for the recursive computations.
         longerLen          = length longerTop
         lesserLen          = length lesserLeft
 
@@ -263,7 +261,7 @@ buildInitialBandedMatrix gap tcm lesserLeft longerTop o = fullMatrix
 
             -- Define how to compute values to an entire row of the Ukkonen matrix.
             let writeRow i =
-                  -- Precomute some values that will be used for the whole row
+                  -- Precompute some values that will be used for the whole row
                     let start       = max 0 $ i - offset
                         stop        = min (cols - 1) $ i - offset + width - 1
                         leftElement = symbolAlignmentMedian $ lesserLeft ! (i - 1)
@@ -301,7 +299,7 @@ buildInitialBandedMatrix gap tcm lesserLeft longerTop o = fullMatrix
             -- Loop through the remaining rows.
             for_ [1 .. rows - 1] writeRow
 
-            -- Return the matricies for possible expansion
+            -- Return the matrices for possible expansion
             pure (mCost, mDir)
 
 
@@ -410,12 +408,14 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                     cellDefinitions gap longerTop cost tcm mCost mDir
 
             let computeCell leftElement insertCost i j =
+
                     
-                             {-# SCC recomputeCell #-} do
-                                  e@(c,_) <-internalCell leftElement insertCost i j
-                                  oldCost <- M.unsafeRead mCost (i    , j    )
-                                  write (i,j) e
-                                  pure (c == oldCost, j + 1)
+                        
+                                     {-# SCC recomputeCell #-} do
+                                          e@(c,_) <-internalCell leftElement insertCost i j
+                                          oldCost <- M.unsafeRead mCost (i    , j    )
+                                          write (i,j) e
+                                          pure (c == oldCost, j + 1)
 
             let recomputeRange leftElement insertCost i x y = do
                     lastDiff <- newSTRef 0
@@ -426,7 +426,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
 
             -- Define how to compute values to an entire row of the Ukkonen matrix.
             let extendRow i =
-                  -- Precomute some values that will be used for the whole row
+                  -- Precompute some values that will be used for the whole row
                     let start0      = max 0 $ i - offset
                         start3      = min cols $ i + w - offset - prevOffset - 1
                         goUpTo      = max 0 (i - prevOffset) - 1
@@ -475,9 +475,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                            --
 
                            -- Conditionally write to the first cell of the Ukkonen band
-                        if i > prevOffset
-                            then firstCell leftElement insertCost i start0 >>= write (i, b0)
-                            else pure ()
+                        when (i > prevOffset) $ firstCell leftElement insertCost i start0 >>= write (i, b0)
 
                         for_ [b0 + 1 .. e0] internalCell'
 
@@ -521,7 +519,7 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                                    -- before we stopped.
                                    -- If the cost is not the same, we update cell (s0 + 1) and
                                    -- move on to (s0 + 2).
-                                   -- This proceedure continues until (s0 + n) has the same cost
+                                   -- This procedure continues until (s0 + n) has the same cost
                                    -- as before, or *until we reach b1.*
                                    -- We remember the cell (s0 + n - 1) as t0 for the next row.
                                    --  ⊗ ┃  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
@@ -545,9 +543,11 @@ expandBandedMatrix gap tcm lesserLeft longerTop mCost mDir po co = updateBand
                                    --
                         if s0 == t0 && s0 > 0
                             then recomputeUntilSame (s0 + 1) >>= writeSTRef t0' . pred
-                            else if s0 <= e0 && e0 > 0
-                                then recomputeUntilSame (e0 + 1) >>= writeSTRef t0' . pred
-                                else pure ()
+                            else
+                                when (s0 <= e0 && e0 > 0)
+                                $   recomputeUntilSame (e0 + 1)
+                                >>= writeSTRef t0'
+                                .   pred
 
                                    -- Next, we assign to s1 the value t1 from the previous row.
                                    -- We recompute the cells in the range [s1, b1 - 1].
@@ -807,80 +807,6 @@ getMinimalResult gap alignElem opts =
     let v@(~(c, d)) = minimum opts in if d == DiagArrow && alignElem == gap then (c, LeftArrow) else v
 
 
-{--
--- |
--- Serializes an alignment matrix to a 'String'. Uses input characters for row
--- and column labelings.
---
--- Useful for debugging purposes.
-renderCostMatrix
-  :: Foldable f
-  => SymbolAmbiguityGroup
-  -> f SymbolContext
-  -> f SymbolContext
-  -> Z.Matrix Word
-  -> Z.Matrix Direction
-  -> String
-renderCostMatrix gapGroup lhs rhs cMat dMat = unlines
-    [ dimensionPrefix
-    , headerRow
-    , barRow
-    , renderedRows
-    ]
-  where
-    (_,lesser,longer) = measureCharacters lhs rhs
-    longerTokens      = toShownIntegers longer
-    lesserTokens      = toShownIntegers lesser
-    toShownIntegers   = mapWithKey (\k -> (<> show ((k+1) `mod` 10)) . renderContext) . toList
-    matrixTokens      = fmap (fmap showCell) . Z.toLists $ Z.zip cMat dMat
-    showCell (c,d)    = show c <> show d
-    maxPrefixWidth    = maxLengthOf lesserTokens
-    maxColumnWidth    = max (maxLengthOf longerTokens) . maxLengthOf $ fold matrixTokens
-    maxLengthOf       = maximum . fmap length
-
-    colCount = length longer + 1
-    rowCount = length lesser + 1
-
-    dimensionPrefix  = " " <> unwords
-        [ "Dimensions:"
-        , show rowCount
-        , "⨉"
-        , show colCount
-        ]
-
-    headerRow = fold
-        [ " "
-        , pad maxPrefixWidth "⊗"
-        , "┃ "
-        , pad maxColumnWidth "⁎"
-        , concatMap (pad maxColumnWidth) longerTokens
-        ]
-
-    barRow    = fold
-        [ " "
-        , bar maxPrefixWidth
-        , "╋"
-        , concatMap (const (bar maxColumnWidth)) $ undefined : longerTokens
-        ]
-      where
-        bar n = replicate (n+1) '━'
-
-    renderedRows = unlines . zipWithKey renderRow ("⁎":lesserTokens) $ matrixTokens
-      where
-        renderRow _k e vs = " " <> pad maxPrefixWidth e <> "┃ " <> concatMap (pad maxColumnWidth) vs
-
-    renderContext (Align  x _ _) = if x == gapGroup then "—" else "α"
-    renderContext (Delete x _  ) = if x == gapGroup then "—" else "δ"
-    renderContext (Insert x   _) = if x == gapGroup then "—" else "ι"
-    renderContext Gapping{}      = "—"
-
-    pad :: Int -> String -> String
-    pad n e = replicate (n - len) ' ' <> e <> " "
-      where
-        len = length e
---}
-
-
 ukkonenConstants
     :: Foldable f
     => (SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word))
@@ -948,15 +874,17 @@ cellDefinitions gap longerTop cost tcm mCost mDir =
                                 , (insertCost + topCost , UpArrow)
                                 ]
 
-        -- Define how to compute the first cell of the first "offest" rows.
+        -- Define how to compute the first cell of the first "offset" rows.
         -- We need to ensure that there are only Up Arrow values in the directional matrix.
         -- We can also reduce the number of comparisons the first row makes from 3 to 1,
         -- since the diagonal and leftward values are "out of bounds."
         leftColumn _leftElement insertCost i j =
+
             
-                     {-# SCC leftColumn #-} do
-                              firstPrevCost <- M.unsafeRead mCost (i - 1, j)
-                              pure (insertCost + firstPrevCost, UpArrow)
+                
+                             {-# SCC leftColumn #-} do
+                                      firstPrevCost <- M.unsafeRead mCost (i - 1, j)
+                                      pure (insertCost + firstPrevCost, UpArrow)
 
         -- Define how to compute the first cell of the remaining rows.
         -- We need to ensure that there are no Left Arrow values in the directional matrix.
@@ -973,24 +901,26 @@ cellDefinitions gap longerTop cost tcm mCost mDir =
                     alignElem
                     [(alignCost + diagCost, DiagArrow), (insertCost + topCost, UpArrow)]
 
-        -- Define how to compute the last cell of the first "rows - offest" rows.
+        -- Define how to compute the last cell of the first "rows - offset" rows.
         -- We need to ensure that there are only Left Arrow values in the directional matrix.
         -- We can also reduce the number of comparisons the first row makes from 3 to 1,
         -- since the diagonal and upward values are "out of bounds."
         rightBoundary leftElement _insertCost i j =
-            
-                     {-# SCC rightBoundary #-}
-                              let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
-                                  deleteCost = cost topElement gap
-                                  (alignElem, alignCost) = tcm topElement leftElement
-                              in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
-                                     leftCost <- M.unsafeRead mCost (i    , j - 1)
-                                     pure $ getMinimalResult gap alignElem
-                                              [ ( alignCost + diagCost, DiagArrow)
-                                              , (deleteCost + leftCost, LeftArrow)
-                                              ]
 
-        -- Define how to compute the last cell of the last "offest" rows.
+            
+                
+                             {-# SCC rightBoundary #-}
+                                      let topElement = symbolAlignmentMedian $ longerTop ! (j - 1)
+                                          deleteCost = cost topElement gap
+                                          (alignElem, alignCost) = tcm topElement leftElement
+                                      in  do diagCost <- M.unsafeRead mCost (i - 1, j - 1)
+                                             leftCost <- M.unsafeRead mCost (i    , j - 1)
+                                             pure $ getMinimalResult gap alignElem
+                                                      [ ( alignCost + diagCost, DiagArrow)
+                                                      , (deleteCost + leftCost, LeftArrow)
+                                                      ]
+
+        -- Define how to compute the last cell of the last "offset" rows.
         -- We need to ensure that there are no Up Arrow values in the directional matrix.
         -- We can also reduce the number of comparisons the first row makes from 3 to 2,
         -- since the upward values are "out of bounds."

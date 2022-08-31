@@ -10,8 +10,7 @@ module Data.DecTree
     , preorderTraverse
     ) where
 
-import Alignment (PairwiseAlignment, postorderLogic, preorderInternalLogic, preorderLeafLogic)
-import Alignment (preorderRootLogic)
+import Alignment (PairwiseAlignment, postorderLogic, preorderInternalLogic, preorderLeafLogic, preorderRootLogic)
 import Data.BTree (BTree, postorder, preorder)
 import Data.Decoration (FinalizedNode(..), PreliminaryNode(..))
 

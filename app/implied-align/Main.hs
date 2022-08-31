@@ -4,9 +4,10 @@
 
 module Main
     ( main
+    , runSpecifiedInput
     ) where
 
-import Alignment
+import Alignment.Pairwise (alignUkkonen)
 import Control.DeepSeq
 import Control.Lens
 import Control.Monad
@@ -27,11 +28,11 @@ import System.Timing
 
 
 main :: IO ()
-main = runInput
+main = runSpecifiedInput
 
 
-runInput :: IO ()
-runInput = do
+runSpecifiedInput :: IO ()
+runSpecifiedInput = do
     hSetBuffering stdout NoBuffering
     opts <- force <$> parseUserInput
     vals <- parseFileInput opts
@@ -64,7 +65,7 @@ runInput = do
 
                 postorder'    = postorderTraverse stringAligner
                 preorder'     = preorderTraverse
-                stringAligner = unboxedUkkonenDO alphabet tcm
+                stringAligner = alignUkkonen alphabet tcm
             in  do
                 when (verbose opts)
                     $ mapM_

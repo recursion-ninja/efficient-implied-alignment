@@ -43,6 +43,7 @@ Portability :  portable (I hope)
 
 module Main
     ( main
+    , modifyNewick
     ) where
 
 import Data.Foldable
@@ -229,7 +230,11 @@ appendString stringToAppend stringToBeAppended
 
 -- | main driver
 main :: IO ()
-main = do
+main = modifyNewick
+
+
+modifyNewick :: IO ()
+modifyNewick = do
     args <- getArgs
     if length args /= 3
         then error $ fold
@@ -246,7 +251,7 @@ main = do
         then hPutStrLn stderr $ unwords ["Newick will", operation, "taxon/a"]
         else error $ unwords ["Operation", operation, "is unrecognized, must be 'add' or 'delete'"]
     hPutStrLn stderr $ unwords
-        ["Openning newick  treefile", inNewick, "and taxon/a to be added/deleted from file", args ! 2]
+        ["Opening newick  treefile", inNewick, "and taxon/a to be added/deleted from file", args ! 2]
     hPutStrLn stderr "Warning--Tree must be dichotomous for deletion"
     treeFileHandle   <- openFile inNewick ReadMode
     deleteTaxaHandle <- openFile (args ! 2) ReadMode
@@ -256,21 +261,9 @@ main = do
     let treeFile      = fmap (filter (`notElem` otherNewickChars)) rawTreeFile
     --removes branch lengths and terminal comment (ie POY tree cost)
     let cleanTreeFile = fmap (takeWhile (/= '[') . removeBranchLengths) treeFile
-     --let cleanTreeFile = (takeWhile (/= '[' ) $ removeBranchLengths treeFile) ++ [';']
     deleteTaxaRaw <- hGetContents deleteTaxaHandle
     let deleteTaxa = words deleteTaxaRaw
     let op = if operation == "delete"
             then removeTaxonFromNewick deleteTaxa
             else addTaxon2Newick (head deleteTaxa) (deleteTaxa ! 1)
     mapM_ putStrLn $ appendString ";\n" . op <$> cleanTreeFile
-
-        --let newTree = removeTaxonFromNewick cleanTreeFile (tail $ tail args)
-       --let taxToGo = last args
-       --let taxLocation = findNameInString taxToGo cleanTreeFile 0
-       --if taxLocation == Nothing then error ("Error: Taxon " ++ taxToGo ++ " not in tree")
-       --else hPutStrLn stderr ("Found " ++ taxToGo ++ " at position " ++ show (fromJust taxLocation))
-       --let firstPart = take (fromJust taxLocation) cleanTreeFile
-       --let secondPart = drop ((fromJust taxLocation) + (length taxToGo)) cleanTreeFile
-       --hPutStrLn stderr (firstPart ++ " " ++ secondPart)
-       --let newTree = makeNewTree firstPart secondPart
-       --hPutStrLn stdout newTree

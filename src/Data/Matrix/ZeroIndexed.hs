@@ -368,7 +368,7 @@ switchRows r1 r2 = Stupid.switchRows (r1 + 1) (r2 + 1)
 
 
 -- |
--- Switch two coumns of a matrix.
+-- Switch two columns of a matrix.
 -- Example:
 --
 -- >                ( 1 2 3 )   ( 2 1 3 )

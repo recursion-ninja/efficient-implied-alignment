@@ -1,4 +1,5 @@
 {-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
 {-# Language OverloadedStrings #-}
 {-# Language TypeFamilies #-}
 
@@ -8,35 +9,24 @@ module SampleData
     , StringValues
     , TreeInput
     , defaultAlphabet
-      --  , defaultTripleCompare
-      --  , discreteMetricTCM
     , sampleDataSets
     ) where
 
-import Alignment
 import Control.Arrow
-import Control.Lens
 import Data.Alphabet
 import Data.BTree
 import Data.Char
-import Data.Decoration
 import Data.Foldable
-import Data.Functor (($>))
 import Data.Key
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.List.NonEmpty qualified as NE
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Matrix qualified as Mat
-import Data.Pointed
-import Data.Semigroup ((<>))
+import Data.Matrix.Unboxed qualified as Mat
 import Data.Semigroup.Foldable
-import Data.Set (Set)
 import Data.String (IsString(..))
-import Data.SymbolString
 import Data.TCM
 import Data.Text (Text)
-import Data.Validation
 import Data.Vector.Unboxed.NonEmpty (Vector)
 import Data.Vector.Unboxed.NonEmpty qualified as V
 import Prelude hiding (zip)
@@ -93,32 +83,13 @@ defaultAlphabet :: Alphabet Char
 defaultAlphabet = fromSymbols ("ACGT-" :: String)
 
 
-{-
-defaultTripleCompare :: ThreewayCompare Char
-defaultTripleCompare = buildThreeWayCompare defaultAlphabet discreteMetricTCM
--}
-
-
 discreteMetricTCM :: TransitionCostMatrix
 discreteMetricTCM = tcm
     where
         tcm            = buildTransitionCostMatrix defaultAlphabet scm
         scm            = buildSymbolChangeMatrix fakeParseInput
-        fakeParseInput = Mat.fromList (5, 5) [ if i == j then 0 else 1 | i <- [0 .. 4], j <- [0 .. 4] ]
-
-
-preferGapsTCM :: TransitionCostMatrix
-preferGapsTCM = tcm
-    where
-        tcm            = buildTransitionCostMatrix defaultAlphabet scm
-        scm            = buildSymbolChangeMatrix fakeParseInput
-        fakeParseInput = Mat.fromList (5, 5) [ f i j | i <- [0 .. 4], j <- [0 .. 4] ]
-            where
-                f i j
-                    | i == j    = 0
-                    | i == 4    = 1
-                    | j == 4    = 1
-                    | otherwise = 2
+        indices        = [0 .. 4]
+        fakeParseInput = Mat.fromLists [ [ if i == j then 0 else 1 | j <- indices ] | i <- indices ]
 
 
 blank :: NodeDatum ()
@@ -137,7 +108,6 @@ toNonEmptyOutputs :: (Foldable t, Foldable f) => t (f Char) -> NonEmpty (NonEmpt
 toNonEmptyOutputs = fmap toNonEmpties . NE.fromList . toList
 
 
---convertToValues :: (Foldable f, Foldable g, Foldable t) => [(f Char, t (g Char))] -> StringValues
 convertToValues :: [(NonEmpty Char, [String])] -> StringValues
 convertToValues =
     fmap (toNonEmptyInputs *** toNonEmptyOutputs) . M.fromList . zip (fromString . pure <$> ['A' ..])

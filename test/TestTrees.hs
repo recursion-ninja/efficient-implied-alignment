@@ -1,51 +1,46 @@
 {-# Language FlexibleContexts #-}
+{-# Language ImportQualifiedPost #-}
 {-# Language TypeFamilies #-}
 
-module Main where
+module Main
+    ( main
+    , testTrees
+    ) where
 
 import Alignment
+import Alignment.Pairwise (alignUkkonen)
 import Control.DeepSeq
-import Control.Lens
-import Data.Alphabet
+import Control.Lens ((^.))
 import Data.BTree
 import Data.Char
 import Data.Decoration
 import Data.Foldable
-import Data.Functor (($>))
 import Data.Key
-import Data.List.NonEmpty (NonEmpty(..), intersperse)
-import Data.List.NonEmpty qualified as NE
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Map (Map)
-import Data.Map qualified as M
 import Data.Ord
-import Data.Pointed
-import Data.Semigroup ((<>))
-import Data.Semigroup.Foldable
-import Data.Set (Set)
 import Data.SymbolString
-import Data.TCM
+import Data.TCM (TransitionCostMatrix)
 import Data.Text (Text, unpack)
 import Data.Validation
-import Data.Vector.NonEmpty qualified as V
 import Data.Vector.Unboxed.NonEmpty (Vector)
 import File.Input
 import Prelude hiding (zip)
 import SampleData
-import System.IO
 import Test.Tasty
 import Test.Tasty.HUnit
 
 
-stringAligner op = postorderLogic $ unboxedUkkonenDO defaultAlphabet op
---stringAligner op = postorderLogic $ ukkonenDO defaultAlphabet op
+stringAligner :: TransitionCostMatrix -> PreliminaryNode -> PreliminaryNode -> PreliminaryNode
+stringAligner tcm = postorderLogic $ alignUkkonen defaultAlphabet tcm
 
 
 main :: IO ()
-main = runTests
+main = testTrees
 
 
-runTests :: IO ()
-runTests = defaultMain . testGroup "Test Trees" $ runTest <$> sampleDataSets
+testTrees :: IO ()
+testTrees = defaultMain . testGroup "Test Trees" $ runTest <$> sampleDataSets
 
 
 runTest
@@ -56,26 +51,26 @@ runTest
        )
     -> TestTree
 runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
-    inputTree <- case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
+    inputTree' <- case toEither $ unifyInput defaultAlphabet (fst <$> leafData) treeData of
         Left  errors -> assertFailure . unlines $ show <$> toList errors
         Right tree   -> pure tree
     outputTrees <- case toEither $ gatherOutputTrees leafData treeData of
         Left  errors -> assertFailure . unlines $ show <$> toList errors
         Right tree   -> pure tree
-    let result        = force . preorder' $ postorder' inputTree
-        alignedString = renderPhylogeny leafRendererA result
-        inputString   = renderPhylogeny inputRenderer inputTree
-        outputStrings = renderPhylogeny inputRenderer <$> outputTrees
-        closestOutput = minimumBy (comparing (strDistance alignedString)) outputStrings
-        errorMsg      = unlines
+    let result         = force . preorder' $ postorder' inputTree'
+        alignedString' = renderPhylogeny leafRendererA result
+        inputString'   = renderPhylogeny inputRenderer inputTree'
+        outputStrings  = renderPhylogeny inputRenderer <$> outputTrees
+        closestOutput  = minimumBy (comparing (strDistance alignedString')) outputStrings
+        errorMsg       = unlines
             [ "Input Tree:"
-            , inputString
+            , inputString'
             , "Actual Aligned Tree:"
-            , alignedString
+            , alignedString'
             , "Expected Aligned Tree:"
             , closestOutput
             ]
-    assertBool errorMsg (alignedString `elem` outputStrings)
+    assertBool errorMsg (alignedString' `elem` outputStrings)
 
     where
         postorder'           = postorder $ stringAligner op
@@ -83,17 +78,17 @@ runTest (dataSetLabel, leafData, treeData, op) = testCase dataSetLabel $ do
 
         medianStateFinalizer = preorderInternalLogic
 
-        gatherOutputTrees x y = sequenceA $ (\i -> f $ (! i) . snd <$> x) <$> (0 :| [1 .. count - 1])
+        gatherOutputTrees
+            :: Map Text (a, NonEmpty (NonEmpty (Vector Char)))
+            -> BTree b c
+            -> Validation (NonEmpty UnificationError) (NonEmpty (BTree b PreliminaryNode))
+        gatherOutputTrees x y = traverse (\i -> f $ (! i) . snd <$> x) $ 0 :| [1 .. count - 1]
             where
                 count = length . head . toList $ snd <$> x
                 f z = unifyInput defaultAlphabet z y
 
-    --    stringAligner = postorderLogic (ukkonenDO defaultAlphabet op)
         leafRendererA :: FinalizedNode -> Text -> String
         leafRendererA x i = fold [unpack i, ": ", renderSingleton defaultAlphabet $ x ^. alignedString]
-
-        nodeRendererA :: HasAlignedString s (V.Vector SymbolContext) => s -> p -> String
-        nodeRendererA x _ = fold ["?: ", renderSingleton defaultAlphabet $ x ^. alignedString]
 
         inputRenderer :: PreliminaryNode -> Text -> String
         inputRenderer x i = fold [unpack i, ": ", renderSingleton defaultAlphabet $ x ^. preliminaryString]

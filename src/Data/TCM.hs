@@ -7,7 +7,7 @@ module Data.TCM
       -- * Construction
     , buildSymbolChangeMatrix
     , buildTransitionCostMatrix
-      -- * Querries
+      -- * Queries
     , overlap
     , overlap'
     , renderTCM
@@ -20,8 +20,8 @@ import Data.Foldable
 import Data.Key
 import Data.List.NonEmpty (NonEmpty(..))
 import Data.List.NonEmpty qualified as NE
-import Data.Matrix (Matrix, unsafeIndex)
-import Data.Matrix qualified as M
+import Data.Matrix.Unboxed (Matrix, unsafeIndex)
+import Data.Matrix.Unboxed qualified as M
 import Data.Semigroup
 import Data.Semigroup.Foldable
 import Data.SymbolString
@@ -30,14 +30,14 @@ import Data.SymbolString
 -- |
 -- /O(1)/ for practical purposes, technically \( \mathcal{O} \left( \log_16 \left( a \right) \right) \)
 --
--- A generalized function representationing cost to change between two symbols.
+-- A generalized function representing cost to change between two symbols.
 type SymbolChangeMatrix k = k -> k -> Word
 
 
 -- |
 -- /O(a^2)/
 --
--- A generalized function representationing transition between two
+-- A generalized function representing transition between two
 -- 'SymbolAmbiguityGroup's, returning the corresponding median
 -- 'SymbolAmbiguityGroup' and transition cost.
 type TransitionCostMatrix = SymbolAmbiguityGroup -> SymbolAmbiguityGroup -> (SymbolAmbiguityGroup, Word)
@@ -75,10 +75,10 @@ renderTCM alphabet tcm = unlines . (headerRow :) $ fmap (foldMap render) listOfR
 buildTransitionCostMatrix :: Alphabet k -> SymbolChangeMatrix Int -> TransitionCostMatrix
 buildTransitionCostMatrix alphabet scm =
     let len = 1 `shiftL` length alphabet
-        m   = M.fromList
-            (len, len)
-            [ overlap alphabet scm (toEnum i) (toEnum j) | i <- [0 .. len - 1], j <- [0 .. len - 1] ]
-    in  \i j -> unsafeIndex m (fromEnum i, fromEnum j)
+        mtx :: Matrix (SymbolAmbiguityGroup, Word)
+        mtx = M.fromLists
+            [ [ overlap alphabet scm (toEnum i) (toEnum j) | j <- [0 .. len - 1] ] | i <- [0 .. len - 1] ]
+    in  \i j -> unsafeIndex mtx (fromEnum i, fromEnum j)
 
 
 -- |
@@ -172,7 +172,7 @@ symbolDistances allSymbols costStruct group1 group2 = foldMap1 costAndSymbol all
 overlap'
     :: (FiniteBits e, Foldable1 f, Functor f)
     => Int                   -- ^ Alphabet size
-    -> (Word -> Word -> Word) -- ^ Symbol change matrix (SCM) to determin cost
+    -> (Word -> Word -> Word) -- ^ Symbol change matrix (SCM) to determine cost
     -> f e                    -- ^ List of elements for of which to find the k-median and cost
     -> (e, Word)              -- ^ K-median and cost
 overlap' size sigma xs = go size maxBound zero

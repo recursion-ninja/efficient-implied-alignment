@@ -59,9 +59,9 @@ zeroPad k i = replicate (k - length shown) '0' <> shown where shown = show i
 
 
 timeOp :: (MonadIO m, NFData a) => m a -> m (CPUTime, a)
-timeOp ioa = do
+timeOp op = do
     t1 <- liftIO getCPUTime
-    a  <- force <$> ioa
+    a  <- force <$> op
     t2 <- liftIO getCPUTime
     let t = CPUTime . fromIntegral $ t2 - t1
     pure (t, a)

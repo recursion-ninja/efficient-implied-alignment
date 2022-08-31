@@ -64,7 +64,7 @@ preorderRootLogic =
 
 
 -- |
--- The pre-order scoring logic for intenral nodes.
+-- The pre-order scoring logic for internal nodes.
 {-# INLINABLE preorderLeafLogic #-}
 preorderLeafLogic
     :: FinalizedNode                          -- ^ Parent decoration
@@ -90,7 +90,7 @@ preorderLeafLogic parent current =
 
 
 -- |
--- The pre-order scoring logic for intenral nodes.
+-- The pre-order scoring logic for internal nodes.
 {-# INLINABLE preorderInternalLogic #-}
 preorderInternalLogic
     :: FinalizedNode                          -- ^ Parent decoration
@@ -146,9 +146,9 @@ deriveAlignment pAlignment pContext cContext = alignment
             , "Parent Alignment: " <> show pAlignment
             , "Parent Context:   " <> show pContext
             , "Child  Context:   " <> show cContext
-            , "Parent Context Renamining: "
+            , "Parent Context Renaming: "
             , show z
-            , "Child Context Renamining: "
+            , "Child Context Renaming: "
             , show y
             , "Result Alignment: "
             , show $ reverse x

@@ -40,7 +40,7 @@ type Identifier = T.Text
 
 -- |
 -- Parses a line containing the sequence identifier along with an
--- optional conmment which is discarded.
+-- optional comment which is discarded.
 {-# INLINE identifierLine #-}
 {-# SPECIALISE identifierLine :: Parsec Void  T.Text Identifier #-}
 {-# SPECIALISE identifierLine :: Parsec Void LT.Text Identifier #-}
@@ -83,13 +83,12 @@ validIdentifierChar c = (not . isSpace) c && c /= '$' && c /= ';'
 {-# SPECIALISE commentBody :: Parsec Void LT.Text LT.Text #-}
 {-# SPECIALISE commentBody :: Parsec Void  String  String #-}
 commentBody :: (MonadParsec e s m, Token s ~ Char) => m (Tokens s)
-commentBody = do
-    _ <- inlinedSpace
-    _ <- optional $ char '$'
-    _ <- inlinedSpace
-    commentLine
-    where
-    -- |
-    -- Defines the line of a comment
+commentBody =
+    let -- Defines the line of a comment
         commentLine :: (MonadParsec e s m, Token s ~ Char) => m (Tokens s)
         commentLine = takeWhile1P (Just "Taxon comment content") $ \x -> x /= '\n' && x /= '\r'
+    in  do
+        _ <- inlinedSpace
+        _ <- optional $ char '$'
+        _ <- inlinedSpace
+        commentLine

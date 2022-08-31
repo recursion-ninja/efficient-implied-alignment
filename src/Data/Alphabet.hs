@@ -2,7 +2,7 @@
 -- |
 --
 -- An 'Alphabet' represents an /ordered/ list of unique symbols with constant
--- time random access. Symbols are any data type which are coercable from a
+-- time random access. Symbols are any data type which are coercible from a
 -- 'String' through the 'IsString' type-class.
 --
 -- An 'Alphabet' is constructed in one of two ways:
@@ -34,14 +34,8 @@ module Data.Alphabet
     , AmbiguityGroup
       -- * Construction
     , fromSymbols
-    , fromSymbolsWithStateNames
-      -- * Querries
-    , alphabetStateNames
-    , alphabetSymbols
+      -- * Queries
     , gapSymbol
-      -- * Truncation
-    , truncateAtMaxSymbol
-    , truncateAtSymbol
     ) where
 
 import Data.Alphabet.Internal

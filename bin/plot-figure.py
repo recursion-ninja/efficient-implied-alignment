@@ -1,6 +1,5 @@
 #!/bin/python3
 
-from mpl_toolkits import mplot3d
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,7 +43,7 @@ width  = depth = 1
 # Create ranges of the form [0..n] and [0..k] based on the tick labels.
 my_xticks = list(map(str, map(int, sorted(set(xsl.tolist())))))
 my_yticks = list(map(str, map(int, sorted(set(ysl.tolist())))))
-my_xticks.insert(0,0)
+my_xticks.insert(0,'0')
 
 ax.set_yticks(ys)
 ax.set_zticks(range(2,15,2))

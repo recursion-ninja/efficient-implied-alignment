@@ -1,0 +1,408 @@
+################################################################################
+### GitHub Actions curation providing quality assurance for Haskell projects 
+###
+name: 'Haskell Quality Assurance CI'
+
+
+################################################################################
+### Actions Configuration
+###
+defaults:
+  run:
+    shell: bash
+
+on:
+  # Build every pull request, to check for regressions.
+  pull_request:
+
+  # Build when a PR is merged, to update the README's CI badge.
+  push:
+#    branches: [master]
+
+
+################################################################################
+### Actions: Curation
+###
+jobs:
+
+
+################################################################################
+### Cabal build matrix
+###
+  cabal:
+    env:
+      PROJECT_FILE: --project-file=config/cabal.project.CI
+
+    name: GHC-${{ matrix.ghc }}
+    
+    runs-on:  ${{ matrix.os  }}
+    
+    strategy:
+
+      fail-fast: false
+
+      # NOTE:
+      #   Do *not* include macOS in *any* benchmarking/testing build matrix!
+      #   Only include macOS in build matrices checking for compilation success.
+      #     - macOS consumes x10 the free Linux CI minutes
+      #     - macOS bills at x10 the paid Linux CI minute rate
+      #
+      matrix:
+        ghc:   [ '8.10', '9.0', '9.2', '9.4.1' ]
+        cabal: [ '3.8.1.0' ]
+        os:    [ ubuntu-latest ]
+
+    steps:
+      - name: 'Setup - Clone Project'
+        uses: actions/checkout@v3
+      
+      - name: 'Setup - Haskell'
+        uses: haskell/actions/setup@v2
+        id:   haskell-info
+        with:
+          ghc-version:   ${{ matrix.ghc   }}
+          cabal-version: ${{ matrix.cabal }}
+
+      - name: 'Setup - Cabal'
+        run: |
+          ghc   --version
+          cabal --version
+          cabal update
+          cabal clean
+          cabal configure "${PROJECT_FILE}" --with-compiler=${{ steps.haskell-info.outputs.ghc-exe }}
+          cabal freeze    "${PROJECT_FILE}"
+
+      - name: 'Cache - Cabal'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.haskell-info.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('**/*.freeze') }}
+          # restore keys is a fall back when the freeze plan is different
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: 'Cabal - Build'
+        run: |
+          cabal build all "${PROJECT_FILE}" --only-dependencies
+          cabal build all "${PROJECT_FILE}"
+
+      - name: 'Cabal - Check'
+        run: |
+          cabal check "${PROJECT_FILE}" || true
+          cabal sdist "${PROJECT_FILE}" -o "$(pwd)"
+
+
+################################################################################
+### Check that the project builds with the specified lower bounds
+###
+  build-min-bounds:
+    env:
+      PROJECT_FILE: --project-file=config/cabal.project.lowest
+
+    name: 'Check: Cabal lower bounds'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Setup - Clone Project'
+        uses: actions/checkout@v3
+
+      - name: 'Setup - Haskell'
+        uses: haskell/actions/setup@v2
+        id:   haskell-info
+        with:
+          ghc-version:   8.10.1
+          cabal-version: 3.6
+
+      - name: 'Setup - Cabal'
+        run: |
+          ghc   --version
+          cabal --version
+          cabal update
+          cabal clean
+          cabal configure "${PROJECT_FILE}"
+          cabal freeze    "${PROJECT_FILE}"
+
+      - name: 'Cache - Cabal'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.haskell-info.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-lowest-bounds-${{ hashFiles('**/*.freeze') }}
+          # restore keys is a fall back when the freeze plan is different
+          restore-keys: |
+            ${{ runner.os }}-lowest-bounds-
+
+      - name: 'Cabal - Build'
+        run: |
+          cabal build all "${PROJECT_FILE}" --only-dependencies
+          cabal build all "${PROJECT_FILE}"
+
+      - name: 'Cabal - Check'
+        run: |
+          cabal check "${PROJECT_FILE}" || true
+          cabal sdist "${PROJECT_FILE}" -o "$(pwd)"
+
+
+################################################################################
+### Check that all HLint hints are applied
+###
+  hlint:
+    name: 'Check: HLint'
+
+    needs: build-min-bounds
+
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 'Query - Latest HLint Version'
+        id: query
+        run: |
+          echo "::set-output name=latest-version::"$(curl -s -H 'Accept: application/json' https://hackage.haskell.org/package/hlint | sed -n 's/^.*"\([0-9\.]\+\)":"normal"\}$/\1/p')
+
+      - name: 'Setup - Clone Project'
+        uses: actions/checkout@v3
+
+      - name: 'Setup - HLint'
+        uses: haskell/actions/hlint-setup@v2
+        id: hlint
+        with:
+          version: ${{ steps.query.outputs.latest-version }}
+
+      - name: 'Run HLint'
+        uses: haskell/actions/hlint-run@v2
+        with:
+          path: '[ "app/", "src/", "test/" ]' 
+          fail-on: warning
+
+
+################################################################################
+### Check that Weeder does not detect dead code
+###
+  weeder:
+    env:
+      PROJECT_FILE: --project-file=config/cabal.project.CI
+      WEEDER_CLEAN: '  > None!\n'
+      WEEDER_START: '-=-=-=-=--=-=-=-=-=-=-=-=-\n    Dead code detected:\n-=-=-=-=--=-=-=-=-=-=-=-=-\n\n'
+      WEEDER_HIE: .hie
+
+    name: 'Check: Weeder'
+
+    needs: build-min-bounds
+
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 'Setup - Clone Project'
+        uses: actions/checkout@v3
+
+      - name: 'Setup - Haskell'
+        uses: haskell/actions/setup@v2
+        id:   haskell-info
+        with:
+          ghc-version:   9.2.4
+          cabal-version: 3.8.1.0
+
+      - name: 'Setup - Cabal'
+        run: |
+          ghc   --version
+          cabal --version
+          cabal update
+          cabal clean
+          cabal configure "${PROJECT_FILE}" --with-compiler=${{ steps.haskell-info.outputs.ghc-exe }}
+          cabal freeze    "${PROJECT_FILE}"
+
+      - name: 'Setup - Weeder'
+        run: |
+          ls ./weeder || cabal install weeder --install-method=copy --installdir=. --with-compiler=${{ steps.haskell-info.outputs.ghc-exe }}
+          ./weeder --version
+
+      - name: 'Cache - Cabal'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.haskell-info.outputs.cabal-store }}
+            ./weeder
+          key: ${{ runner.os }}-Weeder-${{ hashFiles('**/*.freeze') }}
+          # restore keys is a fall back when the freeze plan is different
+          restore-keys: |
+            ${{ runner.os }}-Weeder-
+
+      - name: 'Cabal - Build'
+        run: |
+          cabal build all "${PROJECT_FILE}" --only-dependencies
+          cabal build all "${PROJECT_FILE}"
+
+      - name: 'Run - Weeder'
+        run: |
+          echo -en "${WEEDER_START}"
+          ./weeder \
+            --config ./config/.weeder.dhall \
+            --hie-directory "${WEEDER_HIE}" && \
+            echo -en "${WEEDER_CLEAN}"
+
+
+################################################################################
+### MegaLinter GitHub Action configuration file
+### More info at https://megalinter.github.io
+  megalinter:
+    concurrency:
+      group: ${{ github.ref }}-${{ github.workflow }}
+      cancel-in-progress: true
+
+    env: # Comment env block if you do not want to apply fixes
+      # Apply linter fixes configuration
+      # When active, APPLY_FIXES must also be defined as environment variable in github/workflows/mega-linter.yaml
+      APPLY_FIXES: all
+      
+      # Decide which event triggers application of fixes in a commit or a PR (pull_request, push, all)
+      APPLY_FIXES_EVENT: pull_request
+    
+      # If APPLY_FIXES is used, defines if the fixes are directly committed (commit) or posted in a PR (pull_request)
+      APPLY_FIXES_MODE: pull_request
+    
+    name: 'Check: MegaLinter'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      # MegaLinter
+      - name: MegaLinter
+        id: ml
+        # You can override MegaLinter flavor used to have faster performances
+        # More info at https://megalinter.github.io/flavors/
+        uses: megalinter/megalinter@v6
+        env:
+          # All available variables are described in documentation
+          # https://megalinter.github.io/configuration/
+          VALIDATE_ALL_CODEBASE: true # Set ${{ github.event_name == &#39;push&#39; &amp;&amp; github.ref == &#39;refs/heads/main&#39; }} to validate only diff with main branch
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ADD YOUR CUSTOM ENV VARIABLES HERE TO OVERRIDE VALUES OF mega-linter.yaml
+          MEGALINTER_CONFIG: config/.MegaLinter.yaml
+
+      # Upload MegaLinter artifacts
+      - name: Archive production artifacts
+        if: ${{ success() }} || ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: MegaLinter reports
+          path: |
+            /github/workspace/report
+            /github/workspace/mega-linter.log
+
+      # Create pull request if applicable (for now works only on PR from same repository, not from forks)
+      - name: Create Pull Request with applied fixes
+        id: cpr
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          commit-message: "[MegaLinter] Apply linters automatic fixes"
+          title: "[MegaLinter] Apply linters automatic fixes"
+          labels: bot
+      - name: Create PR output
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'pull_request' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
+
+      # Push new commit if applicable (for now works only on PR from same repository, not from forks)
+      - name: Prepare commit
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'commit' && github.ref != 'refs/heads/main' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        run: sudo chown -Rc $UID .git/
+      - name: Commit and push applied linter fixes
+        if: steps.ml.outputs.has_updated_sources == 1 && (env.APPLY_FIXES_EVENT == 'all' || env.APPLY_FIXES_EVENT == github.event_name) && env.APPLY_FIXES_MODE == 'commit' && github.ref != 'refs/heads/main' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && !contains(github.event.head_commit.message, 'skip fix')
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          branch: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref }}
+          commit_message: "[MegaLinter] Apply linters fixes"
+
+
+################################################################################
+### Check for spelling errors
+###
+  spelling:
+    name: 'Check: Spelling'
+    
+    outputs:
+      followup: ${{ steps.spelling.outputs.followup }}
+
+    permissions:
+      actions:       read
+      contents:      read
+      pull-requests: read
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: check-spelling
+        id: spelling
+        uses: check-spelling/check-spelling@prerelease
+        with:
+          experimental_apply_changes_via_bot: 1
+          suppress_push_for_open_pull_request: 1
+          checkout: true
+          spell_check_this: check-spelling/spell-check-this@prerelease
+          post_comment: 0
+          extra_dictionary_limit: 32
+          extra_dictionaries:
+            cspell:cpp/src/cpp.txt
+            cspell:filetypes/filetypes.txt
+            cspell:fullstack/fullstack.txt
+            cspell:haskell/haskell.txt
+            cspell:latex/latex.txt
+            cspell:python/src/python/python.txt
+            cspell:python/src/python/python-lib.txt
+            cspell:r/src/r.txt
+            cspell:scientific_terms_US/custom_scientific_US.dic.txt
+            cspell:software-terms/src/software-terms.txt
+
+
+################################################################################
+### Generate codebase summary with Succinct Code Counter (SCC)
+###
+  scc:
+    env:
+      COLOR_OPEN: "\x1b[48;5;112m"
+      COLOR_STOP: "\e[0m"
+
+    name: 'Info: SCC'
+
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: 'Succinct Code Counter'
+        run: |
+          echo '::group::Setup - SCC'
+          wget -O - -q https://api.github.com/repos/boyter/scc/releases/latest | \
+          grep "browser_download_url.*x86_64-unknown-linux.zip" | \
+          cut -d : -f 2,3 | \
+          tr -d \" | \
+          wget -i - -O - -q | \
+          gunzip -c > scc; \
+          chmod +x scc
+          echo -e '\033[38;2;180;160;2102m'
+          ./scc --version
+          echo -e "\033[0m"
+          echo -e '\033[38;2;180;250;2102m'
+          echo '::endgroup::'
+          echo '::group::Succinct Code Counter Information'
+          ./scc \
+              --avg-wage 111000 \
+              --exclude-dir "[.git,.github,config]" \
+              --no-duplicates \
+              --no-min-gen \
+              --wide
+          echo -e "\033[0m"
+          echo '::endgroup::'

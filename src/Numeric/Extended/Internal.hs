@@ -9,7 +9,7 @@
 -- Portability :  portable
 --
 -- A type-class for extending types that represent finite numerical values to
--- include an ininity representation.
+-- include an infinity representation.
 --
 -----------------------------------------------------------------------------
 

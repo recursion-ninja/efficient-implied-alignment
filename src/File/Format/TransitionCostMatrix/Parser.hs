@@ -38,8 +38,8 @@ import Data.Char (isSpace)
 import Data.Foldable
 import Data.List.NonEmpty (NonEmpty)
 import Data.List.Utility (duplicates, mostCommon)
-import Data.Matrix (Matrix, cols, rows)
-import Data.Matrix qualified as M (fromList)
+import Data.Matrix.Unboxed (Matrix, cols, rows)
+import Data.Matrix.Unboxed qualified as M (fromLists)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Scientific (toBoundedInteger)
 import Data.Text qualified as T
@@ -55,7 +55,7 @@ import Text.Megaparsec.Custom
 
 
 -- |
--- Intermediate parse result prior to consistancy validation
+-- Intermediate parse result prior to consistency validation
 data  TCMParseResult
     = TCMParseResult (Vector Char) (Matrix Word)
     deriving stock Show
@@ -72,7 +72,7 @@ data  TCMParseResult
 --
 -- > (length . customAlphabet) tcm == (nrows . transitionCosts) tcm && (length . customAlphabet) tcm == (ncols . transitionCosts) tcm
 --
--- Note that the 'transitionCosts` does not need to be a symetic matrix nor have identity values on the matrix diagonal.
+-- Note that the 'transitionCosts` does not need to be a symmetric matrix nor have identity values on the matrix diagonal.
 data  TCM
     = TCM
     { customAlphabet  :: Vector Char
@@ -101,7 +101,7 @@ tcmStreamParser = validateTCMParseResult =<< tcmDefinition <* eof
 -- |
 -- Parses an intermediary result consisting of an Alphabet and a Matrix.
 -- Both the Alphabet and Matrix have been validated independently for
--- consistencey, but no validation has been performed to ensure that the
+-- consistency, but no validation has been performed to ensure that the
 -- dimensions of the Matrix and the length of the Alphabet are consistent
 -- with each other.
 {-# INLINE tcmDefinition #-}
@@ -269,7 +269,7 @@ validateAlphabet alphabet
 validateMatrix :: (MonadFail m, MonadParsec e s m) => [[Word]] -> m (Matrix Word)
 validateMatrix matrix
     | null matrix       = fail "No matrix specified"
-    | null matrixErrors = pure . M.fromList (rows', cols') $ concat matrix
+    | null matrixErrors = pure $ M.fromLists matrix
     | otherwise         = fails matrixErrors
     where
         rows'   = length matrix
